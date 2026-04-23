@@ -1,6 +1,7 @@
 """URL routing utama SIAKRED."""
 from django.contrib import admin
 from django.urls import path, include
+from sesi.views import sesi_bundle_public, sesi_bundle_zip_public
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -22,6 +23,8 @@ urlpatterns = [
 
     # Core (landing, login, dashboard)
     path("", include("core.urls")),
+    path('bundle/<str:token>/', sesi_bundle_public, name='bundle_public'),
+    path('bundle/<str:token>/zip/', sesi_bundle_zip_public, name='bundle_public_zip'),
 ]
 
 if settings.DEBUG:

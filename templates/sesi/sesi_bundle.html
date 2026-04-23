@@ -1,0 +1,476 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+
+{% block title %}Bundle - {{ sesi.judul }} - SIAKRED{% endblock %}
+{% block page_heading %}Bundle Export - {{ sesi.judul|truncatechars:60 }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'sesi:sesi_detail' sesi.pk %}">{{ sesi.judul|truncatechars:40 }}</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Bundle Export</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .bundle-toolbar {
+    display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1rem; margin-bottom:1.25rem;
+  }
+  .bundle-toolbar .search-box {
+    flex:1; min-width:240px; position:relative;
+  }
+  .bundle-toolbar .search-box input {
+    width:100%; padding:.6rem .85rem .6rem 2.25rem; border:1px solid var(--border);
+    border-radius:8px; font-size:.9rem; background:var(--surface-muted);
+  }
+  .bundle-toolbar .search-box svg {
+    position:absolute; left:.65rem; top:50%; transform:translateY(-50%);
+    color:var(--text-muted); pointer-events:none;
+  }
+
+  .bundle-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .bundle-stats { grid-template-columns:repeat(2,1fr); } }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.1rem 1.25rem; display:flex; align-items:center; gap:.9rem;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .stat-card:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.06); }
+  .stat-card .ic {
+    width:42px; height:42px; border-radius:10px; display:flex;
+    align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .stat-card .val { font-size:1.55rem; font-weight:700; color:var(--text-primary); line-height:1; }
+  .stat-card .label { font-size:.78rem; color:var(--text-muted); margin-top:.25rem; }
+
+  .stat-card.total .ic { background:#EFF6FF; color:#2563EB; }
+  .stat-card.filled .ic { background:#ECFDF5; color:#059669; }
+  .stat-card.empty .ic { background:#FEF2F2; color:#DC2626; }
+  .stat-card.docs .ic { background:#F5F3FF; color:#7C3AED; }
+
+  .progress-bar {
+    margin-bottom:1.25rem; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:1rem 1.25rem;
+  }
+  .progress-bar .pb-head {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem;
+  }
+  .progress-bar .pb-head strong { font-size:.95rem; color:var(--text-primary); }
+  .progress-bar .pb-head .pct { font-weight:700; color:#059669; font-size:1rem; }
+  .progress-bar .pb-track { height:10px; background:#E5E7EB; border-radius:5px; overflow:hidden; }
+  .progress-bar .pb-fill {
+    height:100%; background:linear-gradient(90deg,#10B981,#059669);
+    border-radius:5px; transition:width .4s ease;
+  }
+
+  .sesi-meta {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:.85rem 1rem; margin-bottom:1.25rem; font-size:.85rem; color:#1E3A8A;
+    display:flex; gap:1.5rem; flex-wrap:wrap;
+  }
+  .sesi-meta span { display:inline-flex; gap:.35rem; }
+  .sesi-meta strong { color:#1E40AF; }
+
+  .tree-root { display:flex; flex-direction:column; gap:.85rem; }
+
+  .std-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden; transition:border-color .15s;
+  }
+  .std-card.is-empty { border-color:#FCA5A5; }
+  .std-header {
+    padding:1rem 1.25rem; background:linear-gradient(90deg,#EFF6FF,#F8FAFC);
+    border-bottom:1px solid var(--border); cursor:pointer;
+    display:flex; align-items:center; gap:.85rem;
+    transition:background .15s;
+  }
+  .std-card.is-empty .std-header { background:linear-gradient(90deg,#FEF2F2,#FFFBFB); }
+  .std-header:hover { background:linear-gradient(90deg,#DBEAFE,#EFF6FF); }
+  .std-header .chevron {
+    width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+    transition:transform .2s ease; color:var(--text-muted); flex-shrink:0;
+  }
+  .std-card.collapsed .chevron { transform:rotate(-90deg); }
+  .std-header .std-no {
+    background:#2563EB; color:#fff; font-weight:700; font-size:.75rem;
+    padding:.2rem .5rem; border-radius:6px; min-width:32px; text-align:center;
+  }
+  .std-header .std-title { font-weight:600; color:var(--text-primary); flex:1; font-size:.98rem; }
+  .std-header .std-badge {
+    background:#ECFDF5; color:#059669; padding:.25rem .6rem; border-radius:999px;
+    font-size:.73rem; font-weight:600; white-space:nowrap;
+  }
+  .std-card.is-empty .std-badge { background:#FEF2F2; color:#DC2626; }
+  .std-card.partial .std-badge { background:#FEF3C7; color:#B45309; }
+
+  .std-body { padding:.75rem 1.25rem 1.25rem; display:flex; flex-direction:column; gap:.75rem; }
+  .std-card.collapsed .std-body { display:none; }
+
+  .sub-card {
+    border:1px solid #EDE9FE; border-radius:10px; background:#FAFAFF;
+    overflow:hidden;
+  }
+  .sub-header {
+    padding:.65rem .95rem; background:#F5F3FF; border-bottom:1px solid #EDE9FE;
+    display:flex; align-items:center; gap:.6rem; font-size:.88rem;
+  }
+  .sub-header .sub-no {
+    background:#7C3AED; color:#fff; font-weight:600; font-size:.7rem;
+    padding:.15rem .45rem; border-radius:4px; min-width:34px; text-align:center;
+  }
+  .sub-header .sub-title { font-weight:600; color:#5B21B6; flex:1; }
+  .sub-header .sub-count { font-size:.75rem; color:#6D28D9; font-weight:500; }
+  .sub-body { padding:.6rem .85rem; display:flex; flex-direction:column; gap:.45rem; }
+
+  .butir-row {
+    background:#fff; border:1px solid #F3F4F6; border-radius:8px;
+    padding:.65rem .85rem; display:flex; align-items:flex-start;
+    gap:.75rem; font-size:.86rem;
+    transition:border-color .12s, background .12s;
+  }
+  .butir-row:hover { border-color:#E5E7EB; background:#FAFAFB; }
+  .butir-row.empty { border-color:#FECACA; background:#FFFBFB; }
+  .butir-row.filled { border-color:#A7F3D0; background:#F0FDF4; }
+  .butir-row .bk {
+    font-family:ui-monospace,'SF Mono',Consolas,monospace; font-size:.72rem;
+    background:#F3F4F6; color:#374151; padding:.15rem .4rem; border-radius:4px;
+    flex-shrink:0; font-weight:600;
+  }
+  .butir-row .bn { flex:1; color:var(--text-primary); line-height:1.4; }
+  .butir-row .bn .docs { margin-top:.35rem; display:flex; flex-direction:column; gap:.2rem; }
+  .butir-row .bn .docs .doc {
+    display:flex; align-items:center; gap:.4rem; font-size:.78rem; color:#065F46;
+  }
+  .butir-row .bn .docs .doc .dl-tag {
+    background:#D1FAE5; color:#065F46; padding:.08rem .35rem; border-radius:3px;
+    font-size:.68rem; font-weight:600;
+  }
+  .butir-row .bcnt {
+    font-size:.72rem; font-weight:600; padding:.18rem .5rem; border-radius:999px;
+    flex-shrink:0; white-space:nowrap;
+  }
+  .butir-row.empty .bcnt { background:#FEE2E2; color:#991B1B; }
+  .butir-row.filled .bcnt { background:#D1FAE5; color:#065F46; }
+
+  .share-panel {
+    margin-top:1.5rem; background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;
+    padding:1.1rem 1.25rem;
+  }
+  .share-panel h3 { margin:0 0 .5rem; font-size:.95rem; color:#92400E; }
+  .share-panel p { font-size:.82rem; color:#78350F; margin:0 0 .75rem; }
+  .share-panel .tokens { display:flex; flex-direction:column; gap:.5rem; }
+  .share-panel .tk {
+    background:#fff; border:1px solid #FDE68A; border-radius:8px;
+    padding:.6rem .8rem; display:flex; align-items:center; gap:.75rem;
+    font-size:.83rem;
+  }
+  .share-panel .tk .tk-label { flex:1; color:#78350F; font-weight:500; }
+  .share-panel .tk .tk-exp { font-size:.72rem; color:#92400E; }
+
+  .empty-state {
+    background:var(--surface); border:2px dashed var(--border); border-radius:12px;
+    padding:2.5rem 1.5rem; text-align:center; color:var(--text-muted);
+  }
+
+  .bundle-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .bundle-actions .btn { font-size:.85rem; }
+
+  @media print {
+    .bundle-toolbar, .share-panel, .bundle-actions, .breadcrumb { display:none !important; }
+    .std-card.collapsed .std-body { display:flex !important; }
+    .std-header .chevron { display:none !important; }
+    body { background:#fff !important; }
+  }
+</style>
+
+<!-- Sesi Meta -->
+<div class="sesi-meta">
+    <span><strong>Instrumen:</strong> {{ sesi.instrumen.nama_singkat|default:sesi.instrumen }}</span>
+    {% if prodi_display %}<span><strong>Prodi:</strong> {{ prodi_display }}</span>{% endif %}
+    {% if sesi.kode_fakultas %}<span><strong>Fakultas:</strong> {{ sesi.kode_fakultas }}</span>{% endif %}
+    <span><strong>Tahun TS:</strong> {{ sesi.tahun_ts }}</span>
+    <span><strong>Status:</strong> {{ sesi.get_status_display }}</span>
+</div>
+
+<!-- Toolbar: Search + Actions -->
+<div class="bundle-toolbar">
+    <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="bundleSearch" placeholder="Cari standar, sub-standar, atau butir..." autocomplete="off">
+    </div>
+    <div class="bundle-actions">
+        <button type="button" class="btn" onclick="toggleAll(true)" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            Expand
+        </button>
+        <button type="button" class="btn" onclick="toggleAll(false)" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+            Collapse
+        </button>
+        <button type="button" class="btn" onclick="window.print()" style="background:#EFF6FF; color:#1E40AF; border-color:#BFDBFE;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+        </button>
+        <a href="{% url 'sesi:sesi_bundle_zip' sesi.pk %}" class="btn" title="Download semua dokumen dalam satu ZIP + manifest.json" style="background:#F5F3FF; color:#6D28D9; border-color:#DDD6FE;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export ZIP
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="bundle-stats">
+    <div class="stat-card total">
+        <div class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><polyline points="9 11 9 3 15 3 15 11"/></svg>
+        </div>
+        <div>
+            <div class="val">{{ stats.total_butir }}</div>
+            <div class="label">Total Butir</div>
+        </div>
+    </div>
+    <div class="stat-card filled">
+        <div class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div>
+            <div class="val" style="color:#059669;">{{ stats.total_butir_terisi }}</div>
+            <div class="label">Sudah Terisi</div>
+        </div>
+    </div>
+    <div class="stat-card empty">
+        <div class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+            <div class="val" style="color:#DC2626;">{{ stats.total_butir_kosong }}</div>
+            <div class="label">Belum Terisi</div>
+        </div>
+    </div>
+    <div class="stat-card docs">
+        <div class="ic">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+            <div class="val" style="color:#7C3AED;">{{ stats.total_dokumen }}</div>
+            <div class="label">Total Dokumen</div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-bar">
+    <div class="pb-head">
+        <strong>Progress Kelengkapan Dokumen</strong>
+        <span class="pct">{{ stats.completion_pct }}%</span>
+    </div>
+    <div class="pb-track">
+        <div class="pb-fill" style="width:{{ stats.completion_pct }}%;"></div>
+    </div>
+</div>
+
+<!-- Tree Struktur -->
+{% if tree %}
+<div class="tree-root" id="treeRoot">
+    {% for std in tree %}
+        {% with total_butir_std=std.substandars|length %}
+        <div class="std-card" data-std-idx="{{ forloop.counter }}">
+            <div class="std-header" onclick="toggleStd(this)">
+                <span class="chevron">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+                <span class="std-no">{{ std.obj.nomor }}</span>
+                <span class="std-title">{{ std.obj.nama }}</span>
+                <span class="std-badge">{{ std.substandars|length }} sub-standar</span>
+            </div>
+            <div class="std-body">
+                {% for sub in std.substandars %}
+                    <div class="sub-card">
+                        <div class="sub-header">
+                            <span class="sub-no">{{ sub.obj.nomor }}</span>
+                            <span class="sub-title">{{ sub.obj.nama }}</span>
+                            <span class="sub-count">{{ sub.butir_count }} butir</span>
+                        </div>
+                        <div class="sub-body">
+                            {% for butir in sub.butirs %}
+                                <div class="butir-row {% if butir.count > 0 %}filled{% else %}empty{% endif %}">
+                                    <span class="bk">{{ butir.obj.kode }}</span>
+                                    <div class="bn">
+                                        {{ butir.obj.nama_dokumen }}
+                                        {% if butir.dokumens %}
+                                            <div class="docs">
+                                                {% for dok in butir.dokumens %}
+                                                    <div class="doc">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                                        <span>{{ dok.judul|truncatechars:80 }}</span>
+                                                        <span class="dl-tag">{{ dok.tahun_akademik }}</span>
+                                                        {% with s=dok.status_verifikasi %}
+                                                            {% if s == "APPROVED" %}
+                                                                <span style="background:#D1FAE5; color:#065F46; padding:.08rem .35rem; border-radius:3px; font-size:.68rem; font-weight:600;">APPROVED</span>
+                                                            {% elif s == "REJECTED" %}
+                                                                <span style="background:#FEE2E2; color:#991B1B; padding:.08rem .35rem; border-radius:3px; font-size:.68rem; font-weight:600;">REJECTED</span>
+                                                            {% elif s == "NEED_REVISION" %}
+                                                                <span style="background:#FEF3C7; color:#92400E; padding:.08rem .35rem; border-radius:3px; font-size:.68rem; font-weight:600;">NEED REVISION</span>
+                                                            {% elif s == "PENDING" %}
+                                                                <span style="background:#DBEAFE; color:#1E40AF; padding:.08rem .35rem; border-radius:3px; font-size:.68rem; font-weight:600;">PENDING</span>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <span class="bcnt">
+                                        {% if butir.count > 0 %}
+                                            {{ butir.count }} dok
+                                        {% else %}
+                                            kosong
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            {% empty %}
+                                <div style="font-size:.82rem; color:var(--text-muted); padding:.3rem .5rem; font-style:italic;">
+                                    Belum ada butir dokumen
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div style="font-size:.85rem; color:var(--text-muted); padding:.6rem 0; font-style:italic;">
+                        Belum ada sub-standar untuk standar ini.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endwith %}
+    {% endfor %}
+</div>
+
+<!-- SHARE PANEL V2 -->
+<div class="share-panel">
+    <h3>Kelola Token Share</h3>
+    <p>Token memungkinkan asesor/pihak eksternal mengakses bundle tanpa login. Link dikirim manual via email/WA.</p>
+
+    <!-- Form Buat Token -->
+    <form method="post" action="{% url 'sesi:bundle_token_create' sesi.pk %}" style="background:#fff; border:1px solid #FDE68A; border-radius:10px; padding:1rem; margin-bottom:1rem;">
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:.6rem; align-items:end;">
+            <div>
+                <label style="display:block; font-size:.78rem; font-weight:600; color:#78350F; margin-bottom:.25rem;">Label / Keperluan *</label>
+                <input type="text" name="label" required placeholder="Misal: Asesor Dr. Budi LAMEMBA" maxlength="200" style="width:100%; padding:.55rem .75rem; border:1px solid #FDE68A; border-radius:6px; font-size:.85rem;">
+            </div>
+            <div>
+                <label style="display:block; font-size:.78rem; font-weight:600; color:#78350F; margin-bottom:.25rem;">Expired (Opsional)</label>
+                <input type="date" name="expires_at" style="width:100%; padding:.5rem .75rem; border:1px solid #FDE68A; border-radius:6px; font-size:.85rem;">
+            </div>
+            <button type="submit" class="btn" style="background:#F59E0B; color:#fff; border:0; padding:.6rem 1rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Buat Token
+            </button>
+        </div>
+    </form>
+
+    <!-- Daftar Token -->
+    {% if active_tokens %}
+        <div class="tokens">
+            <div style="font-size:.83rem; font-weight:600; color:#78350F; margin-bottom:.4rem;">Token Aktif ({{ active_tokens|length }}):</div>
+            {% for tk in active_tokens %}
+                <div class="tk" style="flex-direction:column; align-items:stretch; gap:.5rem;">
+                    <div style="display:flex; align-items:center; gap:.75rem;">
+                        <span class="tk-label">{{ tk.label }}</span>
+                        <span class="tk-exp">
+                            {% if tk.expires_at %}Exp: {{ tk.expires_at|date:"d M Y" }}{% else %}Tanpa expired{% endif %} - {{ tk.access_count }}x akses
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:.4rem; align-items:center;">
+                        <input type="text" readonly
+                               value="{{ request.scheme }}://{{ request.get_host }}/bundle/{{ tk.token }}/"
+                               id="tok_{{ tk.pk }}"
+                               style="flex:1; padding:.4rem .6rem; border:1px solid #FDE68A; border-radius:6px; font-family:ui-monospace,monospace; font-size:.72rem; background:#FFFBEB;">
+                        <button type="button" onclick="copyTok('tok_{{ tk.pk }}')" class="btn" style="background:#FEF3C7; color:#92400E; border-color:#FDE68A; padding:.35rem .7rem; font-size:.78rem;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copy
+                        </button>
+                        <form method="post" action="{% url 'sesi:bundle_token_revoke' sesi.pk tk.pk %}" style="margin:0;"
+                              onsubmit="return confirm('Revoke token "{{ tk.label|escapejs }}"? Link tidak akan bisa diakses lagi.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn" style="background:#FEE2E2; color:#991B1B; border-color:#FCA5A5; padding:.35rem .7rem; font-size:.78rem;">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                Revoke
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="font-style:italic; margin:0; color:#92400E;">Belum ada token share aktif. Buat token pertama di form di atas.</p>
+    {% endif %}
+</div>
+
+<script>
+function copyTok(id) {
+    var el = document.getElementById(id);
+    el.select(); el.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(el.value).then(function(){
+        var btn = el.nextElementSibling;
+        var orig = btn.innerHTML;
+        btn.innerHTML = 'Copied!'; btn.style.background = '#D1FAE5'; btn.style.color = '#065F46';
+        setTimeout(function(){ btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 1800);
+    });
+}
+</script>
+
+{% else %}
+
+<div class="empty-state">
+    <p>Instrumen untuk sesi ini belum memiliki data Standar/Sub-Standar/Butir.</p>
+</div>
+{% endif %}
+
+<script>
+function toggleStd(header) {
+    header.parentElement.classList.toggle("collapsed");
+}
+function toggleAll(expand) {
+    document.querySelectorAll(".std-card").forEach(function(c){
+        if (expand) c.classList.remove("collapsed");
+        else c.classList.add("collapsed");
+    });
+}
+
+// Search filter
+(function(){
+    var inp = document.getElementById("bundleSearch");
+    if (!inp) return;
+    inp.addEventListener("input", function(){
+        var q = inp.value.trim().toLowerCase();
+        document.querySelectorAll(".std-card").forEach(function(std){
+            var stdTxt = std.querySelector(".std-title").textContent.toLowerCase();
+            var stdNo = std.querySelector(".std-no").textContent.toLowerCase();
+            var anyMatch = false;
+            std.querySelectorAll(".sub-card").forEach(function(sub){
+                var subTxt = sub.querySelector(".sub-title").textContent.toLowerCase();
+                var subNo = sub.querySelector(".sub-no").textContent.toLowerCase();
+                var subMatch = false;
+                sub.querySelectorAll(".butir-row").forEach(function(row){
+                    var t = row.textContent.toLowerCase();
+                    var m = q === "" || t.indexOf(q) >= 0 || stdTxt.indexOf(q) >= 0 || stdNo.indexOf(q) >= 0 || subTxt.indexOf(q) >= 0 || subNo.indexOf(q) >= 0;
+                    row.style.display = m ? "" : "none";
+                    if (m) { subMatch = true; anyMatch = true; }
+                });
+                sub.style.display = (q === "" || subMatch) ? "" : "none";
+            });
+            std.style.display = (q === "" || anyMatch) ? "" : "none";
+            // expand saat mencari
+            if (q !== "" && anyMatch) std.classList.remove("collapsed");
+        });
+    });
+})();
+</script>
+{% endblock %}

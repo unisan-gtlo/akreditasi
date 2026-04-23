@@ -2,15 +2,20 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+import re as stdre
+import zipfile
+import io as stdio
+import json
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.db import transaction
 from django.core.paginator import Paginator
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 
-from .models import SesiAkreditasi, MilestoneSesi, CatatanSesi
+from .models import SesiAkreditasi, MilestoneSesi, CatatanSesi, BundleShareToken
 from .forms import SesiCreateForm, SesiEditForm
 from .permissions import can_create_sesi, can_edit_sesi, can_view_sesi, is_superadmin
 from master_akreditasi.models import Instrumen, ButirDokumen
@@ -892,8 +897,8 @@ def milestone_mark_selesai(request, sesi_pk, ms_pk):
         if sesi.status != "SELESAI":
             messages.info(
                 request,
-                f"💡 Ini milestone terakhir. Pertimbangkan untuk update status sesi menjadi 'Selesai'. "
-                f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi →</a>"
+                f"?? Ini milestone terakhir. Pertimbangkan untuk update status sesi menjadi 'Selesai'. "
+                f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi ?</a>"
             )
 
     # Suggest workflow updates based on which milestone selesai
@@ -901,14 +906,14 @@ def milestone_mark_selesai(request, sesi_pk, ms_pk):
     if "submit" in judul_lower and sesi.status == "PERSIAPAN":
         messages.info(
             request,
-            f"💡 Milestone Submit sudah selesai. Pertimbangkan ubah status sesi menjadi 'Submitted'. "
-            f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi →</a>"
+            f"?? Milestone Submit sudah selesai. Pertimbangkan ubah status sesi menjadi 'Submitted'. "
+            f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi ?</a>"
         )
     elif "visitasi" in judul_lower and sesi.status not in ["VISITASI_AKTIF", "MENUNGGU_HASIL", "SELESAI"]:
         messages.info(
             request,
-            f"💡 Milestone Visitasi selesai. Pertimbangkan ubah status sesi. "
-            f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi →</a>"
+            f"?? Milestone Visitasi selesai. Pertimbangkan ubah status sesi. "
+            f"<a href='{reverse('sesi:sesi_edit', kwargs={'pk': sesi.pk})}' style='color:#1E40AF; font-weight:700;'>Edit Sesi ?</a>"
         )
 
     return redirect("sesi:sesi_detail", pk=sesi.pk)
@@ -983,3 +988,510 @@ def milestone_edit(request, sesi_pk, ms_pk):
         "status_choices": MilestoneSesi.StatusMilestone.choices,
     }
     return render(request, "sesi/milestone_edit.html", context)
+
+# ============================================
+# BUNDLE EXPORT (Step 8 Batch 4)
+# ============================================
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
+
+
+def _build_bundle_tree(sesi, approved_only=False):
+    from django.db.models import Q
+    from django.db.models import Q
+    from django.db.models import Q
+    from django.db.models import Q
+    """Bangun struktur tree Standar ? SubStandar ? Butir ? Dokumen.
+    
+    Return dict:
+    {
+        'standars': [
+            {
+                'obj': <Standar>,
+                'substandars': [
+                    {
+                        'obj': <SubStandar>,
+                        'butirs': [
+                            {
+                                'obj': <ButirDokumen>,
+                                'dokumens': [<Dokumen>, ...],
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        'stats': {
+            'total_butir': int,
+            'total_butir_terisi': int,
+            'total_butir_kosong': int,
+            'total_dokumen': int,
+            'completion_pct': float,
+        }
+    }
+    """
+    from master_akreditasi.models import Standar, SubStandar, ButirDokumen
+    from dokumen.models import Dokumen
+
+    instrumen = sesi.instrumen
+    periode_list = sesi.tahun_periode_list  # property dari Batch 2.5
+
+    # Build scope filter untuk dokumen
+    scope_filter = Q()
+    if sesi.kode_prodi:
+        scope_filter |= Q(scope_kode_prodi=sesi.kode_prodi)
+    if sesi.kode_fakultas:
+        scope_filter |= Q(scope_kode_fakultas=sesi.kode_fakultas) | \
+                        Q(scope_kode_prodi__isnull=True, scope_kode_fakultas=sesi.kode_fakultas)
+    # Selalu include scope UNIVERSITAS (dokumen universal)
+    scope_filter |= Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
+
+    # Ambil semua standar untuk instrumen ini
+    standars_qs = Standar.objects.filter(
+        instrumen=instrumen
+    ).order_by('urutan', 'nomor')
+
+    tree_standars = []
+    total_butir = 0
+    total_butir_terisi = 0
+    total_dokumen = 0
+
+    for std in standars_qs:
+        substandars_qs = SubStandar.objects.filter(
+            standar=std
+        ).order_by('urutan', 'nomor')
+
+        tree_substandars = []
+        for sub in substandars_qs:
+            butirs_qs = ButirDokumen.objects.filter(
+                sub_standar=sub
+            ).order_by('urutan', 'kode')
+
+            tree_butirs = []
+            for butir in butirs_qs:
+                dokumens = Dokumen.objects.filter(
+                    butir_dokumen=butir,
+                    tahun_akademik__in=periode_list,
+                    status='FINAL',  # hanya dokumen FINAL yang masuk bundle
+                ).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat')
+
+                dokumens_all = list(dokumens)
+                
+                # Filter by approved status kalau approved_only=True
+                if approved_only:
+                    dokumens_list = [d for d in dokumens_all if d.is_approved()]
+                else:
+                    dokumens_list = dokumens_all
+                total_butir += 1
+                total_dokumen += len(dokumens_list)
+                if dokumens_list:
+                    total_butir_terisi += 1
+
+                tree_butirs.append({
+                    'obj': butir,
+                    'dokumens': dokumens_list,
+                    'count': len(dokumens_list),
+                })
+
+            tree_substandars.append({
+                'obj': sub,
+                'butirs': tree_butirs,
+                'butir_count': len(tree_butirs),
+            })
+
+        tree_standars.append({
+            'obj': std,
+            'substandars': tree_substandars,
+        })
+
+    total_butir_kosong = total_butir - total_butir_terisi
+    completion_pct = (total_butir_terisi / total_butir * 100) if total_butir > 0 else 0
+
+    return {
+        'standars': tree_standars,
+        'stats': {
+            'total_butir': total_butir,
+            'total_butir_terisi': total_butir_terisi,
+            'total_butir_kosong': total_butir_kosong,
+            'total_dokumen': total_dokumen,
+            'completion_pct': round(completion_pct, 1),
+        }
+    }
+
+
+
+
+
+
+
+
+def _get_prodi_display(sesi):
+    """Return string tampilan prodi: 'Jenjang Nama (Kode)'.
+    
+    Contoh: 'S1 Manajemen (E21)'
+    
+    Jenjang di-infer dari digit pertama kode:
+    - 2x -> S1, 3x -> S2, 4x -> S3, 1x -> D3
+    """
+    if not sesi.kode_prodi:
+        return ''
+    nama = getattr(sesi, 'nama_prodi_snapshot', '') or ''
+    kode = sesi.kode_prodi
+    
+    # Cari digit pertama untuk infer jenjang
+    jenjang = ''
+    for ch in kode:
+        if ch.isdigit():
+            mapping = {'1': 'D3', '2': 'S1', '3': 'S2', '4': 'S3'}
+            jenjang = mapping.get(ch, '')
+            break
+    
+    if jenjang and nama:
+        return f'{jenjang} {nama} ({kode})'
+    elif nama:
+        return f'{nama} ({kode})'
+    return kode
+
+
+def _check_sesi_permission(user, sesi):
+    """Cek permission view sesi.
+    
+    - Superuser/staff -> allow
+    - Authenticated user -> allow (scope filtering dihandle di view list, bukan di detail/bundle)
+    - Anonymous -> deny
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    return True  # allow semua authenticated user untuk bundle view
+
+@login_required(login_url='/login/')
+def sesi_bundle(request, sesi_id):
+    """Halaman bundle export — tree view dokumen per sesi.
+    
+    Format read-only untuk submit ke LAM/BAN-PT atau share ke asesor.
+    """
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+
+    # Permission check
+    if not _check_sesi_permission(request.user, sesi):
+        raise Http404("Sesi tidak ditemukan atau tidak ada akses.")
+
+    tree_data = _build_bundle_tree(sesi)
+
+    # Ambil token share yang aktif (untuk ditampilkan di halaman)
+    active_tokens = sesi.bundle_tokens.filter(is_active=True).order_by('-created_at')
+
+    context = {
+        'page_title': f'Bundle - {sesi.judul}',
+        'active_menu': 'sesi',
+        'sesi': sesi,
+        'tree': tree_data['standars'],
+        'stats': tree_data['stats'],
+        'active_tokens': active_tokens,
+        'prodi_display': _get_prodi_display(sesi),
+        'is_public_view': False,  # flag untuk template
+    }
+    return render(request, 'sesi/sesi_bundle.html', context)
+
+
+# ============================================
+# BUNDLE PUBLIC (Step 8 Batch 4D)
+# ============================================
+
+from django.http import HttpResponseForbidden
+from django.views.decorators.csrf import csrf_protect
+
+
+def sesi_bundle_public(request, token):
+    """Halaman bundle publik via token (TANPA LOGIN).
+    
+    Untuk asesor LAM/BAN-PT atau eksternal yang tidak punya akun.
+    """
+    try:
+        share = BundleShareToken.objects.select_related('sesi__instrumen').get(token=token)
+    except BundleShareToken.DoesNotExist:
+        return render(request, 'sesi/sesi_bundle_invalid.html', {
+            'page_title': 'Link Tidak Valid',
+            'reason': 'Token tidak ditemukan. Periksa kembali link yang Anda gunakan.',
+        }, status=404)
+
+    if not share.is_valid():
+        reason = 'Link ini sudah dinonaktifkan oleh pengelola.'
+        if share.expires_at:
+            from django.utils import timezone
+            if share.expires_at < timezone.now():
+                reason = f'Link ini sudah kadaluarsa pada {share.expires_at.strftime("%d %B %Y, %H:%M")} WITA.'
+        return render(request, 'sesi/sesi_bundle_invalid.html', {
+            'page_title': 'Link Tidak Valid',
+            'reason': reason,
+        }, status=403)
+
+    # Valid -> track access + render
+    share.mark_accessed()
+    sesi = share.sesi
+    tree_data = _build_bundle_tree(sesi, approved_only=True)
+
+    context = {
+        'page_title': f'Bundle Asesor - {sesi.judul}',
+        'sesi': sesi,
+        'tree': tree_data['standars'],
+        'stats': tree_data['stats'],
+        'share_token': share,
+        'prodi_display': _get_prodi_display(sesi),
+        'is_public_view': True,
+    }
+    return render(request, 'sesi/sesi_bundle_public.html', context)
+
+
+@login_required(login_url='/login/')
+@require_POST
+@csrf_protect
+def bundle_token_create(request, sesi_id):
+    """Generate token share baru untuk sesi."""
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+    if not _check_sesi_permission(request.user, sesi):
+        return HttpResponseForbidden('Tidak ada akses untuk sesi ini.')
+
+    label = request.POST.get('label', '').strip()
+    expires_raw = request.POST.get('expires_at', '').strip()
+
+    if not label:
+        messages.error(request, 'Label token wajib diisi.')
+        return redirect('sesi:sesi_bundle', sesi_id=sesi.pk)
+
+    expires_at = None
+    if expires_raw:
+        from django.utils.dateparse import parse_date
+        parsed = parse_date(expires_raw)
+        if parsed:
+            from django.utils import timezone
+            import datetime
+            # Set ke akhir hari (23:59:59)
+            expires_at = timezone.make_aware(datetime.datetime.combine(parsed, datetime.time(23, 59, 59)))
+
+    token = BundleShareToken.objects.create(
+        sesi=sesi,
+        token=BundleShareToken.generate_token(),
+        label=label[:200],
+        expires_at=expires_at,
+        created_by=request.user,
+    )
+
+    messages.success(
+        request,
+        f'Token "{token.label}" berhasil dibuat. Copy link dan share ke asesor.'
+    )
+    return redirect('sesi:sesi_bundle', sesi_id=sesi.pk)
+
+
+@login_required(login_url='/login/')
+@require_POST
+@csrf_protect
+def bundle_token_revoke(request, sesi_id, token_id):
+    """Revoke (nonaktifkan) token share."""
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+    if not _check_sesi_permission(request.user, sesi):
+        return HttpResponseForbidden('Tidak ada akses untuk sesi ini.')
+
+    token = get_object_or_404(BundleShareToken, pk=token_id, sesi=sesi)
+    token.is_active = False
+    token.save(update_fields=['is_active'])
+
+    messages.success(request, f'Token "{token.label}" telah dinonaktifkan.')
+    return redirect('sesi:sesi_bundle', sesi_id=sesi.pk)
+
+
+# ============================================
+# BUNDLE ZIP EXPORT (Step 8 Batch 4E)
+# ============================================
+
+def _sanitize_filename(s, max_len=80):
+    """Bersihkan string jadi safe filename (no special chars, no spaces)."""
+    s = stdre.sub(r'[<>:"/\\|?*\x00-\x1f]', '', str(s))
+    s = stdre.sub(r'\s+', '_', s.strip())
+    s = stdre.sub(r'_+', '_', s)
+    return s[:max_len].strip('_.')
+
+
+def _build_bundle_zip(sesi, include_local_files=True, approved_only=False):
+    """Build ZIP file bundle dalam memory. Return (bytes, filename)."""
+    from dokumen.models import DokumenRevisi
+    from django.utils import timezone
+    import datetime
+
+    tree_data = _build_bundle_tree(sesi, approved_only=approved_only)
+    stats = tree_data['stats']
+
+    # Manifest root
+    manifest = {
+        'sesi': {
+            'id': sesi.pk,
+            'judul': sesi.judul,
+            'instrumen': str(sesi.instrumen),
+            'kode_prodi': sesi.kode_prodi or '',
+            'nama_prodi': getattr(sesi, 'nama_prodi_snapshot', '') or '',
+            'prodi_display': _get_prodi_display(sesi),
+            'kode_fakultas': sesi.kode_fakultas or '',
+            'tahun_ts': sesi.tahun_ts,
+            'status': sesi.get_status_display(),
+            'jumlah_tahun_evaluasi': getattr(sesi, 'jumlah_tahun_evaluasi', None),
+            'periode_list': getattr(sesi, 'tahun_periode_list', []),
+        },
+        'exported_at': timezone.now().isoformat(),
+        'exported_by': 'SIAKRED UNISAN',
+        'stats': stats,
+        'dokumen': [],
+    }
+
+    # Bikin ZIP di memory
+    buf = stdio.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        # README.txt
+        readme = (
+            f"BUNDLE DOKUMEN AKREDITASI\n"
+            f"==========================\n\n"
+            f"Sesi: {sesi.judul}\n"
+            f"Instrumen: {sesi.instrumen}\n"
+            f"Tahun TS: {sesi.tahun_ts}\n"
+            f"Periode Evaluasi: {', '.join(str(p) for p in getattr(sesi, 'tahun_periode_list', []))}\n\n"
+            f"Diekspor: {timezone.now().strftime('%d %B %Y, %H:%M')} WITA\n\n"
+            f"STATISTIK:\n"
+            f"- Total Butir: {stats['total_butir']}\n"
+            f"- Terisi: {stats['total_butir_terisi']}\n"
+            f"- Kosong: {stats['total_butir_kosong']}\n"
+            f"- Total Dokumen: {stats['total_dokumen']}\n"
+            f"- Completion: {stats['completion_pct']}%\n\n"
+            f"STRUKTUR FOLDER:\n"
+            f"Dokumen dikelompokkan per Standar/Sub-Standar/Butir.\n"
+            f"File dokumen yang disimpan di Google Drive tidak disertakan\n"
+            f"langsung dalam ZIP ini, tetapi tautan aksesnya tercatat di\n"
+            f"'manifest.json'.\n\n"
+            f"Lihat 'manifest.json' untuk metadata lengkap.\n\n"
+            f"--\n"
+            f"SIAKRED UNISAN - Sistem Informasi Akreditasi\n"
+            f"Universitas Ichsan Gorontalo\n"
+        )
+        zf.writestr('README.txt', readme)
+
+        # Iterate tree
+        for std_item in tree_data['standars']:
+            std = std_item['obj']
+            std_folder = f"{_sanitize_filename(str(std.nomor))}-{_sanitize_filename(std.nama, 60)}"
+
+            for sub_item in std_item['substandars']:
+                sub = sub_item['obj']
+                sub_folder = f"{_sanitize_filename(str(sub.nomor))}-{_sanitize_filename(sub.nama, 50)}"
+
+                for butir_item in sub_item['butirs']:
+                    butir = butir_item['obj']
+                    butir_folder = f"{_sanitize_filename(butir.kode)}-{_sanitize_filename(butir.nama_dokumen, 40)}"
+
+                    for dok in butir_item['dokumens']:
+                        # Ambil revisi terakhir yang aktif
+                        rev = dok.revisi.filter(aktif=True).order_by('-nomor_revisi').first()
+                        if not rev:
+                            continue
+
+                        entry = {
+                            'standar': f"{std.nomor} - {std.nama}",
+                            'sub_standar': f"{sub.nomor} - {sub.nama}",
+                            'butir': f"{butir.kode} - {butir.nama_dokumen}",
+                            'dokumen_id': dok.pk,
+                            'judul': dok.judul,
+                            'tahun_akademik': dok.tahun_akademik,
+                            'status': dok.get_status_display() if hasattr(dok, 'get_status_display') else dok.status,
+                            'nomor_revisi': rev.nomor_revisi,
+                            'file_size_kb': rev.file_size_kb,
+                            'mime_type': rev.mime_type,
+                            'storage_type': rev.storage_type,
+                            'uploaded_at': rev.tanggal_upload.isoformat() if rev.tanggal_upload else None,
+                        }
+
+                        # Safe filename: kode_butir + judul + ext
+                        ext = rev.extension or ''
+                        if ext and not ext.startswith('.'):
+                            ext = '.' + ext
+                        base_name = f"{_sanitize_filename(butir.kode)}_{_sanitize_filename(dok.judul, 60)}"
+                        rev_suffix = f"_r{rev.nomor_revisi}" if rev.nomor_revisi and rev.nomor_revisi > 1 else ''
+                        safe_name = f"{base_name}{rev_suffix}{ext}"
+
+                        zip_path = f"{std_folder}/{sub_folder}/{butir_folder}/{safe_name}"
+
+                        if rev.storage_type == 'LOCAL' and include_local_files and rev.file:
+                            try:
+                                with rev.file.open('rb') as f:
+                                    zf.writestr(zip_path, f.read())
+                                entry['zip_path'] = zip_path
+                                entry['included'] = True
+                            except Exception as e:
+                                entry['included'] = False
+                                entry['error'] = f'Gagal baca file: {str(e)[:100]}'
+                        elif rev.storage_type == 'GDRIVE':
+                            entry['included'] = False
+                            entry['gdrive_url'] = rev.gdrive_url
+                            entry['gdrive_file_id'] = rev.gdrive_file_id
+                            entry['note'] = 'File disimpan di Google Drive, lihat gdrive_url untuk akses.'
+                        else:
+                            entry['included'] = False
+                            entry['note'] = 'File tidak tersedia (tidak ada file lokal dan bukan GDrive).'
+
+                        manifest['dokumen'].append(entry)
+
+        # Tulis manifest.json terakhir
+        zf.writestr(
+            'manifest.json',
+            json.dumps(manifest, indent=2, ensure_ascii=False, default=str)
+        )
+
+    buf.seek(0)
+
+    # Filename: LAMEMBA-E21-2025-2026-20260423.zip
+    today = timezone.now().strftime('%Y%m%d')
+    instrumen_tag = _sanitize_filename(
+        getattr(sesi.instrumen, 'nama_singkat', None) or str(sesi.instrumen),
+        20
+    )
+    prodi_tag = _sanitize_filename(sesi.kode_prodi or 'UNIV', 10)
+    tahun_tag = sesi.tahun_ts.replace('/', '-') if sesi.tahun_ts else 'TS'
+    filename = f"bundle_{instrumen_tag}_{prodi_tag}_{tahun_tag}_{today}.zip"
+
+    return buf.getvalue(), filename
+
+
+@login_required(login_url='/login/')
+def sesi_bundle_zip(request, sesi_id):
+    """Download bundle sebagai ZIP (internal, butuh login)."""
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+    if not _check_sesi_permission(request.user, sesi):
+        return HttpResponseForbidden('Tidak ada akses untuk sesi ini.')
+
+    zip_bytes, filename = _build_bundle_zip(sesi)
+
+    response = HttpResponse(zip_bytes, content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = len(zip_bytes)
+    return response
+
+
+def sesi_bundle_zip_public(request, token):
+    """Download bundle ZIP via token publik (tanpa login)."""
+    try:
+        share = BundleShareToken.objects.select_related('sesi').get(token=token)
+    except BundleShareToken.DoesNotExist:
+        return HttpResponse('Token tidak ditemukan', status=404)
+
+    if not share.is_valid():
+        return HttpResponse('Token tidak valid atau kadaluarsa', status=403)
+
+    share.mark_accessed()
+    zip_bytes, filename = _build_bundle_zip(share.sesi, approved_only=True)
+
+    response = HttpResponse(zip_bytes, content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = len(zip_bytes)
+    return response
+

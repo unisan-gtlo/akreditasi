@@ -91,3 +91,27 @@ class CatatanSesiAdmin(admin.ModelAdmin):
     list_display = ("sesi", "tipe", "dibuat_oleh", "tanggal_dibuat")
     list_filter = ("tipe", "sesi__instrumen")
     search_fields = ("sesi__judul", "isi")
+
+from .models import BundleShareToken
+
+
+@admin.register(BundleShareToken)
+class BundleShareTokenAdmin(admin.ModelAdmin):
+    list_display = [
+        'label', 'sesi', 'token_short', 'is_active',
+        'expires_at', 'access_count', 'created_at',
+    ]
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['label', 'token', 'sesi__judul']
+    readonly_fields = ['token', 'created_at', 'last_accessed_at', 'access_count']
+    
+    def token_short(self, obj):
+        return obj.token[:16] + '...' if len(obj.token) > 16 else obj.token
+    token_short.short_description = 'Token'
+    
+    def save_model(self, request, obj, form, change):
+        if not obj.token:
+            obj.token = BundleShareToken.generate_token()
+        if not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)

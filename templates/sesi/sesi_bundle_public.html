@@ -1,0 +1,265 @@
+{% extends "layouts/publik.html" %}
+{% load static %}
+
+{% block title %}Bundle Dokumen Akreditasi - {{ sesi.judul }}{% endblock %}
+
+{% block page %}
+<style>
+  .pub-bundle {
+    max-width: 1280px; margin: 0 auto; padding: 1.5rem;
+  }
+  .pub-header {
+    background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+    color: #fff; padding: 1.75rem 2rem; border-radius: 14px; margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+  }
+  .pub-header::before {
+    content: "BUNDLE ASESOR"; position: absolute; right: -20px; top: 50%;
+    transform: translateY(-50%) rotate(-15deg); font-size: 6rem;
+    font-weight: 900; opacity: 0.08; letter-spacing: 8px;
+    pointer-events: none; white-space: nowrap;
+  }
+  .pub-header h1 { margin: 0 0 .4rem; font-size: 1.5rem; font-weight: 700; position: relative; }
+  .pub-header .sub { font-size: 1rem; opacity: .92; position: relative; }
+  .pub-header .meta {
+    margin-top: 1rem; display: flex; gap: 1.25rem; flex-wrap: wrap;
+    font-size: .85rem; opacity: .95; position: relative;
+  }
+
+  .pub-banner {
+    background: #FFFBEB; border: 1px solid #FDE68A; color: #78350F;
+    padding: .75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: .6rem; font-size: .85rem;
+  }
+
+  .pub-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 800px) { .pub-stats { grid-template-columns: repeat(2, 1fr); } }
+  .pub-stat {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .pub-stat .v { font-size: 1.5rem; font-weight: 700; color: #111827; line-height: 1; }
+  .pub-stat .l { font-size: .78rem; color: #6B7280; margin-top: .25rem; }
+  .pub-stat.t1 { border-top: 3px solid #3B82F6; }
+  .pub-stat.t2 { border-top: 3px solid #10B981; } .pub-stat.t2 .v { color: #059669; }
+  .pub-stat.t3 { border-top: 3px solid #EF4444; } .pub-stat.t3 .v { color: #DC2626; }
+  .pub-stat.t4 { border-top: 3px solid #8B5CF6; } .pub-stat.t4 .v { color: #7C3AED; }
+
+  .pub-progress {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+  }
+  .pub-progress .h { display: flex; justify-content: space-between; margin-bottom: .5rem; }
+  .pub-progress .h strong { color: #111827; }
+  .pub-progress .h span { color: #059669; font-weight: 700; }
+  .pub-progress .t { height: 10px; background: #E5E7EB; border-radius: 5px; overflow: hidden; }
+  .pub-progress .f {
+    height: 100%; background: linear-gradient(90deg, #10B981, #059669);
+    border-radius: 5px;
+  }
+
+  .pub-search {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+    padding: .25rem .5rem .25rem 2.25rem; position: relative; margin-bottom: 1.25rem;
+  }
+  .pub-search input {
+    width: 100%; padding: .55rem 0; border: 0; outline: 0; font-size: .9rem;
+    background: transparent;
+  }
+  .pub-search svg { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: #9CA3AF; }
+
+  .pub-tree { display: flex; flex-direction: column; gap: .75rem; }
+  .p-std {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden;
+  }
+  .p-std-h {
+    padding: .9rem 1.1rem; background: #F8FAFC; border-bottom: 1px solid #E5E7EB;
+    display: flex; align-items: center; gap: .75rem; cursor: pointer;
+  }
+  .p-std-h:hover { background: #F1F5F9; }
+  .p-std-h .no {
+    background: #2563EB; color: #fff; padding: .2rem .5rem; border-radius: 6px;
+    font-weight: 700; font-size: .75rem; min-width: 32px; text-align: center;
+  }
+  .p-std-h .nm { flex: 1; font-weight: 600; color: #111827; }
+  .p-std-h .bd { font-size: .73rem; color: #6B7280; }
+  .p-std-h .ch { transition: transform .2s; color: #9CA3AF; }
+  .p-std.collapsed .ch { transform: rotate(-90deg); }
+  .p-std-b { padding: .75rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: .6rem; }
+  .p-std.collapsed .p-std-b { display: none; }
+
+  .p-sub { border: 1px solid #EDE9FE; border-radius: 10px; background: #FAFAFF; overflow: hidden; }
+  .p-sub-h { padding: .55rem .85rem; background: #F5F3FF; display: flex; gap: .6rem; font-size: .87rem; }
+  .p-sub-h .no { background: #7C3AED; color: #fff; padding: .15rem .45rem; border-radius: 4px; font-weight: 600; font-size: .7rem; }
+  .p-sub-h .nm { flex: 1; color: #5B21B6; font-weight: 600; }
+  .p-sub-b { padding: .5rem .75rem; display: flex; flex-direction: column; gap: .4rem; }
+
+  .p-butir {
+    background: #fff; border: 1px solid #F3F4F6; border-radius: 8px;
+    padding: .55rem .8rem; display: flex; align-items: flex-start; gap: .6rem; font-size: .85rem;
+  }
+  .p-butir.filled { border-color: #A7F3D0; background: #F0FDF4; }
+  .p-butir.empty { border-color: #FECACA; background: #FFFBFB; }
+  .p-butir .bk { background: #F3F4F6; color: #374151; padding: .12rem .4rem; border-radius: 4px; font-size: .7rem; font-family: ui-monospace, monospace; font-weight: 600; }
+  .p-butir .bn { flex: 1; }
+  .p-butir .docs { margin-top: .3rem; display: flex; flex-direction: column; gap: .2rem; }
+  .p-butir .docs .doc { display: flex; gap: .4rem; font-size: .78rem; color: #065F46; align-items: center; }
+  .p-butir .docs .doc .tag { background: #D1FAE5; color: #065F46; padding: .08rem .35rem; border-radius: 3px; font-size: .68rem; font-weight: 600; }
+  .p-butir .ct {
+    font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; white-space: nowrap;
+    font-weight: 600;
+  }
+  .p-butir.filled .ct { background: #D1FAE5; color: #065F46; }
+  .p-butir.empty .ct { background: #FEE2E2; color: #991B1B; }
+
+  .pub-footer {
+    margin-top: 2rem; padding: 1.25rem; text-align: center;
+    color: #6B7280; font-size: .8rem; border-top: 1px solid #E5E7EB;
+  }
+  .pub-footer strong { color: #1E40AF; }
+
+  @media print {
+    .pub-search, .pub-banner { display: none !important; }
+    .p-std.collapsed .p-std-b { display: flex !important; }
+    .p-std-h .ch { display: none !important; }
+    .pub-header::before { display: none !important; }
+    body { background: #fff !important; }
+  }
+</style>
+
+<div class="pub-bundle">
+    <div class="pub-header">
+        <h1>{{ sesi.judul }}</h1>
+        <div class="sub">Bundle Dokumen Akreditasi - Universitas Ichsan Gorontalo</div>
+        <div class="meta">
+            <span><strong>Instrumen:</strong> {{ sesi.instrumen.nama_singkat|default:sesi.instrumen }}</span>
+            {% if prodi_display %}<span><strong>Prodi:</strong> {{ prodi_display }}</span>{% endif %}
+            <span><strong>Tahun TS:</strong> {{ sesi.tahun_ts }}</span>
+            <span><strong>Status:</strong> {{ sesi.get_status_display }}</span>
+        </div>
+    </div>
+
+    <div class="pub-banner">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>
+            Anda mengakses bundle dokumen akreditasi dengan <strong>link read-only</strong>{% if share_token.expires_at %} (berlaku hingga {{ share_token.expires_at|date:"d M Y" }}){% endif %}.
+            Link ini hanya untuk keperluan verifikasi oleh asesor/pihak berwenang.
+        </span>
+    </div>
+
+    <div style="display:flex; gap:.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+        <a href="/bundle/{{ share_token.token }}/zip/" class="btn" style="background:#7C3AED; color:#fff; padding:.55rem 1rem; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; font-weight:500; border:0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Semua (ZIP)
+        </a>
+        <button type="button" onclick="window.print()" class="btn" style="background:#fff; color:#1E40AF; padding:.55rem 1rem; border-radius:8px; border:1px solid #BFDBFE; display:inline-flex; align-items:center; gap:.4rem; font-size:.85rem; font-weight:500; cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print / Save PDF
+        </button>
+    </div>
+
+    <div class="pub-stats">
+        <div class="pub-stat t1"><div class="v">{{ stats.total_butir }}</div><div class="l">Total Butir</div></div>
+        <div class="pub-stat t2"><div class="v">{{ stats.total_butir_terisi }}</div><div class="l">Sudah Terisi</div></div>
+        <div class="pub-stat t3"><div class="v">{{ stats.total_butir_kosong }}</div><div class="l">Belum Terisi</div></div>
+        <div class="pub-stat t4"><div class="v">{{ stats.total_dokumen }}</div><div class="l">Total Dokumen</div></div>
+    </div>
+
+    <div class="pub-progress">
+        <div class="h"><strong>Progress Kelengkapan Dokumen</strong><span>{{ stats.completion_pct }}%</span></div>
+        <div class="t"><div class="f" style="width:{{ stats.completion_pct }}%;"></div></div>
+    </div>
+
+    <div class="pub-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="pubSearch" placeholder="Cari standar, sub-standar, atau butir..." autocomplete="off">
+    </div>
+
+    {% if tree %}
+    <div class="pub-tree" id="pubTree">
+        {% for std in tree %}
+        <div class="p-std">
+            <div class="p-std-h" onclick="this.parentElement.classList.toggle('collapsed')">
+                <span class="ch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+                <span class="no">{{ std.obj.nomor }}</span>
+                <span class="nm">{{ std.obj.nama }}</span>
+                <span class="bd">{{ std.substandars|length }} sub-standar</span>
+            </div>
+            <div class="p-std-b">
+                {% for sub in std.substandars %}
+                <div class="p-sub">
+                    <div class="p-sub-h">
+                        <span class="no">{{ sub.obj.nomor }}</span>
+                        <span class="nm">{{ sub.obj.nama }}</span>
+                    </div>
+                    <div class="p-sub-b">
+                        {% for butir in sub.butirs %}
+                        <div class="p-butir {% if butir.count > 0 %}filled{% else %}empty{% endif %}">
+                            <span class="bk">{{ butir.obj.kode }}</span>
+                            <div class="bn">
+                                {{ butir.obj.nama_dokumen }}
+                                {% if butir.dokumens %}
+                                <div class="docs">
+                                    {% for dok in butir.dokumens %}
+                                    <div class="doc">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <span>{{ dok.judul|truncatechars:80 }}</span>
+                                        <span class="tag">{{ dok.tahun_akademik }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span class="ct">{% if butir.count > 0 %}{{ butir.count }} dok{% else %}kosong{% endif %}</span>
+                        </div>
+                        {% empty %}
+                        <div style="font-size:.8rem; color:#9CA3AF; font-style:italic; padding:.3rem;">Belum ada butir</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size:.85rem; color:#9CA3AF; font-style:italic;">Belum ada sub-standar.</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding:3rem; text-align:center; color:#6B7280; background:#fff; border:2px dashed #E5E7EB; border-radius:12px;">
+        Instrumen sesi ini belum memiliki data.
+    </div>
+    {% endif %}
+
+    <div class="pub-footer">
+        Dihasilkan oleh <strong>SIAKRED UNISAN</strong> - Sistem Informasi Akreditasi<br>
+        <small>Universitas Ichsan Gorontalo - PUSTIKOM UNISAN | {% now "d F Y, H:i" %} WITA</small>
+    </div>
+</div>
+
+<script>
+(function(){
+    var inp = document.getElementById("pubSearch");
+    if (!inp) return;
+    inp.addEventListener("input", function(){
+        var q = inp.value.trim().toLowerCase();
+        document.querySelectorAll(".p-std").forEach(function(std){
+            var anyMatch = false;
+            std.querySelectorAll(".p-sub").forEach(function(sub){
+                var subMatch = false;
+                sub.querySelectorAll(".p-butir").forEach(function(row){
+                    var m = q === "" || row.textContent.toLowerCase().indexOf(q) >= 0;
+                    row.style.display = m ? "" : "none";
+                    if (m) { subMatch = true; anyMatch = true; }
+                });
+                sub.style.display = (q === "" || subMatch) ? "" : "none";
+            });
+            std.style.display = (q === "" || anyMatch) ? "" : "none";
+            if (q !== "" && anyMatch) std.classList.remove("collapsed");
+        });
+    });
+})();
+</script>
+{% endblock %}

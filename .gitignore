@@ -39,3 +39,11 @@ logs/*.log
 build/
 dist/
 *.egg-info/
+
+# Backup files from patching
+*.bak
+*.bak2
+*.bak3
+
+# Database dumps (not for git)
+dump_*.json

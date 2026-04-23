@@ -13,10 +13,18 @@ urlpatterns = [
     path("<int:pk>/cancel/", views.sesi_cancel, name="sesi_cancel"),
     path("<int:pk>/delete/", views.sesi_delete, name="sesi_delete"),
     path("<int:pk>/timeline/", views.sesi_timeline, name="sesi_timeline"),
+    # Bundle Export (Step 8 Batch 4)
+    path('<int:sesi_id>/bundle/', views.sesi_bundle, name='sesi_bundle'),
 
     # Milestone management
     path("<int:sesi_pk>/milestone/<int:ms_pk>/progress/", views.milestone_mark_progress, name="milestone_mark_progress"),
     path("<int:sesi_pk>/milestone/<int:ms_pk>/selesai/", views.milestone_mark_selesai, name="milestone_mark_selesai"),
     path("<int:sesi_pk>/milestone/<int:ms_pk>/reset/", views.milestone_reset, name="milestone_reset"),
     path("<int:sesi_pk>/milestone/<int:ms_pk>/edit/", views.milestone_edit, name="milestone_edit"),
+
+    # Token management (Step 8 Batch 4D)
+    path('<int:sesi_id>/bundle/token/create/', views.bundle_token_create, name='bundle_token_create'),
+    path('<int:sesi_id>/bundle/token/<int:token_id>/revoke/', views.bundle_token_revoke, name='bundle_token_revoke'),
+
+    path('<int:sesi_id>/bundle/zip/', views.sesi_bundle_zip, name='sesi_bundle_zip'),
 ]

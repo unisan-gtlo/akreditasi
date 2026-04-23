@@ -285,3 +285,85 @@ class CatatanSesi(models.Model):
 
     def __str__(self):
         return f"{self.sesi.judul} - {self.get_tipe_display()}"
+
+# ============================================
+# BUNDLE SHARE TOKEN (Step 8 Batch 4)
+# ============================================
+
+class BundleShareToken(models.Model):
+    """Token untuk akses publik halaman bundle sesi tanpa login.
+    
+    Digunakan untuk share link ke asesor LAM/BAN-PT atau eksternal
+    yang tidak punya akun di SIAKRED.
+    """
+    sesi = models.ForeignKey(
+        'SesiAkreditasi',
+        on_delete=models.CASCADE,
+        related_name='bundle_tokens',
+        verbose_name="Sesi Akreditasi",
+    )
+    token = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        verbose_name="Token",
+    )
+    label = models.CharField(
+        max_length=200,
+        verbose_name="Label / Keperluan",
+        help_text="Nama atau keperluan token, misal: 'Asesor LAMEMBA Dr. Budi' atau 'Submission BAN-PT'",
+    )
+
+    # Access control
+    is_active = models.BooleanField(default=True, verbose_name="Aktif")
+    expires_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Kadaluarsa Pada",
+        help_text="Kosongkan untuk tanpa expired. Disarankan diisi untuk keamanan.",
+    )
+
+    # Tracking
+    created_by = models.ForeignKey(
+        'core.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='bundle_tokens_created',
+        verbose_name="Dibuat Oleh",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Dibuat Pada")
+    last_accessed_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Terakhir Diakses",
+    )
+    access_count = models.PositiveIntegerField(default=0, verbose_name="Jumlah Akses")
+
+    class Meta:
+        db_table = 'bundle_share_token'
+        verbose_name = "Token Share Bundle"
+        verbose_name_plural = "Token Share Bundle"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.label} ({self.sesi.judul})"
+
+    @staticmethod
+    def generate_token():
+        """Generate token random 48-char URL-safe."""
+        import secrets
+        return secrets.token_urlsafe(36)  # ~48 chars
+
+    def is_valid(self):
+        """Cek apakah token masih valid (aktif & belum expired)."""
+        from django.utils import timezone
+        if not self.is_active:
+            return False
+        if self.expires_at and self.expires_at < timezone.now():
+            return False
+        return True
+
+    def mark_accessed(self):
+        """Tracking: tandai token telah diakses."""
+        from django.utils import timezone
+        self.last_accessed_at = timezone.now()
+        self.access_count += 1
+        self.save(update_fields=['last_accessed_at', 'access_count'])
