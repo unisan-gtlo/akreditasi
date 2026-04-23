@@ -100,3 +100,40 @@ class DokumenAccessLogAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+# ============================================
+# VERIFIKASI ADMIN (Step 9)
+# ============================================
+
+from .models import VerifikasiDokumen, VerifikasiLog
+
+
+@admin.register(VerifikasiDokumen)
+class VerifikasiDokumenAdmin(admin.ModelAdmin):
+    list_display = ['revisi', 'status', 'verifikator', 'tanggal_verifikasi', 'tanggal_dibuat']
+    list_filter = ['status', 'tanggal_verifikasi', 'tanggal_dibuat']
+    search_fields = ['revisi__dokumen__judul', 'catatan']
+    readonly_fields = ['tanggal_dibuat', 'tanggal_diubah']
+    date_hierarchy = 'tanggal_dibuat'
+    
+    fieldsets = (
+        ('Dokumen', {'fields': ('revisi',)}),
+        ('Verifikasi', {'fields': ('status', 'catatan', 'verifikator', 'tanggal_verifikasi')}),
+        ('Metadata', {'fields': ('tanggal_dibuat', 'tanggal_diubah'), 'classes': ('collapse',)}),
+    )
+
+
+@admin.register(VerifikasiLog)
+class VerifikasiLogAdmin(admin.ModelAdmin):
+    list_display = ['verifikasi', 'aksi', 'status_lama', 'status_baru', 'dilakukan_oleh', 'tanggal']
+    list_filter = ['aksi', 'status_baru', 'tanggal']
+    search_fields = ['verifikasi__revisi__dokumen__judul', 'catatan']
+    readonly_fields = ['verifikasi', 'aksi', 'status_lama', 'status_baru', 'catatan', 'dilakukan_oleh', 'tanggal']
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+

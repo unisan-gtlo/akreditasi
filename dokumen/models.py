@@ -144,6 +144,51 @@ class Dokumen(models.Model):
     tanggal_dibuat = models.DateTimeField(auto_now_add=True)
     tanggal_diubah = models.DateTimeField(auto_now=True)
 
+
+    # ========================================
+    # VERIFIKASI HELPERS (Step 9)
+    # ========================================
+    
+    def latest_revisi(self):
+        """Return DokumenRevisi terakhir yang aktif, atau None."""
+        return self.revisi.filter(aktif=True).order_by('-nomor_revisi').first()
+    
+    def latest_verifikasi(self):
+        """Return VerifikasiDokumen untuk revisi terakhir, atau None."""
+        rev = self.latest_revisi()
+        if not rev:
+            return None
+        try:
+            return rev.verifikasi
+        except Exception:
+            return None
+    
+    @property
+    def status_verifikasi(self):
+        """Return status verifikasi revisi terakhir. 
+        Return 'NO_REVISION' kalau belum ada revisi.
+        Return 'PENDING' kalau ada revisi tapi belum ada record verifikasi.
+        """
+        v = self.latest_verifikasi()
+        if v:
+            return v.status
+        if self.latest_revisi():
+            return 'PENDING'
+        return 'NO_REVISION'
+    
+    def is_approved(self):
+        """True kalau revisi terakhir sudah APPROVED."""
+        return self.status_verifikasi == 'APPROVED'
+    
+    def is_pending_review(self):
+        return self.status_verifikasi == 'PENDING'
+    
+    def is_rejected(self):
+        return self.status_verifikasi == 'REJECTED'
+    
+    def needs_revision(self):
+        return self.status_verifikasi == 'NEED_REVISION'
+
     class Meta:
         verbose_name = _("Dokumen Akreditasi")
         verbose_name_plural = _("Dokumen Akreditasi")
@@ -410,3 +455,134 @@ class DokumenAccessLog(models.Model):
     def __str__(self):
         u = self.user.username if self.user else "anonim"
         return f"{self.waktu:%d/%m/%Y %H:%M} - {u} - {self.get_aksi_display()}"
+
+
+# ============================================
+# VERIFIKASI DOKUMEN (Step 9)
+# ============================================
+
+class VerifikasiDokumen(models.Model):
+    """Record verifikasi LP3M/Dekan untuk setiap revisi dokumen.
+    
+    - 1 revisi dokumen -> 1 verifikasi (OneToOne)
+    - Saat uploader upload revisi baru, auto-buat Verifikasi baru dengan status PENDING
+    - Verifikator mengubah status + memberi catatan
+    - Dokumen dianggap 'FINAL APPROVED' jika revisi terakhir status=APPROVED
+    """
+    
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Menunggu Review'
+        APPROVED = 'APPROVED', 'Disetujui'
+        REJECTED = 'REJECTED', 'Ditolak'
+        NEED_REVISION = 'NEED_REVISION', 'Perlu Revisi'
+    
+    revisi = models.OneToOneField(
+        'DokumenRevisi',
+        on_delete=models.CASCADE,
+        related_name='verifikasi',
+        verbose_name='Revisi Dokumen',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+        verbose_name='Status Verifikasi',
+    )
+    catatan = models.TextField(
+        blank=True, default='',
+        verbose_name='Catatan Verifikator',
+        help_text='Disarankan diisi untuk REJECTED/NEED_REVISION agar uploader tau harus fix apa.',
+    )
+    verifikator = models.ForeignKey(
+        'core.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='verifikasi_dilakukan',
+        verbose_name='Diverifikasi Oleh',
+    )
+    tanggal_verifikasi = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name='Tanggal Verifikasi',
+        help_text='Diisi otomatis saat status berubah dari PENDING.',
+    )
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True, verbose_name='Dibuat Pada')
+    tanggal_diubah = models.DateTimeField(auto_now=True, verbose_name='Diubah Pada')
+    
+    class Meta:
+        db_table = 'verifikasi_dokumen'
+        verbose_name = 'Verifikasi Dokumen'
+        verbose_name_plural = 'Verifikasi Dokumen'
+        ordering = ['-tanggal_dibuat']
+        indexes = [
+            models.Index(fields=['status', '-tanggal_dibuat']),
+        ]
+    
+    def __str__(self):
+        return f'{self.revisi.dokumen.judul} r{self.revisi.nomor_revisi} - {self.get_status_display()}'
+    
+    def is_final_approved(self):
+        """True jika status APPROVED."""
+        return self.status == self.Status.APPROVED
+    
+    def is_pending(self):
+        return self.status == self.Status.PENDING
+    
+    def is_rejected(self):
+        return self.status == self.Status.REJECTED
+    
+    def needs_revision(self):
+        return self.status == self.Status.NEED_REVISION
+
+
+class VerifikasiLog(models.Model):
+    """Audit trail: setiap perubahan status verifikasi di-log.
+    
+    Berguna untuk: tracking kapan approved, siapa yang approve, alasan reject sebelumnya, dll.
+    """
+    verifikasi = models.ForeignKey(
+        VerifikasiDokumen,
+        on_delete=models.CASCADE,
+        related_name='logs',
+    )
+    aksi = models.CharField(max_length=20, help_text='APPROVED, REJECTED, NEED_REVISION, RESET')
+    status_lama = models.CharField(max_length=20, blank=True)
+    status_baru = models.CharField(max_length=20)
+    catatan = models.TextField(blank=True, default='')
+    dilakukan_oleh = models.ForeignKey(
+        'core.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='verifikasi_log',
+    )
+    tanggal = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'verifikasi_dokumen_log'
+        verbose_name = 'Log Verifikasi'
+        verbose_name_plural = 'Log Verifikasi'
+        ordering = ['-tanggal']
+    
+    def __str__(self):
+        return f'{self.aksi} - {self.verifikasi} @ {self.tanggal:%Y-%m-%d %H:%M}'
+
+
+# ============================================
+# AUTO-CREATE VERIFIKASI SAAT REVISI BARU
+# ============================================
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender='dokumen.DokumenRevisi')
+def auto_create_verifikasi(sender, instance, created, **kwargs):
+    """Setiap kali DokumenRevisi baru dibuat, auto-create Verifikasi status PENDING."""
+    if created:
+        # Import lazy biar tidak circular
+        from dokumen.models import VerifikasiDokumen
+        VerifikasiDokumen.objects.get_or_create(
+            revisi=instance,
+            defaults={'status': VerifikasiDokumen.Status.PENDING},
+        )
+

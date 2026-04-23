@@ -37,4 +37,7 @@ urlpatterns = [
 
     # Access log (K7)
     path("dokumen/<int:pk>/log/", views.dokumen_access_log, name="dokumen_access_log"),
+    # Dashboard Verifikasi (Step 9)
+    path('verifikasi/', views.verifikasi_dashboard, name='verifikasi_dashboard'),
+    path('verifikasi/<int:verifikasi_id>/review/', views.verifikasi_review, name='verifikasi_review'),
 ]

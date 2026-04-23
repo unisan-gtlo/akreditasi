@@ -654,22 +654,52 @@ button {
 }
 
 .captcha-question {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 120px;
   padding: 0.75rem 1rem;
   background: white;
   border: 1.5px dashed var(--primary-300);
   border-radius: var(--radius-sm);
   font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--primary-800);
   text-align: center;
-  letter-spacing: 2px;
+  letter-spacing: 0.1em;
   user-select: none;
+  white-space: nowrap;
+}
+.captcha-input {
+  flex: 1;
+}
+.captcha-reload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+  background: white;
+  border: 1.5px solid var(--primary-300);
+  border-radius: var(--radius-sm);
+  color: var(--primary-700);
+  cursor: pointer;
+  transition: transform 0.4s ease, background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.captcha-reload-btn:hover {
+  background: var(--primary-50);
+  border-color: var(--primary-500);
+  color: var(--primary-800);
+  transform: rotate(180deg);
+}
+.captcha-reload-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .captcha-input {
-  width: 110px;
+  width: auto;
   padding: 0.75rem;
   text-align: center;
   font-size: 1.1rem;

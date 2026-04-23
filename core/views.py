@@ -95,6 +95,20 @@ def count_recent_failed_attempts(ip_address, minutes=15):
     ).count()
 
 
+def clear_recent_failed_attempts(ip_address, minutes=15):
+    """Hapus failed attempts dari IP setelah login berhasil."""
+    since = timezone.now() - timezone.timedelta(minutes=minutes)
+    LoginAttempt.objects.filter(
+        ip_address=ip_address,
+        status__in=[
+            LoginAttempt.Status.FAILED_PASSWORD,
+            LoginAttempt.Status.FAILED_USERNAME,
+            LoginAttempt.Status.FAILED_CAPTCHA,
+        ],
+        waktu__gte=since,
+    ).delete()
+
+
 def record_attempt(username, user, status, request):
     """Simpan login attempt ke database."""
     LoginAttempt.objects.create(
@@ -232,6 +246,9 @@ def login_view(request):
 
             if is_new_device:
                 send_new_device_notification(user, device_session, request)
+
+            # Reset failed attempts saat login sukses
+            clear_recent_failed_attempts(ip, minutes=15)
 
             login(request, user)
             record_attempt(identifier, user, LoginAttempt.Status.SUCCESS, request)

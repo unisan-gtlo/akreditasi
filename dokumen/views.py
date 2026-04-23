@@ -1200,3 +1200,252 @@ def dokumen_publik_download(request, pk):
         except FileNotFoundError:
             messages.error(request, "File fisik tidak ditemukan di server.")
             return redirect("dokumen_publik_detail", pk=dokumen.pk)
+
+
+# ============================================
+# DASHBOARD VERIFIKASI LP3M (Step 9C)
+# ============================================
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.db.models import Q, Count
+from django.core.paginator import Paginator
+
+
+def _can_verify(user):
+    """Cek apakah user punya permission verifikasi.
+    
+    Yang bisa verifikasi: Superuser, staff, atau user dengan scope
+    level BIRO/UNIVERSITAS/FAKULTAS/LP3M/REKTORAT.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    if not hasattr(user, 'scopes'):
+        return False
+    allowed_levels = {'BIRO', 'UNIVERSITAS', 'FAKULTAS', 'LP3M', 'LP2M', 'REKTORAT', 'SUPER', 'ADMIN'}
+    for scope in user.scopes.filter(aktif=True):
+        if (scope.level or '').upper() in allowed_levels:
+            return True
+    return False
+
+
+def _scope_filter_for_verifikator(user):
+    """Build Q filter untuk dokumen yang bisa di-review user ini.
+    
+    Return Q object yang dipakai di Dokumen.objects.filter(Q).
+    """
+    if user.is_superuser or user.is_staff:
+        return Q()  # semua
+    
+    q = Q()
+    has_access = False
+    
+    for scope in user.scopes.filter(aktif=True):
+        level = (scope.level or '').upper()
+        if level in ('UNIVERSITAS', 'BIRO', 'LP3M', 'LP2M', 'REKTORAT', 'SUPER', 'ADMIN'):
+            return Q()  # akses semua
+        if level == 'FAKULTAS' and scope.fakultas_id:
+            q |= Q(scope_kode_fakultas=scope.fakultas_id)
+            has_access = True
+    
+    if not has_access:
+        return Q(pk__in=[])  # tidak ada akses
+    return q
+
+
+@login_required(login_url='/login/')
+def verifikasi_dashboard(request):
+    """Dashboard utama verifikasi LP3M dengan queue dokumen pending."""
+    user = request.user
+    
+    if not _can_verify(user):
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('Anda tidak memiliki akses ke dashboard verifikasi.')
+    
+    # Filter tab: all | pending | approved | rejected | need_revision
+    tab = request.GET.get('tab', 'pending')
+    search_q = request.GET.get('q', '').strip()
+    
+    scope_q = _scope_filter_for_verifikator(user)
+    
+    # Ambil semua VerifikasiDokumen dengan filter scope dokumen
+    from dokumen.models import VerifikasiDokumen, DokumenRevisi
+    
+    # Join ke revisi -> dokumen, apply scope filter via dokumen
+    verifikasi_qs = VerifikasiDokumen.objects.select_related(
+        'revisi', 'revisi__dokumen', 'revisi__dokumen__butir_dokumen',
+        'verifikator',
+    ).filter(
+        revisi__dokumen__in=Dokumen.objects.filter(scope_q),
+        revisi__aktif=True,
+    )
+    
+    # Hitung stats per status (sebelum apply tab filter)
+    stats = {
+        'total': verifikasi_qs.count(),
+        'pending': verifikasi_qs.filter(status='PENDING').count(),
+        'approved': verifikasi_qs.filter(status='APPROVED').count(),
+        'rejected': verifikasi_qs.filter(status='REJECTED').count(),
+        'need_revision': verifikasi_qs.filter(status='NEED_REVISION').count(),
+    }
+    
+    # Apply tab filter
+    tab_upper = tab.upper().replace('-', '_')
+    if tab_upper == 'PENDING':
+        verifikasi_qs = verifikasi_qs.filter(status='PENDING')
+    elif tab_upper == 'APPROVED':
+        verifikasi_qs = verifikasi_qs.filter(status='APPROVED')
+    elif tab_upper == 'REJECTED':
+        verifikasi_qs = verifikasi_qs.filter(status='REJECTED')
+    elif tab_upper == 'NEED_REVISION':
+        verifikasi_qs = verifikasi_qs.filter(status='NEED_REVISION')
+    # 'all' -> no filter
+    
+    # Search filter
+    if search_q:
+        verifikasi_qs = verifikasi_qs.filter(
+            Q(revisi__dokumen__judul__icontains=search_q) |
+            Q(revisi__dokumen__butir_dokumen__kode__icontains=search_q) |
+            Q(revisi__dokumen__butir_dokumen__nama_dokumen__icontains=search_q) |
+            Q(revisi__dokumen__scope_kode_prodi__icontains=search_q)
+        )
+    
+    # Sort: terbaru dulu untuk PENDING, atau by tanggal verifikasi untuk lainnya
+    if tab_upper == 'PENDING':
+        verifikasi_qs = verifikasi_qs.order_by('-tanggal_dibuat')
+    else:
+        verifikasi_qs = verifikasi_qs.order_by('-tanggal_verifikasi', '-tanggal_dibuat')
+    
+    # Pagination
+    paginator = Paginator(verifikasi_qs, 20)
+    page_num = request.GET.get('page', 1)
+    page = paginator.get_page(page_num)
+    
+    context = {
+        'page_title': 'Dashboard Verifikasi LP3M',
+        'active_menu': 'verifikasi',
+        'tab': tab_upper.lower(),
+        'search_q': search_q,
+        'stats': stats,
+        'page': page,
+        'items': page.object_list,
+    }
+    return render(request, 'dokumen/verifikasi_dashboard.html', context)
+
+
+# ============================================
+# REVIEW ACTION (Step 9D)
+# ============================================
+
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.http import HttpResponseForbidden
+
+
+def _user_can_verify_dokumen(user, dokumen):
+    """Cek apakah user punya permission verifikasi dokumen tertentu (scope-based)."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    if not hasattr(user, 'scopes'):
+        return False
+    for scope in user.scopes.filter(aktif=True):
+        level = (scope.level or '').upper()
+        if level in ('UNIVERSITAS', 'BIRO', 'LP3M', 'LP2M', 'REKTORAT', 'SUPER', 'ADMIN'):
+            return True
+        if level == 'FAKULTAS' and scope.fakultas_id:
+            if dokumen.scope_kode_fakultas and str(dokumen.scope_kode_fakultas) == str(scope.fakultas_id):
+                return True
+    return False
+
+
+@login_required(login_url='/login/')
+@require_http_methods(['GET', 'POST'])
+def verifikasi_review(request, verifikasi_id):
+    """Halaman review dokumen + handle submit action (approve/reject/need_revision)."""
+    from dokumen.models import VerifikasiDokumen, VerifikasiLog
+    
+    verifikasi = get_object_or_404(
+        VerifikasiDokumen.objects.select_related(
+            'revisi', 'revisi__dokumen', 'revisi__dokumen__butir_dokumen',
+            'verifikator',
+        ),
+        pk=verifikasi_id,
+    )
+    revisi = verifikasi.revisi
+    dokumen = revisi.dokumen
+    
+    # Permission check
+    if not _user_can_verify_dokumen(request.user, dokumen):
+        return HttpResponseForbidden('Anda tidak memiliki akses untuk memverifikasi dokumen ini.')
+    
+    # History log
+    history = VerifikasiLog.objects.filter(verifikasi=verifikasi).select_related('dilakukan_oleh').order_by('-tanggal')
+    
+    if request.method == 'POST':
+        aksi = request.POST.get('aksi', '').strip().upper()
+        catatan = request.POST.get('catatan', '').strip()
+        
+        valid_aksi = {'APPROVED', 'REJECTED', 'NEED_REVISION', 'RESET'}
+        if aksi not in valid_aksi:
+            messages.error(request, 'Aksi tidak valid.')
+            return redirect('dokumen:verifikasi_review', verifikasi_id=verifikasi.pk)
+        
+        # Save previous state untuk audit log
+        status_lama = verifikasi.status
+        
+        # Update verifikasi
+        if aksi == 'RESET':
+            verifikasi.status = VerifikasiDokumen.Status.PENDING
+            verifikasi.verifikator = None
+            verifikasi.tanggal_verifikasi = None
+        else:
+            verifikasi.status = aksi
+            verifikasi.verifikator = request.user
+            verifikasi.tanggal_verifikasi = timezone.now()
+        
+        if catatan:
+            verifikasi.catatan = catatan
+        verifikasi.save()
+        
+        # Create audit log
+        VerifikasiLog.objects.create(
+            verifikasi=verifikasi,
+            aksi=aksi,
+            status_lama=status_lama,
+            status_baru=verifikasi.status,
+            catatan=catatan,
+            dilakukan_oleh=request.user,
+        )
+        
+        # Flash message berdasarkan aksi
+        action_messages = {
+            'APPROVED': f'Dokumen "{dokumen.judul}" berhasil DISETUJUI.',
+            'REJECTED': f'Dokumen "{dokumen.judul}" telah DITOLAK.',
+            'NEED_REVISION': f'Dokumen "{dokumen.judul}" ditandai PERLU REVISI.',
+            'RESET': f'Verifikasi "{dokumen.judul}" telah direset ke PENDING.',
+        }
+        messages.success(request, action_messages.get(aksi, 'Verifikasi berhasil diperbarui.'))
+        
+        # Redirect ke dashboard dengan tab yang sesuai
+        tab_map = {'APPROVED': 'approved', 'REJECTED': 'rejected', 'NEED_REVISION': 'need_revision', 'RESET': 'pending'}
+        next_tab = tab_map.get(aksi, 'pending')
+        return redirect(f"{request.build_absolute_uri(chr(0x2f) + 'dokumen/verifikasi/')}?tab={next_tab}")
+    
+    # GET request -- tampilkan form
+    context = {
+        'page_title': f'Review: {dokumen.judul[:50]}',
+        'active_menu': 'verifikasi',
+        'verifikasi': verifikasi,
+        'revisi': revisi,
+        'dokumen': dokumen,
+        'butir': dokumen.butir_dokumen,
+        'history': history,
+    }
+    return render(request, 'dokumen/verifikasi_review.html', context)
+

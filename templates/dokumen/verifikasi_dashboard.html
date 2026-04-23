@@ -1,0 +1,283 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+
+{% block title %}Dashboard Verifikasi LP3M - SIAKRED{% endblock %}
+{% block page_heading %}Dashboard Verifikasi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Verifikasi Dokumen</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .verif-stats { display:grid; grid-template-columns:repeat(5, 1fr); gap:1rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .verif-stats { grid-template-columns:repeat(2, 1fr); } }
+  .vs-card {
+    position:relative; overflow:hidden;
+    border:1px solid var(--border); border-radius:12px;
+    padding:1.1rem 1.25rem 1rem; cursor:pointer;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+    text-decoration:none; color:inherit; display:block;
+    background:#fff;
+  }
+  .vs-card::before {
+    content:""; position:absolute; top:0; left:0; right:0;
+    height:3px; background:var(--card-color, #9CA3AF);
+    transition:height .15s;
+  }
+  .vs-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.07); }
+  .vs-card:hover::before { height:4px; }
+  .vs-card.active::before { height:5px; }
+  .vs-card.active { box-shadow:0 6px 24px rgba(0,0,0,.08); }
+  .vs-card .ic {
+    width:34px; height:34px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:.75rem;
+    background:var(--card-bg-soft, #F3F4F6);
+    color:var(--card-color, #6B7280);
+  }
+  .vs-card .v {
+    font-size:1.8rem; font-weight:700; line-height:1; margin-bottom:.3rem;
+    color:var(--card-color, #374151);
+  }
+  .vs-card .l { font-size:.78rem; color:var(--text-muted); font-weight:500; }
+  
+  /* Variasi warna per card */
+  .vs-card.all { --card-color:#475569; --card-bg-soft:#F1F5F9; }
+  .vs-card.all.active { background:#F8FAFC; }
+  
+  .vs-card.pending { --card-color:#2563EB; --card-bg-soft:#DBEAFE; }
+  .vs-card.pending.active { background:#EFF6FF; }
+  
+  .vs-card.approved { --card-color:#059669; --card-bg-soft:#D1FAE5; }
+  .vs-card.approved.active { background:#ECFDF5; }
+  
+  .vs-card.rejected { --card-color:#DC2626; --card-bg-soft:#FEE2E2; }
+  .vs-card.rejected.active { background:#FEF2F2; }
+  
+  .vs-card.need_revision { --card-color:#D97706; --card-bg-soft:#FEF3C7; }
+  .vs-card.need_revision.active { background:#FFFBEB; }
+
+  .verif-toolbar {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:.85rem 1rem; margin-bottom:1rem;
+    display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;
+  }
+  .verif-toolbar form { flex:1; min-width:260px; position:relative; margin:0; }
+  .verif-toolbar input[type=text] {
+    width:100%; padding:.55rem .85rem .55rem 2.25rem;
+    border:1px solid var(--border); border-radius:8px; font-size:.9rem;
+    background:var(--surface-muted);
+  }
+  .verif-toolbar .sb-ic {
+    position:absolute; left:.7rem; top:50%; transform:translateY(-50%); color:var(--text-muted);
+  }
+
+  .verif-table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .verif-table { width:100%; border-collapse:collapse; }
+  .verif-table th {
+    text-align:left; padding:.75rem 1rem; font-size:.78rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);
+    background:var(--surface-muted); border-bottom:1px solid var(--border);
+  }
+  .verif-table td {
+    padding:.85rem 1rem; border-bottom:1px solid var(--border); font-size:.88rem;
+    vertical-align:top;
+  }
+  .verif-table tr:last-child td { border-bottom:0; }
+  .verif-table tr:hover td { background:#FAFAFB; }
+
+  .v-badge {
+    display:inline-block; padding:.15rem .55rem; border-radius:999px;
+    font-size:.7rem; font-weight:600;
+  }
+  .v-badge.pending { background:#DBEAFE; color:#1E40AF; }
+  .v-badge.approved { background:#D1FAE5; color:#065F46; }
+  .v-badge.rejected { background:#FEE2E2; color:#991B1B; }
+  .v-badge.need_revision { background:#FEF3C7; color:#92400E; }
+
+  .v-butir {
+    font-family:ui-monospace, monospace; font-size:.72rem;
+    background:#F3F4F6; color:#374151; padding:.1rem .4rem; border-radius:4px;
+    font-weight:600;
+  }
+  .v-meta { font-size:.75rem; color:var(--text-muted); margin-top:.2rem; }
+
+  .v-actions { display:flex; gap:.35rem; }
+  .v-btn {
+    padding:.3rem .6rem; border:1px solid; border-radius:6px; font-size:.75rem;
+    font-weight:500; cursor:pointer; text-decoration:none; display:inline-flex;
+    align-items:center; gap:.25rem; background:#fff;
+  }
+  .v-btn.review { background:#EFF6FF; color:#1E40AF; border-color:#BFDBFE; }
+  .v-btn.review:hover { background:#DBEAFE; }
+
+  .verif-pagination {
+    padding:1rem; display:flex; justify-content:space-between; align-items:center;
+    font-size:.85rem; color:var(--text-muted); border-top:1px solid var(--border);
+  }
+  .verif-pagination a, .verif-pagination span {
+    padding:.35rem .75rem; border:1px solid var(--border); border-radius:6px;
+    color:var(--text-primary); text-decoration:none; margin-left:.25rem;
+    background:var(--surface);
+  }
+  .verif-pagination .active { background:#2563EB; color:#fff; border-color:#2563EB; }
+
+  .empty-state {
+    padding:3rem 1.5rem; text-align:center; color:var(--text-muted);
+  }
+  .empty-state .ic { margin-bottom:1rem; opacity:.4; }
+</style>
+
+<!-- Stats Cards = Tab Navigation -->
+<div class="verif-stats">
+    <a href="?tab=all" class="vs-card all {% if tab == 'all' %}active{% endif %}">
+        <div class="ic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+        </div>
+        <div class="v">{{ stats.total }}</div>
+        <div class="l">Total Dokumen</div>
+    </a>
+    <a href="?tab=pending" class="vs-card pending {% if tab == 'pending' %}active{% endif %}">
+        <div class="ic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="v">{{ stats.pending }}</div>
+        <div class="l">Menunggu Review</div>
+    </a>
+    <a href="?tab=approved" class="vs-card approved {% if tab == 'approved' %}active{% endif %}">
+        <div class="ic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="v">{{ stats.approved }}</div>
+        <div class="l">Disetujui</div>
+    </a>
+    <a href="?tab=rejected" class="vs-card rejected {% if tab == 'rejected' %}active{% endif %}">
+        <div class="ic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="v">{{ stats.rejected }}</div>
+        <div class="l">Ditolak</div>
+    </a>
+    <a href="?tab=need_revision" class="vs-card need_revision {% if tab == 'need_revision' %}active{% endif %}">
+        <div class="ic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div class="v">{{ stats.need_revision }}</div>
+        <div class="l">Perlu Revisi</div>
+    </a>
+</div>
+
+<!-- Search Toolbar -->
+<div class="verif-toolbar">
+    <form method="get" action="">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <svg class="sb-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" name="q" value="{{ search_q }}" placeholder="Cari judul dokumen, kode butir, atau prodi..." autocomplete="off">
+    </form>
+</div>
+
+<!-- Table -->
+<div class="verif-table-wrap">
+    {% if items %}
+    <table class="verif-table">
+        <thead>
+            <tr>
+                <th>Butir &amp; Dokumen</th>
+                <th>Scope</th>
+                <th>Rev</th>
+                <th>Status</th>
+                <th>Verifikator</th>
+                <th>Tanggal</th>
+                <th style="text-align:right;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in items %}
+            {% with rev=v.revisi dok=v.revisi.dokumen butir=v.revisi.dokumen.butir_dokumen %}
+            <tr>
+                <td>
+                    <span class="v-butir">{{ butir.kode }}</span>
+                    <div style="margin-top:.25rem; font-weight:500; color:var(--text-primary);">
+                        {{ dok.judul|truncatechars:70 }}
+                    </div>
+                    <div class="v-meta">{{ butir.nama_dokumen|truncatechars:60 }}</div>
+                </td>
+                <td>
+                    <div style="font-size:.82rem;">
+                        {% if dok.scope_kode_prodi %}Prodi: <strong>{{ dok.scope_kode_prodi }}</strong>{% endif %}
+                        {% if dok.scope_kode_fakultas and not dok.scope_kode_prodi %}Fakultas: <strong>{{ dok.scope_kode_fakultas }}</strong>{% endif %}
+                        {% if not dok.scope_kode_prodi and not dok.scope_kode_fakultas %}<em style="color:var(--text-muted);">Universitas</em>{% endif %}
+                    </div>
+                    <div class="v-meta">TA: {{ dok.tahun_akademik }}</div>
+                </td>
+                <td>r{{ rev.nomor_revisi }}</td>
+                <td>
+                    {% if v.status == 'PENDING' %}<span class="v-badge pending">Pending</span>
+                    {% elif v.status == 'APPROVED' %}<span class="v-badge approved">Approved</span>
+                    {% elif v.status == 'REJECTED' %}<span class="v-badge rejected">Rejected</span>
+                    {% elif v.status == 'NEED_REVISION' %}<span class="v-badge need_revision">Need Revision</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if v.verifikator %}
+                        <div style="font-size:.82rem;">{{ v.verifikator.get_full_name|default:v.verifikator.username }}</div>
+                    {% else %}
+                        <em style="color:var(--text-muted); font-size:.78rem;">Belum</em>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if v.tanggal_verifikasi %}
+                        <div style="font-size:.78rem;">{{ v.tanggal_verifikasi|date:"d M Y" }}</div>
+                        <div class="v-meta">{{ v.tanggal_verifikasi|time:"H:i" }}</div>
+                    {% else %}
+                        <div style="font-size:.78rem; color:var(--text-muted);">Upload: {{ v.tanggal_dibuat|date:"d M Y" }}</div>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    <div class="v-actions" style="justify-content:flex-end;">
+                        <a href="{% url 'dokumen:verifikasi_review' v.pk %}" class="v-btn review" title="Review dokumen ini">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Review
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if page.has_other_pages %}
+    <div class="verif-pagination">
+        <div>Menampilkan {{ page.start_index }}-{{ page.end_index }} dari {{ page.paginator.count }} dokumen</div>
+        <div>
+            {% if page.has_previous %}<a href="?tab={{ tab }}&q={{ search_q }}&page={{ page.previous_page_number }}">&laquo; Prev</a>{% endif %}
+            <span class="active">{{ page.number }}</span>
+            {% if page.has_next %}<a href="?tab={{ tab }}&q={{ search_q }}&page={{ page.next_page_number }}">Next &raquo;</a>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="ic">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div style="font-size:1rem; font-weight:500; color:var(--text-primary); margin-bottom:.3rem;">
+            {% if search_q %}Tidak ada hasil pencarian{% else %}Tidak ada dokumen di status ini{% endif %}
+        </div>
+        <div style="font-size:.85rem;">
+            {% if search_q %}Coba kata kunci lain atau ganti tab di atas{% else %}Semua dokumen di status lain atau belum ada upload{% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

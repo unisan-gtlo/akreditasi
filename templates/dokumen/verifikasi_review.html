@@ -1,0 +1,311 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+
+{% block title %}Review Dokumen - {{ dokumen.judul|truncatechars:40 }}{% endblock %}
+{% block page_heading %}Review Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'dokumen:verifikasi_dashboard' %}">Verifikasi Dokumen</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Review</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .rv-wrap { display:grid; grid-template-columns:2fr 1fr; gap:1.25rem; }
+  @media (max-width:900px) { .rv-wrap { grid-template-columns:1fr; } }
+
+  .rv-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; margin-bottom:1rem;
+  }
+  .rv-card h3 {
+    margin:0 0 .85rem; font-size:.95rem; font-weight:600; color:var(--text-primary);
+    padding-bottom:.6rem; border-bottom:1px solid var(--border);
+  }
+  .rv-info { display:grid; grid-template-columns:auto 1fr; gap:.55rem 1rem; font-size:.88rem; }
+  .rv-info dt { color:var(--text-muted); font-weight:500; }
+  .rv-info dd { margin:0; color:var(--text-primary); }
+  .rv-info .badge {
+    display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.7rem; font-weight:600;
+  }
+  .rv-info .badge.pending { background:#DBEAFE; color:#1E40AF; }
+  .rv-info .badge.approved { background:#D1FAE5; color:#065F46; }
+  .rv-info .badge.rejected { background:#FEE2E2; color:#991B1B; }
+  .rv-info .badge.need_revision { background:#FEF3C7; color:#92400E; }
+
+  .rv-butir {
+    background:#F8FAFC; border-left:3px solid #2563EB; border-radius:6px;
+    padding:.75rem 1rem; margin-bottom:.75rem;
+  }
+  .rv-butir .kode {
+    font-family:ui-monospace,monospace; font-size:.72rem; font-weight:600;
+    background:#E0E7FF; color:#3730A3; padding:.12rem .45rem; border-radius:4px;
+  }
+  .rv-butir .nama { font-size:.88rem; margin-top:.3rem; color:var(--text-primary); }
+
+  .rv-file-box {
+    background:#F9FAFB; border:1px dashed #D1D5DB; border-radius:10px;
+    padding:1rem; text-align:center;
+  }
+  .rv-file-box .fname { font-size:.88rem; font-weight:500; color:var(--text-primary); margin-bottom:.3rem; word-break:break-all; }
+  .rv-file-box .fmeta { font-size:.75rem; color:var(--text-muted); margin-bottom:.75rem; }
+  .rv-file-box .actions { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; }
+  .rv-file-box .btn-f {
+    padding:.5rem .9rem; font-size:.82rem; border-radius:7px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:.3rem; border:1px solid;
+    font-weight:500;
+  }
+  .rv-file-box .btn-preview { background:#EFF6FF; color:#1E40AF; border-color:#BFDBFE; }
+  .rv-file-box .btn-download { background:#F3F4F6; color:#374151; border-color:#D1D5DB; }
+
+  .rv-form-grp { margin-bottom:1rem; }
+  .rv-form-grp label { display:block; font-size:.82rem; font-weight:600; color:var(--text-primary); margin-bottom:.35rem; }
+  .rv-form-grp textarea {
+    width:100%; padding:.6rem .8rem; border:1px solid var(--border); border-radius:8px;
+    font-size:.88rem; font-family:inherit; resize:vertical; min-height:90px;
+  }
+
+  .rv-radio-group { display:flex; flex-direction:column; gap:.5rem; }
+  .rv-radio {
+    display:flex; align-items:flex-start; gap:.6rem; padding:.75rem .9rem;
+    border:1.5px solid var(--border); border-radius:8px; cursor:pointer;
+    transition:border-color .12s, background .12s;
+  }
+  .rv-radio:hover { border-color:#9CA3AF; background:#FAFAFB; }
+  .rv-radio input[type=radio] { margin-top:.2rem; cursor:pointer; accent-color:currentColor; }
+  .rv-radio .rv-radio-content { flex:1; }
+  .rv-radio .rv-radio-label { font-weight:600; font-size:.9rem; margin-bottom:.15rem; }
+  .rv-radio .rv-radio-desc { font-size:.78rem; color:var(--text-muted); }
+  .rv-radio.approve:has(input:checked) { border-color:#059669; background:#ECFDF5; color:#065F46; }
+  .rv-radio.reject:has(input:checked) { border-color:#DC2626; background:#FEF2F2; color:#991B1B; }
+  .rv-radio.revision:has(input:checked) { border-color:#D97706; background:#FFFBEB; color:#92400E; }
+
+  .hint-catatan {
+    display:none; background:#FEF3C7; border-left:3px solid #F59E0B; border-radius:6px;
+    padding:.6rem .85rem; margin-top:.5rem; font-size:.8rem; color:#78350F;
+  }
+
+  .rv-submit {
+    display:flex; gap:.5rem; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);
+  }
+  .rv-submit button, .rv-submit a {
+    padding:.6rem 1.1rem; border-radius:8px; font-weight:500; font-size:.88rem;
+    border:1px solid; text-decoration:none; display:inline-flex; align-items:center; gap:.35rem;
+    cursor:pointer;
+  }
+  .rv-submit .btn-save { background:#2563EB; color:#fff; border-color:#2563EB; }
+  .rv-submit .btn-save:hover { background:#1D4ED8; }
+  .rv-submit .btn-cancel { background:#fff; color:var(--text-primary); border-color:var(--border); }
+  .rv-submit .btn-reset { background:#F3F4F6; color:#6B7280; border-color:#D1D5DB; margin-left:auto; }
+
+  .rv-history { max-height:260px; overflow-y:auto; }
+  .rv-history-item {
+    display:flex; gap:.7rem; padding:.6rem 0; border-bottom:1px solid var(--border);
+    font-size:.82rem;
+  }
+  .rv-history-item:last-child { border-bottom:0; }
+  .rv-history-item .dot {
+    width:10px; height:10px; border-radius:50%; margin-top:.3rem; flex-shrink:0;
+  }
+  .rv-history-item .dot.APPROVED { background:#059669; }
+  .rv-history-item .dot.REJECTED { background:#DC2626; }
+  .rv-history-item .dot.NEED_REVISION { background:#D97706; }
+  .rv-history-item .dot.RESET, .rv-history-item .dot.PENDING { background:#6B7280; }
+  .rv-history-item .content { flex:1; }
+  .rv-history-item .act { font-weight:600; color:var(--text-primary); }
+  .rv-history-item .meta { color:var(--text-muted); font-size:.72rem; margin-top:.15rem; }
+  .rv-history-item .note { background:#F9FAFB; padding:.35rem .55rem; border-radius:4px; margin-top:.3rem; font-style:italic; }
+</style>
+
+<div class="rv-wrap">
+    <!-- KOLOM KIRI: Info Dokumen + Form Review -->
+    <div>
+        <!-- Info Dokumen -->
+        <div class="rv-card">
+            <h3>Informasi Dokumen</h3>
+            
+            <div class="rv-butir">
+                <span class="kode">{{ butir.kode }}</span>
+                <div class="nama">{{ butir.nama_dokumen }}</div>
+            </div>
+            
+            <dl class="rv-info">
+                <dt>Judul</dt><dd><strong>{{ dokumen.judul }}</strong></dd>
+                {% if dokumen.deskripsi %}<dt>Deskripsi</dt><dd>{{ dokumen.deskripsi|truncatewords:50 }}</dd>{% endif %}
+                <dt>Revisi</dt><dd>r{{ revisi.nomor_revisi }} {% if revisi.nomor_revisi == 1 %}(awal){% endif %}</dd>
+                <dt>Tahun Akademik</dt><dd>{{ dokumen.tahun_akademik }}</dd>
+                <dt>Scope</dt><dd>
+                    {% if dokumen.scope_kode_prodi %}Prodi: <strong>{{ dokumen.scope_kode_prodi }}</strong>{% endif %}
+                    {% if dokumen.scope_kode_fakultas %}{% if dokumen.scope_kode_prodi %} | {% endif %}Fakultas: <strong>{{ dokumen.scope_kode_fakultas }}</strong>{% endif %}
+                    {% if not dokumen.scope_kode_prodi and not dokumen.scope_kode_fakultas %}<em>Universitas</em>{% endif %}
+                </dd>
+                <dt>Status Saat Ini</dt><dd>
+                    {% if verifikasi.status == 'PENDING' %}<span class="badge pending">Menunggu Review</span>
+                    {% elif verifikasi.status == 'APPROVED' %}<span class="badge approved">Disetujui</span>
+                    {% elif verifikasi.status == 'REJECTED' %}<span class="badge rejected">Ditolak</span>
+                    {% elif verifikasi.status == 'NEED_REVISION' %}<span class="badge need_revision">Perlu Revisi</span>
+                    {% endif %}
+                </dd>
+                <dt>Upload</dt><dd>{{ revisi.tanggal_upload|date:"d F Y, H:i" }}</dd>
+                {% if revisi.uploaded_by %}<dt>Uploader</dt><dd>{{ revisi.uploaded_by.get_full_name|default:revisi.uploaded_by.username }}</dd>{% endif %}
+            </dl>
+        </div>
+
+        <!-- File Preview -->
+        <div class="rv-card">
+            <h3>File Dokumen</h3>
+            <div class="rv-file-box">
+                <div class="fname">
+                    {% if revisi.original_filename %}{{ revisi.original_filename }}
+                    {% else %}{{ dokumen.judul }}{% endif %}
+                </div>
+                <div class="fmeta">
+                    {% if revisi.file_size_kb %}{{ revisi.file_size_kb }} KB{% endif %}
+                    {% if revisi.mime_type %} - {{ revisi.mime_type }}{% endif %}
+                    {% if revisi.storage_type %} - Storage: {{ revisi.storage_type }}{% endif %}
+                </div>
+                <div class="actions">
+                    {% if revisi.storage_type == 'LOCAL' and revisi.file %}
+                        <a href="{{ revisi.file.url }}" target="_blank" class="btn-f btn-preview">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            Preview
+                        </a>
+                        <a href="{{ revisi.file.url }}" download class="btn-f btn-download">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download
+                        </a>
+                    {% elif revisi.storage_type == 'GDRIVE' and revisi.gdrive_url %}
+                        <a href="{{ revisi.gdrive_url }}" target="_blank" class="btn-f btn-preview">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            Buka di Google Drive
+                        </a>
+                    {% else %}
+                        <span style="color:var(--text-muted); font-size:.85rem;">File tidak tersedia</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Review -->
+        <div class="rv-card">
+            <h3>Aksi Verifikasi</h3>
+            <form method="post" action="" id="reviewForm">
+                {% csrf_token %}
+                
+                <div class="rv-form-grp">
+                    <label>Pilih Status:</label>
+                    <div class="rv-radio-group">
+                        <label class="rv-radio approve">
+                            <input type="radio" name="aksi" value="APPROVED" {% if verifikasi.status == 'APPROVED' %}checked{% endif %}>
+                            <div class="rv-radio-content">
+                                <div class="rv-radio-label">✓ Approve (Disetujui)</div>
+                                <div class="rv-radio-desc">Dokumen diterima & masuk Bundle Export untuk asesor.</div>
+                            </div>
+                        </label>
+                        <label class="rv-radio reject">
+                            <input type="radio" name="aksi" value="REJECTED" {% if verifikasi.status == 'REJECTED' %}checked{% endif %}>
+                            <div class="rv-radio-content">
+                                <div class="rv-radio-label">✗ Reject (Ditolak)</div>
+                                <div class="rv-radio-desc">Dokumen ditolak — tidak masuk Bundle. Uploader perlu upload ulang.</div>
+                            </div>
+                        </label>
+                        <label class="rv-radio revision">
+                            <input type="radio" name="aksi" value="NEED_REVISION" {% if verifikasi.status == 'NEED_REVISION' %}checked{% endif %}>
+                            <div class="rv-radio-content">
+                                <div class="rv-radio-label">⟳ Need Revision (Perlu Revisi)</div>
+                                <div class="rv-radio-desc">Dokumen butuh perbaikan — uploader revisi sesuai catatan.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="rv-form-grp">
+                    <label>
+                        Catatan Verifikator (opsional)
+                        <span style="font-weight:400; color:var(--text-muted); font-size:.75rem; font-style:italic;">- sangat disarankan kalau Reject/Need Revision</span>
+                    </label>
+                    <textarea name="catatan" id="catatan" placeholder="Contoh: 'Mohon revisi bagian pendahuluan sesuai AACSB standar 2.1. Sebutkan tahun data yang digunakan.'">{{ verifikasi.catatan }}</textarea>
+                    <div class="hint-catatan" id="hintCatatan">
+                        Disarankan isi catatan agar uploader tahu harus fix apa. Catatan kosong boleh, tapi uploader akan bingung.
+                    </div>
+                </div>
+                
+                <div class="rv-submit">
+                    <button type="submit" class="btn-save">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Simpan Verifikasi
+                    </button>
+                    <a href="{% url 'dokumen:verifikasi_dashboard' %}" class="btn-cancel">
+                        Batal
+                    </a>
+                    {% if verifikasi.status != 'PENDING' %}
+                    <button type="submit" name="aksi" value="RESET" class="btn-reset"
+                            onclick="return confirm('Reset verifikasi ke PENDING? Log audit tetap tersimpan.');">
+                        ↺ Reset ke Pending
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KOLOM KANAN: History Verifikasi -->
+    <div>
+        <div class="rv-card">
+            <h3>Riwayat Verifikasi</h3>
+            {% if history %}
+                <div class="rv-history">
+                    {% for log in history %}
+                        <div class="rv-history-item">
+                            <div class="dot {{ log.status_baru }}"></div>
+                            <div class="content">
+                                <div class="act">
+                                    {% if log.aksi == 'APPROVED' %}Disetujui
+                                    {% elif log.aksi == 'REJECTED' %}Ditolak
+                                    {% elif log.aksi == 'NEED_REVISION' %}Perlu Revisi
+                                    {% elif log.aksi == 'RESET' %}Reset ke Pending
+                                    {% else %}{{ log.aksi }}{% endif %}
+                                </div>
+                                <div class="meta">
+                                    {% if log.dilakukan_oleh %}{{ log.dilakukan_oleh.get_full_name|default:log.dilakukan_oleh.username }}{% else %}(system){% endif %}
+                                    - {{ log.tanggal|date:"d M Y, H:i" }}
+                                </div>
+                                {% if log.catatan %}<div class="note">{{ log.catatan }}</div>{% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align:center; padding:1.5rem; color:var(--text-muted); font-size:.85rem; font-style:italic;">
+                    Belum ada riwayat verifikasi. Aksi pertama akan tercatat di sini.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    var radios = document.querySelectorAll('input[name="aksi"]');
+    var hint = document.getElementById('hintCatatan');
+    var catatan = document.getElementById('catatan');
+    
+    function updateHint() {
+        var checked = document.querySelector('input[name="aksi"]:checked');
+        if (!checked || !hint) return;
+        var val = checked.value;
+        var needsHint = (val === 'REJECTED' || val === 'NEED_REVISION') && (!catatan.value.trim());
+        hint.style.display = needsHint ? 'block' : 'none';
+    }
+    
+    radios.forEach(function(r){ r.addEventListener('change', updateHint); });
+    if (catatan) catatan.addEventListener('input', updateHint);
+    updateHint();
+})();
+</script>
+{% endblock %}
