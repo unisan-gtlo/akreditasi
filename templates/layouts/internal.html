@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body %}
+<div class="internal-layout">
+
+    {% include "components/sidebar.html" %}
+
+    <div class="main-content">
+
+        {% include "components/topbar.html" %}
+
+        <main class="page-content">
+
+            {# Flash messages #}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom: 1rem;">
+                        <span class="alert-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block page %}{% endblock %}
+
+        </main>
+
+    </div>
+
+</div>
+
+<script>
+    // Mobile sidebar toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.querySelector('.topbar-menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+        }
+    });
+</script>
+
+{% block extra_page_js %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "layouts/internal.html" %}
+{% load humanize %}
+
+{% block title %}{{ instrumen.nama_singkat }} — SIAKRED{% endblock %}
+{% block page_heading %}{{ instrumen.nama_singkat }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'master_akreditasi:instrumen_list' %}">Instrumen</a>
+    <span>/</span>
+    <span style="color: var(--text-primary); font-weight: 500;">{{ instrumen.nama_singkat }}</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">{{ instrumen.nama_resmi }}</h1>
+            <p class="page-subtitle">
+                <strong>{{ instrumen.lembaga }}</strong> •
+                Versi {{ instrumen.versi|default:"—" }} •
+                {{ instrumen.tahun_berlaku|default:"-" }}
+            </p>
+        </div>
+        <a href="{% url 'master_akreditasi:instrumen_list' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Kembali
+        </a>
+    </div>
+</div>
+
+{# Info cards #}
+<div class="stats-grid">
+    <div class="stat-card accent-blue">
+        <div class="stat-card-header">
+            <div class="stat-card-label">{{ instrumen.label_standar }}</div>
+        </div>
+        <div class="stat-card-value">{{ instrumen.jumlah_standar }}</div>
+        <div class="stat-card-meta">Kriteria penilaian</div>
+    </div>
+    <div class="stat-card accent-amber">
+        <div class="stat-card-header">
+            <div class="stat-card-label">{{ instrumen.label_butir }}</div>
+        </div>
+        <div class="stat-card-value">{{ instrumen.jumlah_butir }}</div>
+        <div class="stat-card-meta">Dokumen wajib arsip</div>
+    </div>
+    <div class="stat-card accent-emerald">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Program Studi</div>
+        </div>
+        <div class="stat-card-value">{{ instrumen.prodi_terdaftar.count }}</div>
+        <div class="stat-card-meta">Ter-mapping</div>
+    </div>
+</div>
+
+{# Deskripsi #}
+{% if instrumen.deskripsi %}
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Tentang Instrumen
+        </div>
+    </div>
+    <div class="panel-body">
+        <p style="color:var(--text-secondary); line-height:1.7; margin:0;">{{ instrumen.deskripsi }}</p>
+        {% if instrumen.url_referensi %}
+            <p style="margin-top:.75rem;">
+                <a href="{{ instrumen.url_referensi }}" target="_blank" style="font-size:.85rem; font-weight:600;">
+                    Kunjungi situs resmi
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Daftar Standar #}
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Daftar {{ instrumen.label_standar }} ({{ standar_list|length }})
+            </div>
+            <div class="panel-subtitle">Klik kriteria untuk melihat sub-kriteria &amp; butir dokumen</div>
+        </div>
+    </div>
+    <div class="panel-body panel-body-flush">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:80px;">No</th>
+                    <th>Nama {{ instrumen.label_standar }}</th>
+                    <th style="width:120px; text-align:center;">Bobot (%)</th>
+                    <th style="width:140px; text-align:center;">Sub-Standar</th>
+                    <th style="width:120px; text-align:center;">Butir</th>
+                    <th style="width:100px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for std in standar_list %}
+                <tr>
+                    <td>
+                        <div style="display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:32px; padding:0 .6rem; background:var(--primary-50); color:var(--primary-700); border-radius:8px; font-weight:700; font-size:.85rem;">
+                            {{ std.nomor }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600; color:var(--text-primary);">{{ std.nama }}</div>
+                        {% if std.deskripsi %}
+                            <div style="font-size:.8rem; color:var(--text-muted); margin-top:2px; line-height:1.5;">
+                                {{ std.deskripsi|truncatechars:140 }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if std.bobot %}
+                            <span class="badge badge-purple">{{ std.bobot }}%</span>
+                        {% else %}
+                            <span style="color:var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">{{ std.jumlah_substandar }}</td>
+                    <td style="text-align:center;">{{ std.jumlah_butir }}</td>
+                    <td>
+                        <a href="{% url 'master_akreditasi:standar_detail' std.pk %}" style="font-size:.85rem; font-weight:600;">
+                            Detail →
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+                    Belum ada {{ instrumen.label_standar }} untuk instrumen ini.
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Dashboard — SIAKRED UNISAN{% endblock %}
+
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Selamat datang, {{ user.nama_lengkap }} 👋</h1>
+            <p class="page-subtitle">
+                Sistem Informasi Arsip Akreditasi Universitas Ichsan Gorontalo
+            </p>
+        </div>
+    </div>
+</div>
+
+{# Stats cards #}
+<div class="stats-grid">
+    <div class="stat-card accent-blue">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Instrumen Akreditasi</div>
+            <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ stat_instrumen_count|intcomma }}</div>
+        <div class="stat-card-meta">BAN-PT &amp; 4 LAM</div>
+    </div>
+
+    <div class="stat-card accent-cyan">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Standar / Kriteria</div>
+            <div class="stat-card-icon bg-cyan">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ stat_standar_count|intcomma }}</div>
+        <div class="stat-card-meta">Siap untuk akreditasi</div>
+    </div>
+
+    <div class="stat-card accent-amber">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Sub-Standar</div>
+            <div class="stat-card-icon bg-amber">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ stat_substandar_count|intcomma }}</div>
+        <div class="stat-card-meta">Detail per standar</div>
+    </div>
+
+    <div class="stat-card accent-emerald">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Butir Dokumen</div>
+            <div class="stat-card-icon bg-emerald">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ stat_butir_count|intcomma }}</div>
+        <div class="stat-card-meta">Dokumen yang diarsipkan</div>
+    </div>
+
+    <div class="stat-card accent-purple">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Program Studi</div>
+            <div class="stat-card-icon bg-purple">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ stat_mapping_count|intcomma }}</div>
+        <div class="stat-card-meta">Ter-mapping ke instrumen</div>
+    </div>
+</div>
+
+{# Info user & scope #}
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Profil &amp; Scope Anda
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; font-size:.9rem;">
+            <div>
+                <div style="font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Username</div>
+                <div style="font-weight:600; color:var(--text-primary); margin-top:2px;">{{ user.username }}</div>
+            </div>
+            <div>
+                <div style="font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Email</div>
+                <div style="font-weight:600; color:var(--text-primary); margin-top:2px;">{{ user.email|default:"—" }}</div>
+            </div>
+            <div>
+                <div style="font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Status</div>
+                <div style="margin-top:2px;">
+                    {% if user.is_superuser %}
+                        <span class="badge badge-purple">Super Admin Pustikom</span>
+                    {% elif user.is_staff %}
+                        <span class="badge badge-blue">Staff</span>
+                    {% else %}
+                        <span class="badge badge-gray">Pengguna</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <div style="font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Login Terakhir</div>
+                <div style="font-weight:600; color:var(--text-primary); margin-top:2px;">
+                    {{ user.last_login|date:"d M Y, H:i"|default:"Baru pertama login" }}
+                </div>
+            </div>
+        </div>
+
+        {% if scopes %}
+            <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border-subtle);">
+                <div style="font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:.75rem;">Role &amp; Scope</div>
+                <div style="display:flex; flex-wrap:wrap; gap:.5rem;">
+                    {% for scope in scopes %}
+                        <span class="badge badge-blue">
+                            {{ scope.get_role_display }} — {{ scope.get_level_display }}
+                            {% if scope.is_pimpinan %} (Pimpinan){% endif %}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Last device info #}
+{% if last_device %}
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Login Terakhir dari Device Lain
+        </div>
+    </div>
+    <div class="panel-body">
+        <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:.9rem; color:var(--text-secondary);">
+            <div>🖥️ {{ last_device.browser_name }} / {{ last_device.os_name }}</div>
+            <div>📍 IP: {{ last_device.ip_address }}</div>
+            <div>🕒 {{ last_device.last_seen|date:"d M Y, H:i" }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Coming soon #}
+<div class="panel" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-color: var(--primary-200);">
+    <div class="panel-body">
+        <div style="display:flex; align-items:start; gap:1rem;">
+            <div style="font-size:1.5rem;">🚧</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; color:var(--primary-800); margin-bottom:.35rem;">Modul berikutnya sedang disiapkan</div>
+                <div style="color:var(--text-secondary); font-size:.9rem; line-height:1.7;">
+                    Upload &amp; Preview Dokumen, Sesi Akreditasi, Portal Asesor, dan Laporan akan hadir bertahap.
+                    Saat ini Anda dapat menjelajahi struktur akreditasi lewat menu
+                    <strong>Instrumen</strong>, <strong>Standar / Kriteria</strong>, dan <strong>Mapping Prodi</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

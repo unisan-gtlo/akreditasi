@@ -1,0 +1,111 @@
+{% extends "layouts/internal.html" %}
+{% load humanize %}
+
+{% block title %}Import Excel - SIAKRED{% endblock %}
+{% block page_heading %}Import Excel Master{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Import Excel</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Import Excel Master</h1>
+            <p class="page-subtitle">
+                Upload file Excel untuk import bulk Sub-Standar dan Butir Dokumen per instrumen.
+                Berguna untuk mengisi data resmi dari BAN-PT / LAM dengan cepat.
+            </p>
+        </div>
+        <div style="display:flex; gap:.5rem;">
+            <a href="{% url 'master_akreditasi:template_picker' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+                Download Template
+            </a>
+            <a href="{% url 'master_akreditasi:import_upload' %}" class="btn btn-primary">
+                Upload Excel Baru
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="panel" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-color: #F59E0B;">
+    <div class="panel-body">
+        <div style="display:flex; align-items:start; gap:1rem;">
+            <div style="font-size:1.5rem;">🚧</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; color:#92400E; margin-bottom:.35rem;">Fitur Upload dan Template sedang disiapkan</div>
+                <div style="color:#78350F; font-size:.9rem; line-height:1.7;">
+                    Menu ini akan segera berfungsi penuh. Saat ini Anda bisa lihat placeholder UI dan history import.
+                    Fitur lengkap (Upload, Preview, Commit, Download Template) akan hadir di update berikutnya.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">History Import</div>
+            <div class="panel-subtitle">{{ logs|length }} import terakhir</div>
+        </div>
+    </div>
+    <div class="panel-body panel-body-flush">
+        {% if logs %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>File</th>
+                    <th>Instrumen</th>
+                    <th style="text-align:center;">Mode</th>
+                    <th style="text-align:center;">Total / Valid / Error</th>
+                    <th style="text-align:center;">Status</th>
+                    <th>Uploader</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-size:.85rem;">{{ log.waktu_upload|date:"d M Y H:i" }}</td>
+                    <td style="font-weight:600;">{{ log.file_name }}</td>
+                    <td><span class="badge badge-blue">{{ log.instrumen.nama_singkat }}</span></td>
+                    <td style="text-align:center;"><span class="badge badge-gray">{{ log.get_mode_display }}</span></td>
+                    <td style="text-align:center; font-size:.85rem;">
+                        {{ log.total_rows }} / <span style="color:var(--success); font-weight:600;">{{ log.valid_rows }}</span> / <span style="color:var(--danger); font-weight:600;">{{ log.error_rows }}</span>
+                    </td>
+                    <td style="text-align:center;">
+                        {% if log.status == "COMMITTED" %}
+                            <span class="badge badge-emerald">{{ log.get_status_display }}</span>
+                        {% elif log.status == "PREVIEWED" %}
+                            <span class="badge badge-amber">{{ log.get_status_display }}</span>
+                        {% elif log.status == "FAILED" %}
+                            <span class="badge badge-rose">{{ log.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge badge-gray">{{ log.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:.85rem; color:var(--text-secondary);">{{ log.uploaded_by.username }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+            <div style="font-size:3rem; margin-bottom:.75rem;">📊</div>
+            <div style="font-weight:600; color:var(--text-secondary); margin-bottom:.5rem;">Belum ada riwayat import</div>
+            <div style="font-size:.85rem; max-width:420px; margin:0 auto; line-height:1.6;">
+                Import pertama akan muncul di sini setelah fitur Upload aktif.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

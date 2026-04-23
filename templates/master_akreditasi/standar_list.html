@@ -1,0 +1,105 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Standar Akreditasi — SIAKRED{% endblock %}
+{% block page_heading %}Standar / Kriteria{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Standar / Kriteria</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Standar / Kriteria Akreditasi</h1>
+            <p class="page-subtitle">
+                Semua standar dari {{ instrumen_all|length }} instrumen akreditasi UNISAN.
+            </p>
+        </div>
+    </div>
+</div>
+
+{# Filter #}
+<div class="panel">
+    <div class="panel-body" style="padding: 1rem 1.5rem;">
+        <form method="get" style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+            <label style="font-size:.85rem; font-weight:600; color:var(--text-secondary);">Filter Instrumen:</label>
+            <select name="instrumen" class="form-input" style="max-width:320px; padding: .55rem .85rem;" onchange="this.form.submit()">
+                <option value="">Semua Instrumen</option>
+                {% for ins in instrumen_all %}
+                    <option value="{{ ins.id }}" {% if filter_instrumen == ins.id|stringformat:"s" %}selected{% endif %}>
+                        {{ ins.nama_singkat }} — {{ ins.lembaga }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% if filter_instrumen %}
+                <a href="{% url 'master_akreditasi:standar_list' %}" style="font-size:.85rem; font-weight:600;">Reset</a>
+            {% endif %}
+            <div style="margin-left:auto; font-size:.85rem; color:var(--text-muted);">
+                {{ standar_list|length }} standar ditampilkan
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Tabel #}
+<div class="panel">
+    <div class="panel-body panel-body-flush">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Instrumen</th>
+                    <th style="width:80px;">No</th>
+                    <th>Nama Standar / Kriteria</th>
+                    <th style="width:120px; text-align:center;">Bobot (%)</th>
+                    <th style="width:120px; text-align:center;">Sub-Standar</th>
+                    <th style="width:100px; text-align:center;">Butir</th>
+                    <th style="width:100px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for std in standar_list %}
+                <tr>
+                    <td>
+                        <span class="badge badge-blue">{{ std.instrumen.nama_singkat }}</span>
+                    </td>
+                    <td>
+                        <div style="display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:32px; padding:0 .6rem; background:var(--primary-50); color:var(--primary-700); border-radius:8px; font-weight:700; font-size:.85rem;">
+                            {{ std.nomor }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600;">{{ std.nama }}</div>
+                        {% if std.deskripsi %}
+                            <div style="font-size:.8rem; color:var(--text-muted); margin-top:2px;">
+                                {{ std.deskripsi|truncatechars:120 }}
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if std.bobot %}<span class="badge badge-purple">{{ std.bobot }}%</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                    </td>
+                    <td style="text-align:center;">{{ std.jumlah_substandar }}</td>
+                    <td style="text-align:center;">{{ std.jumlah_butir }}</td>
+                    <td>
+                        <a href="{% url 'master_akreditasi:standar_detail' std.pk %}" style="font-size:.85rem; font-weight:600;">
+                            Detail →
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+                    Tidak ada standar untuk filter yang dipilih.
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}{{ standar.nama }} — SIAKRED{% endblock %}
+{% block page_heading %}{{ standar.instrumen.label_standar }} {{ standar.nomor }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'master_akreditasi:instrumen_list' %}">Instrumen</a>
+    <span>/</span>
+    <a href="{% url 'master_akreditasi:instrumen_detail' standar.instrumen.pk %}">{{ standar.instrumen.nama_singkat }}</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">{{ standar.instrumen.label_standar }} {{ standar.nomor }}</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">{{ standar.instrumen.label_standar }} {{ standar.nomor }}: {{ standar.nama }}</h1>
+            <p class="page-subtitle">
+                <span class="badge badge-blue">{{ standar.instrumen.nama_singkat }}</span>
+                {% if standar.bobot %}
+                    <span class="badge badge-purple" style="margin-left:.25rem;">Bobot: {{ standar.bobot }}%</span>
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'master_akreditasi:instrumen_detail' standar.instrumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Kembali
+        </a>
+    </div>
+</div>
+
+{# Deskripsi #}
+{% if standar.deskripsi %}
+<div class="panel">
+    <div class="panel-body">
+        <p style="color:var(--text-secondary); line-height:1.7; margin:0;">{{ standar.deskripsi }}</p>
+    </div>
+</div>
+{% endif %}
+
+{# Sub-Standar Tree #}
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                {{ standar.instrumen.label_substandar }} &amp; {{ standar.instrumen.label_butir }}
+            </div>
+            <div class="panel-subtitle">Struktur dokumen yang harus diarsipkan</div>
+        </div>
+    </div>
+
+    <div class="panel-body">
+        {% if substandar_root %}
+            <ul style="list-style:none; padding:0; margin:0;">
+                {% for ss in substandar_root %}
+                    {% include "master_akreditasi/_substandar_node.html" with node=ss %}
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+                <div style="font-size:3rem; margin-bottom:.75rem;">📋</div>
+                <div style="font-weight:600; color:var(--text-secondary); margin-bottom:.5rem;">
+                    Belum ada {{ standar.instrumen.label_substandar }}
+                </div>
+                <div style="font-size:.85rem; max-width:420px; margin:0 auto; line-height:1.6;">
+                    Sub-standar dan butir dokumen bisa ditambahkan lewat Django Admin
+                    atau nanti lewat fitur Import Excel (Step 6).
+                </div>
+                {% if user.is_staff %}
+                    <a href="/admin/master_akreditasi/substandar/add/" target="_blank" class="btn btn-primary" style="margin-top:1.25rem;">
+                        Tambah via Admin
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

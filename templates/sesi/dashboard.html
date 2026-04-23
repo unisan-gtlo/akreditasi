@@ -1,0 +1,289 @@
+{% extends 'layouts/internal.html' %}
+
+{% block title %}Dashboard Sesi - SIAKRED{% endblock %}
+{% block page_heading %}Dashboard Sesi Akreditasi{% endblock %}
+
+{% block breadcrumb %}
+<div class='topbar-breadcrumb'>
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span>/</span>
+    <span style='color:var(--text-primary); font-weight:500;'>Dashboard</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class='page-header'>
+    <div class='page-header-flex'>
+        <div>
+            <h1 class='page-title'>Dashboard Sesi Akreditasi</h1>
+            <p class='page-subtitle'>
+                <strong>Scope:</strong> {{ user_scope_info }} -- 
+                <strong>Update:</strong> {{ today|date:'l, d F Y' }}
+            </p>
+        </div>
+        <div style='display:flex; gap:.5rem;'>
+            <button onclick='window.location.reload()' class='btn' style='background:var(--surface-muted); color:var(--text-primary);'>
+                <svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='23 4 23 10 17 10'/><polyline points='1 20 1 14 7 14'/><path d='M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15'/></svg>
+                Refresh
+            </button>
+            <a href="{% url 'sesi:sesi_list' %}" class='btn btn-primary'>
+                Lihat Semua Sesi
+            </a>
+        </div>
+    </div>
+</div>
+
+{# 4 STATS CARDS - BENTO TOP #}
+<div class='stats-grid' style='grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:1.5rem;'>
+    <div class='stat-card accent-blue'>
+        <div class='stat-card-header'>
+            <div class='stat-card-label'>Sesi Aktif</div>
+        </div>
+        <div class='stat-card-value'>{{ total_aktif }}</div>
+        <div class='stat-card-meta'>Sedang berjalan</div>
+    </div>
+
+    <div class='stat-card accent-amber'>
+        <div class='stat-card-header'>
+            <div class='stat-card-label'>Critical</div>
+        </div>
+        <div class='stat-card-value' style='color:#DC2626;'>{{ critical_count }}</div>
+        <div class='stat-card-meta'>Deadline dekat / progress rendah</div>
+    </div>
+
+    <div class='stat-card accent-purple'>
+        <div class='stat-card-header'>
+            <div class='stat-card-label'>Sedang Visitasi</div>
+        </div>
+        <div class='stat-card-value'>{{ sedang_visitasi }}</div>
+        <div class='stat-card-meta'>Visitasi asesor aktif</div>
+    </div>
+
+    <div class='stat-card accent-emerald'>
+        <div class='stat-card-header'>
+            <div class='stat-card-label'>Selesai Tahun Ini</div>
+        </div>
+        <div class='stat-card-value'>{{ selesai_tahun_ini }}</div>
+        <div class='stat-card-meta'>Sertifikat terbit {{ today|date:'Y' }}</div>
+    </div>
+</div>
+
+{# BENTO GRID: Charts + Critical List #}
+<div style='display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;'>
+
+    {# DONUT CHART - Status #}
+    <div class='panel'>
+        <div class='panel-header'>
+            <div class='panel-title'>Sesi by Status</div>
+            <div class='panel-subtitle'>Distribusi sesi berdasarkan status saat ini</div>
+        </div>
+        <div class='panel-body' style='padding:1.5rem;'>
+            {% if donut_segments %}
+            <div style='display:flex; gap:1.5rem; align-items:center; flex-wrap:wrap;'>
+                {# Donut SVG #}
+                <div style='flex-shrink:0; position:relative;'>
+                    <svg width='200' height='200' viewBox='0 0 200 200'>
+                        {% for seg in donut_segments %}
+                            <path d='{{ seg.path }}' fill='{{ seg.color }}' opacity='0.95' stroke='white' stroke-width='1'>
+                                <title>{{ seg.label }}: {{ seg.count }} ({{ seg.pct }}%)</title>
+                            </path>
+                        {% endfor %}
+                        {# Center text #}
+                        <text x='100' y='95' text-anchor='middle' style='font-size:28px; font-weight:800; fill:#0F172A;'>{{ donut_total }}</text>
+                        <text x='100' y='115' text-anchor='middle' style='font-size:11px; font-weight:600; fill:#64748B; text-transform:uppercase; letter-spacing:.05em;'>Total Sesi</text>
+                    </svg>
+                </div>
+
+                {# Legend #}
+                <div style='flex:1; min-width:180px;'>
+                    {% for seg in donut_segments %}
+                    <div style='display:flex; align-items:center; gap:.5rem; padding:.35rem 0; font-size:.85rem;'>
+                        <div style='width:14px; height:14px; background:{{ seg.color }}; border-radius:3px; flex-shrink:0;'></div>
+                        <div style='flex:1; color:var(--text-primary);'>{{ seg.label }}</div>
+                        <div style='font-weight:700; color:var(--text-primary);'>{{ seg.count }}</div>
+                        <div style='font-size:.75rem; color:var(--text-muted); width:45px; text-align:right;'>{{ seg.pct }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div style='text-align:center; padding:2rem; color:var(--text-muted);'>
+                Belum ada data sesi untuk ditampilkan
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# BAR CHART - Per Fakultas #}
+    <div class='panel'>
+        <div class='panel-header'>
+            <div class='panel-title'>Sesi per Fakultas</div>
+            <div class='panel-subtitle'>Jumlah sesi terdaftar per fakultas</div>
+        </div>
+        <div class='panel-body' style='padding:1.5rem;'>
+            {% if fakultas_data %}
+                {% for f in fakultas_data %}
+                <div style='margin-bottom:.85rem;'>
+                    <div style='display:flex; justify-content:space-between; font-size:.85rem; margin-bottom:.25rem;'>
+                        <span style='font-weight:600;'>{{ f.kode }}</span>
+                        <span style='font-weight:700; color:var(--primary-700);'>{{ f.count }} sesi</span>
+                    </div>
+                    <div style='height:14px; background:var(--surface-muted); border-radius:7px; overflow:hidden;'>
+                        <div style='width:{{ f.pct }}%; height:100%; background: linear-gradient(90deg, #3B82F6, #2563EB); border-radius:7px; transition: width .5s;'></div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div style='text-align:center; padding:2rem; color:var(--text-muted);'>
+                Belum ada data
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{# CRITICAL SESI LIST #}
+{% if critical_sesi %}
+<div class='panel' style='margin-bottom:1.5rem;'>
+    <div class='panel-header' style='background: linear-gradient(135deg, #FEF3C7 0%, #FEE2E2 100%); border-bottom: 1px solid #FCA5A5;'>
+        <div class='panel-title' style='color:#991B1B;'>
+            🚨 Sesi yang Perlu Perhatian ({{ critical_count }})
+        </div>
+        <div class='panel-subtitle' style='color:#7F1D1D;'>
+            Sesi dengan deadline dekat atau progress rendah
+        </div>
+    </div>
+    <div class='panel-body' style='padding:0;'>
+        <table style='width:100%; border-collapse:collapse;'>
+            <thead>
+                <tr style='background:var(--surface-muted); text-align:left;'>
+                    <th style='padding:.85rem 1.5rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Urgency</th>
+                    <th style='padding:.85rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Sesi</th>
+                    <th style='padding:.85rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Status</th>
+                    <th style='padding:.85rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Deadline</th>
+                    <th style='padding:.85rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Progress</th>
+                    <th style='padding:.85rem; font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in critical_sesi %}
+                <tr style='border-top:1px solid var(--border-subtle);'>
+                    <td style='padding:.85rem 1.5rem;'>
+                        {% if item.urgency == 'urgent' %}
+                            <span style='background:#FEE2E2; color:#991B1B; padding:3px 10px; border-radius:10px; font-size:.7rem; font-weight:700;'>🔴 URGENT</span>
+                        {% else %}
+                            <span style='background:#FEF3C7; color:#92400E; padding:3px 10px; border-radius:10px; font-size:.7rem; font-weight:700;'>🟡 WARNING</span>
+                        {% endif %}
+                    </td>
+                    <td style='padding:.85rem;'>
+                        <div style='font-weight:600;'>{{ item.sesi.judul|truncatechars:50 }}</div>
+                        <div style='font-size:.75rem; color:var(--text-muted);'>{{ item.sesi.instrumen.nama_singkat }} - Prodi {{ item.sesi.kode_prodi }}</div>
+                    </td>
+                    <td style='padding:.85rem;'>
+                        <span class='badge badge-{{ item.sesi.status_color }}' style='font-size:.7rem;'>{{ item.sesi.get_status_display }}</span>
+                    </td>
+                    <td style='padding:.85rem; font-size:.85rem;'>
+                        {% if item.days != None %}
+                            {% if item.days <= 0 %}
+                                <strong style='color:#DC2626;'>TERLEWAT {{ item.days|add:0 }}d</strong>
+                            {% elif item.days <= 7 %}
+                                <strong style='color:#DC2626;'>{{ item.days }} hari lagi</strong>
+                            {% else %}
+                                <span style='color:#92400E;'>{{ item.days }} hari lagi</span>
+                            {% endif %}
+                        {% else %}
+                            <span style='color:var(--text-muted);'>--</span>
+                        {% endif %}
+                    </td>
+                    <td style='padding:.85rem; min-width:120px;'>
+                        <div style='display:flex; align-items:center; gap:.5rem;'>
+                            <div style='flex:1; height:8px; background:var(--surface-muted); border-radius:4px; overflow:hidden;'>
+                                <div style='width:{{ item.progress.percentage }}%; height:100%; background: {% if item.progress.percentage < 30 %}#EF4444{% elif item.progress.percentage < 60 %}#F59E0B{% else %}#10B981{% endif %};'></div>
+                            </div>
+                            <span style='font-size:.75rem; font-weight:700;'>{{ item.progress.percentage }}%</span>
+                        </div>
+                    </td>
+                    <td style='padding:.85rem; text-align:right;'>
+                        <a href="{% url 'sesi:sesi_detail' item.sesi.pk %}" style='font-size:.8rem; font-weight:600; color:var(--primary-600);'>Detail →</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{# BENTO BOTTOM: Activity + Per Instrumen #}
+<div style='display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem;'>
+
+    {# Recent Activity #}
+    <div class='panel'>
+        <div class='panel-header'>
+            <div class='panel-title'>Aktivitas Terbaru</div>
+            <div class='panel-subtitle'>Catatan & update sesi</div>
+        </div>
+        <div class='panel-body' style='padding:0; max-height:400px; overflow-y:auto;'>
+            {% for c in recent_catatan %}
+            <div style='padding:1rem 1.25rem; border-bottom:1px solid var(--border-subtle);'>
+                <div style='display:flex; justify-content:space-between; align-items:start; margin-bottom:.35rem; gap:.5rem;'>
+                    <div style='display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;'>
+                        <span class='badge badge-gray' style='font-size:.65rem;'>{{ c.get_tipe_display }}</span>
+                        <a href="{% url 'sesi:sesi_detail' c.sesi.pk %}" style='font-size:.85rem; font-weight:600; color:var(--primary-700); text-decoration:none;'>{{ c.sesi.judul|truncatechars:35 }}</a>
+                    </div>
+                    <span style='font-size:.7rem; color:var(--text-muted); white-space:nowrap;'>{{ c.tanggal_dibuat|date:'d/m/Y H:i' }}</span>
+                </div>
+                <div style='font-size:.85rem; color:var(--text-secondary); line-height:1.5;'>{{ c.isi|truncatechars:120 }}</div>
+                <div style='font-size:.7rem; color:var(--text-muted); margin-top:.25rem;'>oleh {{ c.dibuat_oleh.username }}</div>
+            </div>
+            {% empty %}
+            <div style='padding:2rem; text-align:center; color:var(--text-muted);'>
+                Belum ada catatan aktivitas
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Per Instrumen Breakdown #}
+    <div class='panel'>
+        <div class='panel-header'>
+            <div class='panel-title'>Sesi per Instrumen</div>
+            <div class='panel-subtitle'>Breakdown per status</div>
+        </div>
+        <div class='panel-body' style='padding:0;'>
+            <table style='width:100%; border-collapse:collapse; font-size:.8rem;'>
+                <thead>
+                    <tr style='background:var(--surface-muted);'>
+                        <th style='padding:.65rem .85rem; text-align:left; font-size:.7rem; text-transform:uppercase; color:var(--text-muted);'>Instrumen</th>
+                        <th style='padding:.65rem; text-align:center; font-size:.7rem; color:var(--text-muted);'>Total</th>
+                        <th style='padding:.65rem; text-align:center; font-size:.7rem; color:#3B82F6;'>Persiapan</th>
+                        <th style='padding:.65rem; text-align:center; font-size:.7rem; color:#A855F7;'>Visitasi</th>
+                        <th style='padding:.65rem; text-align:center; font-size:.7rem; color:#10B981;'>Selesai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ins in instrumen_breakdown %}
+                    <tr style='border-top:1px solid var(--border-subtle);'>
+                        <td style='padding:.65rem .85rem; font-weight:600;'>{{ ins.nama }}</td>
+                        <td style='padding:.65rem; text-align:center; font-weight:700; color:var(--primary-700);'>{{ ins.total }}</td>
+                        <td style='padding:.65rem; text-align:center;'>{{ ins.persiapan }}</td>
+                        <td style='padding:.65rem; text-align:center;'>{{ ins.visitasi }}</td>
+                        <td style='padding:.65rem; text-align:center;'>{{ ins.selesai }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan='5' style='padding:1.5rem; text-align:center; color:var(--text-muted);'>
+                            Belum ada data
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

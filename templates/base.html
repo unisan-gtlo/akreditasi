@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SIAKRED — Sistem Informasi Arsip Akreditasi Universitas Ichsan Gorontalo">
+    <meta name="robots" content="{% block meta_robots %}noindex, nofollow{% endblock %}">
+
+    <title>{% block title %}{{ page_title|default:"SIAKRED UNISAN" }}{% endblock %}</title>
+
+    <link rel="icon" type="image/png" href="{% static 'img/logo_unisan.png' %}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+
+    <!-- SIAKRED Design System -->
+    <link rel="stylesheet" href="{% static 'css/siakred.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% block body %}{% endblock %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

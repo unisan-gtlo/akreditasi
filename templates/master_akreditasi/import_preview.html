@@ -1,0 +1,278 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Preview Import — SIAKRED{% endblock %}
+{% block page_heading %}Preview Import{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <a href="{% url 'master_akreditasi:import_home' %}">Import Excel</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Preview #{{ import_log.pk }}</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Preview Import</h1>
+            <p class="page-subtitle">
+                <strong>{{ import_log.file_name }}</strong> •
+                Target: <span class="badge badge-blue">{{ import_log.instrumen.nama_singkat }}</span> •
+                Mode: <span class="badge badge-gray">{{ import_log.get_mode_display }}</span>
+            </p>
+        </div>
+        <a href="{% url 'master_akreditasi:import_home' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Kembali
+        </a>
+    </div>
+</div>
+
+{# Error message (if failed parse) #}
+{% if import_log.error_message %}
+<div class="panel" style="background:#FEE2E2; border-color:#FCA5A5;">
+    <div class="panel-body">
+        <div style="display:flex; align-items:start; gap:.75rem;">
+            <div style="font-size:1.5rem;">⚠️</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; color:#991B1B; margin-bottom:.35rem;">Error saat parsing</div>
+                <div style="color:#7F1D1D; font-size:.9rem; white-space:pre-wrap;">{{ import_log.error_message }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Summary stats #}
+<div class="stats-grid">
+    <div class="stat-card accent-blue">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Total Baris</div>
+        </div>
+        <div class="stat-card-value">{{ import_log.total_rows }}</div>
+    </div>
+    <div class="stat-card accent-emerald">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Baris Valid</div>
+        </div>
+        <div class="stat-card-value">{{ import_log.valid_rows }}</div>
+    </div>
+    <div class="stat-card accent-rose">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Baris Error</div>
+        </div>
+        <div class="stat-card-value">{{ import_log.error_rows }}</div>
+    </div>
+    <div class="stat-card accent-amber">
+        <div class="stat-card-header">
+            <div class="stat-card-label">Status</div>
+        </div>
+        <div class="stat-card-value" style="font-size:1.25rem;">{{ import_log.get_status_display }}</div>
+    </div>
+</div>
+
+{# Hasil commit (kalau sudah COMMITTED) #}
+{% if import_log.status == "COMMITTED" %}
+<div class="panel" style="background:#D1FAE5; border-color:#6EE7B7;">
+    <div class="panel-body">
+        <div style="display:flex; align-items:start; gap:.75rem;">
+            <div style="font-size:1.5rem;">✅</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; color:#065F46; margin-bottom:.5rem;">Import Berhasil Disimpan!</div>
+                <div style="color:#047857; font-size:.9rem;">
+                    SubStandar: <strong>{{ import_log.substandar_created }}</strong> baru, <strong>{{ import_log.substandar_updated }}</strong> di-update<br>
+                    Butir Dokumen: <strong>{{ import_log.butir_created }}</strong> baru, <strong>{{ import_log.butir_updated }}</strong> di-update
+                </div>
+                <div style="margin-top:.75rem;">
+                    <a href="{% url 'master_akreditasi:instrumen_detail' import_log.instrumen.pk %}" class="btn btn-primary" style="padding:.5rem .9rem; font-size:.85rem;">
+                        Lihat Hasil di {{ import_log.instrumen.nama_singkat }} →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Tab navigation #}
+<div class="panel">
+    <div class="panel-body">
+
+        <div class="tab-nav">
+            <button type="button" class="tab-link active" data-tab="tab-ss">
+                📋 SubStandar
+                <span class="tab-link-badge">{{ substandar_items|length }}</span>
+            </button>
+            <button type="button" class="tab-link" data-tab="tab-b">
+                📄 Butir Dokumen
+                <span class="tab-link-badge">{{ butir_items|length }}</span>
+            </button>
+        </div>
+
+        {# Tab 1: SubStandar #}
+        <div class="tab-pane active" id="tab-ss">
+            {% if substandar_items %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">Row</th>
+                        <th style="width:90px;">Std</th>
+                        <th>Nomor Sub</th>
+                        <th>Parent</th>
+                        <th>Nama</th>
+                        <th style="text-align:center; width:140px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in substandar_items %}
+                    <tr {% if item.status == "INVALID" or item.status == "FAILED" %}style="background:#FEF2F2;"{% endif %}>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--text-muted); font-size:.85rem;">#{{ item.row_number }}</td>
+                        <td>
+                            <span class="badge badge-gray">{{ item.raw_data.nomor_standar|default:"—" }}</span>
+                        </td>
+                        <td style="font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--primary-700);">
+                            {{ item.raw_data.nomor_substandar|default:"—" }}
+                        </td>
+                        <td style="font-family:'JetBrains Mono', monospace; font-size:.85rem; color:var(--text-muted);">
+                            {{ item.raw_data.nomor_parent|default:"—" }}
+                        </td>
+                        <td>
+                            <div style="font-weight:500;">{{ item.raw_data.nama|default:"—"|truncatechars:60 }}</div>
+                            {% if item.error_detail %}
+                                <div style="color:var(--danger); font-size:.75rem; margin-top:.25rem;">⚠ {{ item.error_detail }}</div>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="status-badge status-badge-{{ item.status|lower|slice:':12'|cut:'_' }}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                Tidak ada data SubStandar di file Excel.
+            </div>
+            {% endif %}
+        </div>
+
+        {# Tab 2: Butir Dokumen #}
+        <div class="tab-pane" id="tab-b">
+            {% if butir_items %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">Row</th>
+                        <th>SubStd</th>
+                        <th>Kode</th>
+                        <th>Nama Dokumen</th>
+                        <th style="text-align:center;">Kategori</th>
+                        <th style="text-align:center;">Wajib</th>
+                        <th style="text-align:center; width:140px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in butir_items %}
+                    <tr {% if item.status == "INVALID" or item.status == "FAILED" %}style="background:#FEF2F2;"{% endif %}>
+                        <td style="font-family:'JetBrains Mono', monospace; color:var(--text-muted); font-size:.85rem;">#{{ item.row_number }}</td>
+                        <td style="font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--primary-700); font-size:.85rem;">
+                            {{ item.raw_data.nomor_substandar|default:"—" }}
+                        </td>
+                        <td style="font-family:'JetBrains Mono', monospace; font-weight:600; font-size:.85rem;">
+                            {{ item.raw_data.kode_butir|default:"—" }}
+                        </td>
+                        <td>
+                            <div style="font-weight:500;">{{ item.raw_data.nama_dokumen|default:"—"|truncatechars:50 }}</div>
+                            {% if item.error_detail %}
+                                <div style="color:var(--danger); font-size:.75rem; margin-top:.25rem;">⚠ {{ item.error_detail }}</div>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            {% if item.raw_data.kategori %}
+                                <span class="badge badge-gray" style="font-size:.7rem;">{{ item.raw_data.kategori }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            {% if item.raw_data.wajib|upper == "Y" or item.raw_data.wajib|upper == "YA" %}
+                                <span class="badge badge-rose">WAJIB</span>
+                            {% else %}
+                                <span class="badge badge-gray">opsional</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="status-badge status-badge-{{ item.status|lower|slice:':12'|cut:'_' }}">
+                                {{ item.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                Tidak ada data Butir Dokumen di file Excel.
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+{# Action Bar (kalau masih bisa commit/cancel) #}
+{% if can_commit %}
+<div class="panel" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-color: var(--primary-300);">
+    <div class="panel-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <div>
+                <div style="font-weight:700; color:var(--primary-800); margin-bottom:.25rem;">Siap untuk Commit?</div>
+                <div style="color:var(--text-secondary); font-size:.9rem;">
+                    {{ import_log.valid_rows }} baris valid akan disimpan ke database.
+                    {% if import_log.error_rows %}
+                        <strong style="color:var(--danger);">{{ import_log.error_rows }} baris error akan di-skip.</strong>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display:flex; gap:.5rem;">
+                <form method="post" action="{% url 'master_akreditasi:import_cancel' import_log.pk %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background:white;" onclick="return confirm('Batalkan import ini?');">
+                        Batalkan
+                    </button>
+                </form>
+                <form method="post" action="{% url 'master_akreditasi:import_commit' import_log.pk %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Commit import? Data akan langsung disimpan ke database.');">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Commit Import
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// Tab switching
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', () => {
+            const targetId = link.dataset.tab;
+
+            document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+            link.classList.add('active');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+});
+</script>
+
+{% endblock %}

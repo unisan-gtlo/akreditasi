@@ -1,0 +1,113 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Download Template — SIAKRED{% endblock %}
+{% block page_heading %}Download Template Excel{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <a href="{% url 'master_akreditasi:import_home' %}">Import Excel</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Download Template</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Download Template Excel</h1>
+            <p class="page-subtitle">
+                Pilih instrumen akreditasi untuk download template Excel yang sudah diisi daftar standar &amp; referensi validasi.
+            </p>
+        </div>
+        <a href="{% url 'master_akreditasi:import_home' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Kembali
+        </a>
+    </div>
+</div>
+
+{# Info banner #}
+<div class="panel" style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); border-color: var(--primary-300);">
+    <div class="panel-body">
+        <div style="display:flex; align-items:start; gap:1rem;">
+            <div style="font-size:1.5rem;">💡</div>
+            <div style="flex:1;">
+                <div style="font-weight:700; color:var(--primary-800); margin-bottom:.35rem;">Template Dinamis per Instrumen</div>
+                <div style="color:var(--text-secondary); font-size:.9rem; line-height:1.7;">
+                    Template yang Anda download akan <strong>berisi daftar nomor standar</strong> yang valid untuk instrumen pilihan,
+                    plus data validation (dropdown) untuk kolom kategori, wajib, format, dan akses.
+                    Cukup isi data Anda lalu upload kembali via menu Import.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Grid instrumen #}
+<div class="instrumen-grid">
+    {% for instrumen in instrumen_list %}
+        <div class="instrumen-card" style="cursor: default;">
+            <div class="instrumen-card-badge">{{ instrumen.versi|default:"—" }}</div>
+
+            <div>
+                <div class="instrumen-card-title">{{ instrumen.nama_singkat }}</div>
+                <div class="instrumen-card-lembaga">{{ instrumen.lembaga }}</div>
+            </div>
+
+            <div class="instrumen-card-desc">
+                {{ instrumen.deskripsi|default:"Instrumen akreditasi program studi." }}
+            </div>
+
+            <div class="instrumen-card-stats">
+                <div class="instrumen-card-stat">
+                    <div class="instrumen-card-stat-value">{{ instrumen.jumlah_standar }}</div>
+                    <div class="instrumen-card-stat-label">{{ instrumen.label_standar }}</div>
+                </div>
+                <div class="instrumen-card-stat">
+                    <div class="instrumen-card-stat-value">{{ instrumen.jumlah_butir }}</div>
+                    <div class="instrumen-card-stat-label">Butir</div>
+                </div>
+            </div>
+
+            <a href="{% url 'master_akreditasi:template_download' instrumen.pk %}"
+               class="btn btn-primary"
+               style="width:100%; justify-content:center; margin-top:.25rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Template
+            </a>
+        </div>
+    {% empty %}
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="panel-body" style="text-align:center; padding: 3rem 1rem; color:var(--text-muted);">
+                Belum ada instrumen akreditasi yang terdaftar.
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{# Petunjuk #}
+<div class="panel" style="margin-top:1.5rem;">
+    <div class="panel-header">
+        <div class="panel-title">
+            📋 Isi Template Excel
+        </div>
+    </div>
+    <div class="panel-body">
+        <div style="font-size:.9rem; line-height:1.8; color:var(--text-secondary);">
+            File Excel yang di-download akan berisi <strong>4 sheet</strong>:
+            <ul style="padding-left:1.5rem; margin:.75rem 0;">
+                <li><strong>Petunjuk</strong> — cara pengisian lengkap (baca dulu!)</li>
+                <li><strong>SubStandar</strong> — untuk sub-kriteria, dengan header + 2 baris contoh</li>
+                <li><strong>ButirDokumen</strong> — untuk butir dokumen, dengan dropdown validasi kategori/wajib/format/akses</li>
+                <li><strong>Referensi</strong> — daftar nomor standar valid untuk instrumen terpilih (jangan diubah)</li>
+            </ul>
+            Setelah isi data, upload kembali via menu <strong>Import Excel → Upload Excel Baru</strong>.
+        </div>
+    </div>
+</div>
+
+{% endblock %}

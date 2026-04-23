@@ -1,0 +1,317 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}{{ dokumen.judul }} — SIAKRED{% endblock %}
+{% block page_heading %}{{ dokumen.judul|truncatechars:60 }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
+    <span>/</span>
+    <a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">{{ dokumen.judul|truncatechars:40 }}</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+{# Header #}
+<div class="page-header">
+    <div class="page-header-flex">
+        <div style="flex:1;">
+            <h1 class="page-title">{{ dokumen.judul }}</h1>
+            <p class="page-subtitle">
+                <span class="badge badge-blue">{{ dokumen.butir_dokumen.kode }}</span>
+                {{ dokumen.butir_dokumen.nama_dokumen }}
+            </p>
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem;">
+                {% if dokumen.status_akses == 'TERBUKA' %}
+                    <span class="badge badge-emerald">🌐 Terbuka</span>
+                {% else %}
+                    <span class="badge badge-gray">🔒 Internal</span>
+                {% endif %}
+                <span class="badge badge-gray">{{ dokumen.scope_label }}</span>
+                {% if dokumen.tahun_akademik %}
+                    <span class="badge badge-blue">📅 {{ dokumen.tahun_akademik }}</span>
+                {% endif %}
+                {% if revisi_aktif %}
+                    {% if revisi_aktif.is_local %}
+                        <span class="badge badge-emerald">📁 LOCAL</span>
+                    {% else %}
+                        <span class="badge badge-amber">🔗 GOOGLE DRIVE</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div style="display:flex; gap:.5rem;">
+            {% if revisi_aktif %}
+                <a href="{% url 'dokumen:dokumen_download' dokumen.pk %}" class="btn btn-primary"
+                   {% if revisi_aktif.is_gdrive %}target="_blank"{% endif %}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download
+                </a>
+            {% endif %}
+            {% if can_edit %}
+                <a href="{% url 'dokumen:dokumen_upload_revisi' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Revisi
+                </a>
+                <a href="{% url 'dokumen:dokumen_edit' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    Edit Metadata
+                </a>
+                <a href="{% url 'dokumen:dokumen_access_log' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Riwayat Akses
+                </a>
+            {% endif %}
+            <a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Kembali
+            </a>
+        </div>
+    </div>
+</div>
+
+{# Layout 2 kolom #}
+<div style="display:grid; grid-template-columns: 1fr 320px; gap:1.5rem;">
+
+    {# KIRI: Preview Panel #}
+    <div>
+        {# Preview #}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Preview Dokumen
+                </div>
+                {% if revisi_aktif %}
+                <div class="panel-subtitle">
+                    Revisi {{ revisi_aktif.nomor_revisi }}
+                    {% if revisi_aktif.is_local %}
+                        • {{ revisi_aktif.original_filename|truncatechars:50 }} • {{ revisi_aktif.file_size_display }}
+                    {% else %}
+                        • Google Drive Link
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if can_preview %}
+                {{% if preview_type == "pdf" %}
+                    {# PDF preview - via custom serve URL (bypass X-Frame DENY) #}
+                    <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">
+                        <iframe src="{% url 'dokumen:dokumen_preview_serve' dokumen.pk %}" width="100%" height="700"
+                                style="border:none; display:block;"
+                                title="PDF Preview">
+                        </iframe>
+                    </div>
+                {% elif preview_type == "image" %}
+                    {# Image preview - via custom serve URL #}
+                    <div style="background:#F3F4F6; padding: 2rem; text-align:center; border-radius: 0 0 12px 12px;">
+                        <img src="{% url 'dokumen:dokumen_preview_serve' dokumen.pk %}" alt="{{ dokumen.judul }}"
+                             style="max-width: 100%; max-height: 700px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+                    </div>
+                {% elif preview_type == "gdrive" %}
+                    {# Google Drive embed #}
+                    <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">
+                        <iframe src="{{ preview_url }}" width="100%" height="700"
+                                style="border:none; display:block;"
+                                allow="autoplay" title="Google Drive Preview">
+                        </iframe>
+                    </div>
+                    <div style="padding: .75rem 1.25rem; background:#FEF3C7; color:#78350F; font-size:.85rem; border-radius:0 0 12px 12px;">
+                        ℹ️ Preview di-embed dari Google Drive. Jika tidak tampil, pastikan link sudah di-share publik
+                        atau klik <a href="{{ revisi_aktif.gdrive_url }}" target="_blank" style="color:var(--primary-600); font-weight:600;">buka di Google Drive ↗</a>.
+                    </div>
+                {% endif %}
+            {% elif revisi_aktif and revisi_aktif.is_local %}
+                {# File ada tapi format tidak bisa preview #}
+                <div class="panel-body" style="text-align:center; padding: 3rem 2rem;">
+                    <div style="font-size:4rem; margin-bottom:1rem;">📄</div>
+                    <div style="font-weight:600; color:var(--text-secondary); margin-bottom:.5rem;">
+                        Format file ini tidak bisa di-preview
+                    </div>
+                    <div style="font-size:.9rem; color:var(--text-muted); max-width:400px; margin:0 auto 1.5rem; line-height:1.6;">
+                        File <strong>{{ revisi_aktif.extension|upper }}</strong> tidak bisa ditampilkan inline.
+                        Silakan download untuk membuka di aplikasi yang sesuai.
+                    </div>
+                    <a href="{% url 'dokumen:dokumen_download' dokumen.pk %}" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download File
+                    </a>
+                </div>
+            {% else %}
+                {# Tidak ada file/link valid #}
+                <div class="panel-body" style="text-align:center; padding: 3rem 2rem;">
+                    <div style="font-size:4rem; margin-bottom:1rem;">⚠️</div>
+                    <div style="font-weight:600; color:var(--text-secondary); margin-bottom:.5rem;">
+                        Tidak ada file atau link valid
+                    </div>
+                    <div style="font-size:.9rem; color:var(--text-muted);">
+                        {% if revisi_aktif and revisi_aktif.is_link_broken %}
+                            Link Google Drive untuk dokumen ini telah rusak atau private.
+                        {% else %}
+                            Belum ada revisi aktif untuk dokumen ini.
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Riwayat Revisi #}
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Riwayat Revisi ({{ revisi_list|length }})
+                    </div>
+                </div>
+            </div>
+            <div class="panel-body panel-body-flush">
+                {% if revisi_list %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;">Revisi</th>
+                            <th>Nama File / Link</th>
+                            <th style="width:90px;">Tipe</th>
+                            <th style="width:90px;">Ukuran</th>
+                            <th style="width:90px; text-align:center;">Aktif</th>
+                            <th style="width:140px;">Upload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rev in revisi_list %}
+                        <tr>
+                            <td><strong>Rev.{{ rev.nomor_revisi }}</strong></td>
+                            <td style="font-size:.85rem;">
+                                {{ rev.original_filename|truncatechars:45 }}
+                                {% if rev.is_gdrive and rev.is_link_broken %}
+                                    <br><span class="badge badge-rose" style="font-size:.65rem; margin-top:2px;">⚠ Link rusak</span>
+                                {% endif %}
+                                {% if rev.catatan_revisi %}
+                                    <br><span style="font-size:.75rem; color:var(--text-muted); font-style:italic;">"{{ rev.catatan_revisi|truncatechars:80 }}"</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if rev.is_local %}
+                                    <span class="badge badge-emerald" style="font-size:.65rem;">{{ rev.extension|upper }}</span>
+                                {% else %}
+                                    <span class="badge badge-amber" style="font-size:.65rem;">🔗 GDRIVE</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:.85rem;">
+                                {% if rev.is_local %}{{ rev.file_size_display }}{% else %}—{% endif %}
+                            </td>
+                            <td style="text-align:center;">
+                                {% if rev.aktif %}
+                                    <span class="badge badge-emerald" style="font-size:.7rem;">Aktif</span>
+                                {% else %}
+                                    <span style="color:var(--text-muted);">—</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:.8rem;">
+                                <div>{{ rev.uploaded_by.username }}</div>
+                                <div style="color:var(--text-muted); font-size:.75rem;">{{ rev.tanggal_upload|date:"d/m/Y H:i" }}</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                    Belum ada revisi.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# KANAN: Sidebar metadata #}
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+
+        {# Stats #}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title" style="font-size:.95rem;">📊 Statistik</div>
+            </div>
+            <div class="panel-body">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div style="text-align:center; padding:.5rem; background:var(--primary-50); border-radius:8px;">
+                        <div style="font-size:1.75rem; font-weight:800; color:var(--primary-700);">{{ dokumen.view_count }}</div>
+                        <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">👁 Lihat</div>
+                    </div>
+                    <div style="text-align:center; padding:.5rem; background:#ECFDF5; border-radius:8px;">
+                        <div style="font-size:1.75rem; font-weight:800; color:#047857;">{{ dokumen.download_count }}</div>
+                        <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">⬇ Download</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Metadata #}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title" style="font-size:.95rem;">📋 Detail</div>
+            </div>
+            <div class="panel-body" style="font-size:.85rem;">
+                <div style="margin-bottom:.85rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Status</div>
+                    <div style="margin-top:2px;">
+                        {% if dokumen.status == 'DRAFT' %}
+                            <span class="badge badge-amber">{{ dokumen.get_status_display }}</span>
+                        {% elif dokumen.status == 'FINAL' %}
+                            <span class="badge badge-emerald">{{ dokumen.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge badge-gray">{{ dokumen.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="margin-bottom:.85rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Tahun Akademik</div>
+                    <div style="font-weight:600; margin-top:2px;">{{ dokumen.tahun_akademik|default:"—" }}</div>
+                </div>
+                <div style="margin-bottom:.85rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Total Revisi</div>
+                    <div style="font-weight:600; margin-top:2px;">{{ dokumen.total_revisi }}</div>
+                </div>
+                <div style="margin-bottom:.85rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Diupload Pertama</div>
+                    <div style="font-weight:600; margin-top:2px;">{{ dokumen.uploaded_by.username }}</div>
+                    <div style="color:var(--text-muted); font-size:.75rem;">{{ dokumen.tanggal_dibuat|date:"d M Y, H:i" }}</div>
+                </div>
+                <div>
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Terakhir Diupdate</div>
+                    <div style="font-weight:600; margin-top:2px;">{{ dokumen.last_updated_by.username }}</div>
+                    <div style="color:var(--text-muted); font-size:.75rem;">{{ dokumen.tanggal_diubah|date:"d M Y, H:i" }}</div>
+                </div>
+            </div>
+        </div>
+
+        {% if dokumen.deskripsi %}
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title" style="font-size:.95rem;">📝 Deskripsi</div>
+            </div>
+            <div class="panel-body">
+                <p style="margin:0; font-size:.85rem; line-height:1.7; color:var(--text-secondary);">{{ dokumen.deskripsi }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if can_edit %}
+        <div class="panel" style="background:#EFF6FF; border-color: var(--primary-200);">
+            <div class="panel-body" style="font-size:.85rem; color:var(--text-secondary); line-height:1.7;">
+                ✓ Anda memiliki akses untuk <strong>edit / upload revisi</strong> dokumen ini
+                karena scope Anda cocok ({{ dokumen.scope_label }}).
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

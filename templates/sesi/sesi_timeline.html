@@ -1,0 +1,196 @@
+{% extends 'layouts/internal.html' %}
+
+{% block title %}Timeline - {{ sesi.judul }} - SIAKRED{% endblock %}
+{% block page_heading %}Timeline Sesi Akreditasi{% endblock %}
+
+{% block breadcrumb %}
+<div class='topbar-breadcrumb'>
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span>/</span>
+    <a href="{% url 'sesi:sesi_detail' sesi.pk %}">{{ sesi.judul|truncatechars:30 }}</a>
+    <span>/</span>
+    <span style='color:var(--text-primary); font-weight:500;'>Timeline</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class='page-header'>
+    <div class='page-header-flex'>
+        <div>
+            <h1 class='page-title'>Timeline: {{ sesi.judul|truncatechars:60 }}</h1>
+            <p class='page-subtitle'>
+                Visualisasi timeline milestone & tanggal kunci akreditasi -- 
+                {{ tgl_start|date:'d M Y' }} sampai {{ tgl_end|date:'d M Y' }} ({{ total_days }} hari)
+            </p>
+        </div>
+        <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn' style='background:var(--surface-muted); color:var(--text-primary);'>
+            Kembali ke Detail
+        </a>
+    </div>
+</div>
+
+{# Legend #}
+<div class='panel' style='margin-bottom:1rem;'>
+    <div class='panel-body' style='padding:1rem 1.5rem; display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center;'>
+        <div style='font-weight:700; color:var(--text-primary); margin-right:.5rem;'>Legenda:</div>
+
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:24px; height:14px; background:#94A3B8; border-radius:3px;'></div>
+            <span>Belum Dimulai</span>
+        </div>
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:24px; height:14px; background:#3B82F6; border-radius:3px;'></div>
+            <span>Sedang Berjalan</span>
+        </div>
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:24px; height:14px; background:#10B981; border-radius:3px;'></div>
+            <span>Selesai</span>
+        </div>
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:24px; height:14px; background:#EF4444; border-radius:3px;'></div>
+            <span>Terlewat</span>
+        </div>
+
+        <div style='border-left:1px solid var(--border); height:24px; margin: 0 .5rem;'></div>
+
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:2px; height:18px; background:#DC2626; border-radius:1px;'></div>
+            <span>Hari Ini ({{ today_date|date:'d M Y' }})</span>
+        </div>
+        <div style='display:flex; align-items:center; gap:.5rem; font-size:.85rem;'>
+            <div style='width:2px; height:18px; background:#F59E0B; border-radius:1px; border-left:2px dashed #F59E0B;'></div>
+            <span>Tanggal Kunci</span>
+        </div>
+    </div>
+</div>
+
+{# Timeline SVG Container #}
+<div class='panel'>
+    <div class='panel-header'>
+        <div class='panel-title'>Gantt Timeline</div>
+        <div class='panel-subtitle'>Hover bar untuk detail milestone</div>
+    </div>
+    <div class='panel-body' style='padding: 1.5rem;'>
+
+        {# Month header strip #}
+        <div style='position:relative; height:30px; margin-bottom:.5rem; border-bottom:1px solid var(--border-subtle);'>
+            {% for mark in month_marks %}
+                <div style='position:absolute; left:{{ mark.x }}%; top:0; transform:translateX(-50%); font-size:.7rem; font-weight:600; color:var(--text-muted); padding:.5rem .35rem;'>
+                    {{ mark.label }}
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Main Timeline Area #}
+        <div style='position:relative; min-height:{{ milestones_data|length }}00px;'>
+
+            {# Background month grid lines #}
+            {% for mark in month_marks %}
+                <div style='position:absolute; left:{{ mark.x }}%; top:0; bottom:0; width:1px; background:#F1F5F9; z-index:1;'></div>
+            {% endfor %}
+
+            {# Today indicator (red vertical line) #}
+            {% if today_x %}
+                <div style='position:absolute; left:{{ today_x }}%; top:-5px; bottom:0; width:2px; background:#DC2626; z-index:5; box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);'></div>
+                <div style='position:absolute; left:{{ today_x }}%; top:-25px; transform:translateX(-50%); background:#DC2626; color:white; padding:2px 8px; border-radius:4px; font-size:.7rem; font-weight:700; z-index:6; white-space:nowrap;'>
+                    HARI INI
+                </div>
+            {% endif %}
+
+            {# Key date markers (vertical dashed lines) #}
+            {% for marker in key_markers %}
+                <div style='position:absolute; left:{{ marker.x }}%; top:0; bottom:0; width:0; border-left:2px dashed {{ marker.color }}; z-index:3;' title='{{ marker.label }} - {{ marker.date|date:"d M Y" }}'></div>
+                <div style='position:absolute; left:{{ marker.x }}%; bottom:-25px; transform:translateX(-50%); background:{{ marker.color }}; color:white; padding:2px 6px; border-radius:4px; font-size:.65rem; font-weight:600; z-index:4; white-space:nowrap;'>
+                    {{ marker.label }}
+                </div>
+            {% endfor %}
+
+            {# Milestone bars (rows) #}
+            {% for item in milestones_data %}
+                <div style='position:relative; height:50px; margin-bottom:8px; z-index:2;'>
+                    {# Label di kiri (di luar bar area) #}
+                    <div style='position:absolute; left:0; top:0; width:200px; padding-right:10px; height:100%; display:flex; align-items:center; font-size:.85rem; font-weight:600; color:var(--text-primary);'>
+                        <span style='display:inline-block; width:24px; height:24px; background:var(--surface-muted); border-radius:50%; text-align:center; line-height:24px; font-size:.8rem; margin-right:.5rem; flex-shrink:0;'>{{ item.milestone.urutan }}</span>
+                        <span style='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'>{{ item.milestone.judul }}</span>
+                    </div>
+
+                    {# Bar container #}
+                    <div style='position:absolute; left:200px; right:0; top:0; height:100%; background:#FAFBFC; border-radius:6px;'>
+                        {# Actual bar #}
+                        <div title='{{ item.milestone.judul }} - {{ item.start_date|date:"d M Y" }} sampai {{ item.end_date|date:"d M Y" }}'
+                             style='position:absolute; left:{{ item.x_start }}%; width:{{ item.width }}%; top:8px; bottom:8px; background:{{ item.color }}; border-radius:4px; cursor:pointer; transition: all .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); display:flex; align-items:center; padding: 0 .5rem;'
+                             onmouseover='this.style.transform="scale(1.02)"; this.style.boxShadow="0 4px 12px rgba(0,0,0,0.25)"'
+                             onmouseout='this.style.transform=""; this.style.boxShadow="0 1px 3px rgba(0,0,0,0.15)"'>
+                            <span style='color:white; font-size:.7rem; font-weight:600; text-shadow: 0 1px 2px rgba(0,0,0,0.25); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'>
+                                {% if item.is_overdue %}TERLEWAT{% else %}{{ item.milestone.get_status_display }}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div style='padding:3rem; text-align:center; color:var(--text-muted);'>
+                    Belum ada milestone untuk sesi ini
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Spacer for bottom labels #}
+        <div style='height:40px;'></div>
+
+    </div>
+</div>
+
+{# Detail Table #}
+<div class='panel' style='margin-top:1.5rem;'>
+    <div class='panel-header'>
+        <div class='panel-title'>Detail Milestone</div>
+    </div>
+    <div class='panel-body' style='padding:0;'>
+        <table class='table' style='width:100%; border-collapse:collapse;'>
+            <thead>
+                <tr style='background:var(--surface-muted); text-align:left;'>
+                    <th style='padding:.85rem 1.5rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>#</th>
+                    <th style='padding:.85rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Milestone</th>
+                    <th style='padding:.85rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Tanggal Target</th>
+                    <th style='padding:.85rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Tanggal Aktual</th>
+                    <th style='padding:.85rem; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);'>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in milestones_data %}
+                <tr style='border-top:1px solid var(--border-subtle);'>
+                    <td style='padding:.85rem 1.5rem; font-weight:600;'>{{ item.milestone.urutan }}</td>
+                    <td style='padding:.85rem;'>
+                        <div style='font-weight:600;'>{{ item.milestone.judul }}</div>
+                        {% if item.milestone.deskripsi %}
+                            <div style='font-size:.75rem; color:var(--text-muted); margin-top:2px;'>{{ item.milestone.deskripsi|truncatechars:80 }}</div>
+                        {% endif %}
+                    </td>
+                    <td style='padding:.85rem; font-size:.85rem;'>{{ item.milestone.tanggal_target|date:'d M Y' }}</td>
+                    <td style='padding:.85rem; font-size:.85rem;'>
+                        {% if item.milestone.tanggal_aktual %}
+                            <span style='color:#059669; font-weight:600;'>{{ item.milestone.tanggal_aktual|date:'d M Y' }}</span>
+                        {% else %}
+                            <span style='color:var(--text-muted);'>-</span>
+                        {% endif %}
+                    </td>
+                    <td style='padding:.85rem;'>
+                        <span style='display:inline-block; padding:3px 10px; border-radius:10px; font-size:.7rem; font-weight:700; color:white; background:{{ item.color }};'>
+                            {% if item.is_overdue %}TERLEWAT{% else %}{{ item.milestone.get_status_display }}{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan='5' style='padding:2rem; text-align:center; color:var(--text-muted);'>
+                        Belum ada milestone
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

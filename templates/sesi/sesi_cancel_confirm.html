@@ -1,0 +1,53 @@
+{% extends 'layouts/internal.html' %}
+
+{% block title %}Batalkan Sesi - SIAKRED{% endblock %}
+{% block page_heading %}Batalkan Sesi{% endblock %}
+
+{% block breadcrumb %}
+<div class='topbar-breadcrumb'>
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span>/</span>
+    <a href="{% url 'sesi:sesi_detail' sesi.pk %}">{{ sesi.judul|truncatechars:30 }}</a>
+    <span>/</span>
+    <span style='color:var(--text-primary); font-weight:500;'>Batalkan</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class='page-header'>
+    <div class='page-header-flex'>
+        <div>
+            <h1 class='page-title'>Batalkan Sesi Akreditasi</h1>
+            <p class='page-subtitle'>Status sesi akan diubah menjadi Dibatalkan -- data tetap utuh</p>
+        </div>
+        <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn' style='background:var(--surface-muted); color:var(--text-primary);'>Kembali</a>
+    </div>
+</div>
+
+<div class='panel' style='background:#FEF3C7; border-color:#FBBF24;'>
+    <div class='panel-body' style='display:flex; gap:1rem; align-items:start; padding:2rem;'>
+        <div style='font-size:2.5rem;'>WARNING</div>
+        <div style='flex:1;'>
+            <h3 style='margin:0 0 .75rem; color:#92400E; font-size:1.25rem;'>Konfirmasi Pembatalan</h3>
+            <p style='margin:0 0 1rem; color:#78350F; line-height:1.7;'>
+                Anda akan membatalkan sesi: <strong>{{ sesi.judul }}</strong>
+            </p>
+            <ul style='margin:0 0 1.25rem 1.25rem; color:#78350F; line-height:1.8; font-size:.9rem;'>
+                <li>Status berubah jadi <strong>Dibatalkan</strong></li>
+                <li>Data sesi (milestone, catatan) <strong>tetap utuh</strong></li>
+                <li>Sesi masih bisa dilihat dengan filter status Dibatalkan</li>
+                <li>Bisa diaktifkan kembali dengan edit status</li>
+            </ul>
+            <form method='post' style='display:flex; gap:.5rem;'>
+                {% csrf_token %}
+                <button type='submit' class='btn' style='background:#F59E0B; color:white; font-weight:700;'>
+                    Ya, Batalkan Sesi
+                </button>
+                <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn'>Batal</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

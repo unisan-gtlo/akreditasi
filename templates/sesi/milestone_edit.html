@@ -1,0 +1,83 @@
+{% extends 'layouts/internal.html' %}
+
+{% block title %}Edit Milestone - SIAKRED{% endblock %}
+{% block page_heading %}Edit Milestone{% endblock %}
+
+{% block breadcrumb %}
+<div class='topbar-breadcrumb'>
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span>/</span>
+    <a href="{% url 'sesi:sesi_detail' sesi.pk %}">{{ sesi.judul|truncatechars:30 }}</a>
+    <span>/</span>
+    <span style='color:var(--text-primary); font-weight:500;'>Edit Milestone</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class='page-header'>
+    <div class='page-header-flex'>
+        <div>
+            <h1 class='page-title'>Edit Milestone: {{ ms.judul }}</h1>
+            <p class='page-subtitle'>
+                Sesi: {{ sesi.judul|truncatechars:50 }}
+            </p>
+        </div>
+        <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn' style='background:var(--surface-muted); color:var(--text-primary);'>Batal</a>
+    </div>
+</div>
+
+<form method='post' class='panel'>
+    {% csrf_token %}
+    <div class='panel-header'>
+        <div class='panel-title'>Form Edit Milestone</div>
+    </div>
+    <div class='panel-body'>
+
+        <div class='form-group'>
+            <label class='form-label form-label-required'>Judul Milestone</label>
+            <input type='text' name='judul' value='{{ ms.judul }}' required class='form-input'>
+        </div>
+
+        <div class='form-group'>
+            <label class='form-label'>Deskripsi</label>
+            <textarea name='deskripsi' rows='2' class='form-input' placeholder='Deskripsi milestone (opsional)'>{{ ms.deskripsi }}</textarea>
+        </div>
+
+        <div style='display:grid; grid-template-columns: 1fr 1fr; gap:1rem;'>
+            <div class='form-group'>
+                <label class='form-label form-label-required'>Tanggal Target</label>
+                <input type='date' name='tanggal_target' value='{{ ms.tanggal_target|date:"Y-m-d" }}' required class='form-input'>
+                <div class='form-help'>Target awal milestone selesai</div>
+            </div>
+
+            <div class='form-group'>
+                <label class='form-label'>Tanggal Aktual</label>
+                <input type='date' name='tanggal_aktual' value='{{ ms.tanggal_aktual|date:"Y-m-d" }}' class='form-input'>
+                <div class='form-help'>Tanggal aktual milestone selesai (kosongkan kalau belum)</div>
+            </div>
+        </div>
+
+        <div class='form-group'>
+            <label class='form-label form-label-required'>Status</label>
+            <select name='status' class='form-input'>
+                {% for value, label in status_choices %}
+                    <option value='{{ value }}' {% if ms.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class='form-group'>
+            <label class='form-label'>Catatan</label>
+            <textarea name='catatan' rows='3' class='form-input' placeholder='Catatan internal milestone (opsional)'>{{ ms.catatan }}</textarea>
+        </div>
+
+        <div style='display:flex; justify-content:flex-end; gap:.5rem; padding-top:1rem; border-top:1px solid var(--border-subtle); margin-top:1rem;'>
+            <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn'>Batal</a>
+            <button type='submit' class='btn btn-primary'>Simpan Perubahan</button>
+        </div>
+
+    </div>
+</form>
+
+{% endblock %}

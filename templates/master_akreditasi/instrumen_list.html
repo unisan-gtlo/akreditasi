@@ -1,0 +1,75 @@
+{% extends "layouts/internal.html" %}
+{% load humanize %}
+
+{% block title %}Instrumen Akreditasi — SIAKRED{% endblock %}
+{% block page_heading %}Instrumen Akreditasi{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <span style="color: var(--text-primary); font-weight: 500;">Instrumen</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Instrumen Akreditasi</h1>
+            <p class="page-subtitle">
+                Daftar instrumen akreditasi yang dipakai UNISAN untuk akreditasi program studi.
+                Pilih instrumen untuk melihat kriteria &amp; butir dokumennya.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span class="badge badge-blue">{{ instrumen_list|length }} Instrumen Aktif</span>
+        </div>
+    </div>
+</div>
+
+<div class="instrumen-grid">
+    {% for instrumen in instrumen_list %}
+        <a href="{% url 'master_akreditasi:instrumen_detail' instrumen.pk %}" class="instrumen-card">
+            <div class="instrumen-card-badge">{{ instrumen.versi|default:"—" }}</div>
+
+            <div>
+                <div class="instrumen-card-title">{{ instrumen.nama_singkat }}</div>
+                <div class="instrumen-card-lembaga">{{ instrumen.lembaga }}</div>
+            </div>
+
+            <div class="instrumen-card-desc">
+                {{ instrumen.deskripsi|default:"Instrumen akreditasi program studi." }}
+            </div>
+
+            <div class="instrumen-card-stats">
+                <div class="instrumen-card-stat">
+                    <div class="instrumen-card-stat-value">{{ instrumen.n_standar }}</div>
+                    <div class="instrumen-card-stat-label">{{ instrumen.label_standar }}</div>
+                </div>
+                <div class="instrumen-card-stat">
+                    <div class="instrumen-card-stat-value">{{ instrumen.prodi_terdaftar.count }}</div>
+                    <div class="instrumen-card-stat-label">Prodi</div>
+                </div>
+                <div class="instrumen-card-stat">
+                    <div class="instrumen-card-stat-value">{{ instrumen.jumlah_butir }}</div>
+                    <div class="instrumen-card-stat-label">Butir</div>
+                </div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:.4rem; color:var(--primary-600); font-size:.85rem; font-weight:600; margin-top:.25rem;">
+                Lihat detail
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+        </a>
+    {% empty %}
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="panel-body" style="text-align:center; padding: 3rem 1rem; color:var(--text-muted);">
+                Belum ada instrumen akreditasi yang terdaftar.
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

@@ -1,34 +1,58 @@
-﻿# SIAKRED — Sistem Informasi Arsip Akreditasi
+﻿# SIAKRED - Sistem Informasi Akreditasi UNISAN
 
-**Universitas Ichsan Gorontalo (UNISAN)**
-UNISAN Digital Campus — Fase 2.7
+Platform manajemen akreditasi terintegrasi untuk Universitas Ichsan Gorontalo (UNISAN).
 
-## Deskripsi
-Sistem pengarsipan dokumen akreditasi program studi multi-instrumen (BAN-PT IAPS 4.0 & LAM). Dokumen dikelompokkan berdasarkan Standar, Sub-Standar, dan Kategori Kepemilikan (Universitas, Biro/Lembaga, Fakultas, Prodi).
+## Fitur Utama
+
+- Manajemen Sesi Akreditasi dengan periode multi-tahun (TS, TS-1, TS-2)
+- Auto-collect dokumen sesuai instrumen & periode
+- Timeline Gantt visual untuk milestone
+- Dashboard executive dengan donut chart & stats
+- Hybrid storage (local + Google Drive)
+- Filter prodi by instrumen (mapping LAM/BAN-PT)
+- Permission scope-based (Universitas/Fakultas/Prodi/Biro)
+- Landing publik untuk transparansi dokumen FINAL
+- Audit trail lengkap
 
 ## Tech Stack
-- Python 3.12
-- Django 6.x
-- PostgreSQL 18 (schema: akreditasi)
-- Integrasi SSO UNISAN + SIMDA
 
-## Quick Start (Development)
-\\\powershell
-cd C:\unisan\akreditasi
-.\venv\Scripts\Activate.ps1
+- Backend: Django 6.0
+- Database: PostgreSQL 18 (multi-schema)
+- Frontend: Vanilla HTML/CSS/JS
+- Server: Gunicorn + Nginx
+- OS: Rocky Linux
+
+## Setup Development
+
+### Prerequisites
+- Python 3.12+
+- PostgreSQL 18+
+- Git
+
+### Install
+
+```bash
+git clone git@github.com:unisan-gtlo/akreditasi.git
+cd akreditasi
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python manage.py migrate
+python manage.py createsuperuser
 python manage.py runserver
-\\\
+```
 
-## Struktur App
-- core — Helper, SSO middleware, permissions
-- master_akreditasi — Instrumen, Standar, SubStandar, ButirDokumen
-- dokumen — DokumenAkreditasi, upload, preview, verifikasi
-- sesi — SesiAkreditasi, tim, progress
-- sesor — Portal asesor, audit log
-- laporan — Laporan & export
+Akses: http://localhost:8000
 
-## Domain Production
-https://akreditasi.unisan-g.id
+## Setup Production
 
-© 2026 Pustikom — UNISAN
-"# akreditasi" 
+Lihat panduan lengkap di [DEPLOY.md](DEPLOY.md)
+
+## License
+
+Internal use - UNISAN
+
+## Contact
+
+PUSTIKOM UNISAN | https://unisan-g.id

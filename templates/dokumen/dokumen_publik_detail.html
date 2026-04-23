@@ -1,0 +1,142 @@
+﻿{% extends "layouts/publik.html" %}
+
+{% block title %}{{ dokumen.judul }} — SIAKRED Publik{% endblock %}
+
+{% block page %}
+
+{# Breadcrumb #}
+<div style="margin-bottom: 1rem; font-size:.9rem; color:var(--text-muted);">
+    <a href="{% url 'dokumen_publik_list' %}" style="color:var(--primary-600); text-decoration:none; font-weight:600;">← Dokumen Publik</a>
+    <span style="margin: 0 .5rem;">/</span>
+    <span style="color:var(--text-primary);">{{ dokumen.judul|truncatechars:60 }}</span>
+</div>
+
+{# Header Card #}
+<div class="panel" style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); color:white; border:none; margin-bottom: 1.5rem;">
+    <div class="panel-body" style="padding: 2rem;">
+        <div style="display:flex; gap:1.5rem; align-items:start; flex-wrap:wrap;">
+            <div style="flex:1; min-width:300px;">
+                <div style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; opacity:.85; margin-bottom:.5rem;">
+                    🌐 Dokumen Publik
+                </div>
+                <h1 style="font-size:1.75rem; font-weight:800; margin: 0 0 .75rem; letter-spacing:-0.01em;">
+                    {{ dokumen.judul }}
+                </h1>
+                <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+                    <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                        {{ dokumen.butir_dokumen.kode }}
+                    </span>
+                    <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                        {{ dokumen.butir_dokumen.sub_standar.standar.instrumen.nama_singkat }}
+                    </span>
+                    {% if dokumen.tahun_akademik %}
+                        <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                            📅 TA {{ dokumen.tahun_akademik }}
+                        </span>
+                    {% endif %}
+                    {% if revisi_aktif.is_local %}
+                        <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                            📁 {{ revisi_aktif.extension|upper }}
+                        </span>
+                    {% else %}
+                        <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                            🔗 GOOGLE DRIVE
+                        </span>
+                    {% endif %}
+                </div>
+                <div style="font-size:.85rem; opacity:.85;">
+                    Pemilik: <strong>{{ dokumen.scope_label }}</strong>
+                    • Diterbitkan: <strong>{{ dokumen.tanggal_dibuat|date:"d M Y" }}</strong>
+                </div>
+            </div>
+            <div style="display:flex; gap:.5rem; flex-direction:column;">
+                {% if revisi_aktif %}
+                    <a href="{% url 'dokumen_publik_download' dokumen.pk %}"
+                       style="background:#FBBF24; color:#1E3A8A; padding:.75rem 1.5rem; border-radius:10px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:.5rem;"
+                       {% if revisi_aktif.is_gdrive %}target="_blank"{% endif %}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if dokumen.deskripsi %}
+        <div style="margin-top: 1.5rem; padding: 1rem 1.25rem; background: rgba(255,255,255,0.1); border-radius: 10px; backdrop-filter: blur(10px);">
+            <div style="font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; opacity:.85; margin-bottom:.35rem;">Deskripsi</div>
+            <p style="margin:0; line-height:1.6; font-size:.9rem;">{{ dokumen.deskripsi }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Preview #}
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview Dokumen
+        </div>
+        {% if revisi_aktif %}
+        <div class="panel-subtitle">
+            {% if revisi_aktif.is_local %}
+                {{ revisi_aktif.original_filename|truncatechars:50 }} • {{ revisi_aktif.file_size_display }}
+            {% else %}
+                Google Drive Link
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if can_preview %}
+        {% if preview_type == "pdf" %}
+            <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">
+                <iframe src="{% url 'dokumen_publik_preview' dokumen.pk %}" width="100%" height="700"
+                        style="border:none; display:block;" title="PDF Preview"></iframe>
+            </div>
+        {% elif preview_type == "image" %}
+            <div style="background:#F3F4F6; padding: 2rem; text-align:center; border-radius: 0 0 12px 12px;">
+                <img src="{% url 'dokumen_publik_preview' dokumen.pk %}" alt="{{ dokumen.judul }}"
+                     style="max-width: 100%; max-height: 700px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+            </div>
+        {% elif preview_type == "gdrive" %}
+            <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">
+                <iframe src="{{ preview_url }}" width="100%" height="700"
+                        style="border:none; display:block;" allow="autoplay" title="Google Drive Preview"></iframe>
+            </div>
+            <div style="padding: .75rem 1.25rem; background:#FEF3C7; color:#78350F; font-size:.85rem;">
+                ℹ️ Preview di-embed dari Google Drive.
+                <a href="{{ revisi_aktif.gdrive_url }}" target="_blank" style="color:var(--primary-600); font-weight:600;">Buka di Google Drive ↗</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="panel-body" style="text-align:center; padding: 3rem 2rem;">
+            <div style="font-size:4rem; margin-bottom:1rem;">📄</div>
+            <div style="font-weight:600; color:var(--text-secondary); margin-bottom:.5rem;">
+                Format file tidak bisa di-preview inline
+            </div>
+            <div style="font-size:.9rem; color:var(--text-muted); margin-bottom:1.5rem;">
+                Silakan download untuk membuka di aplikasi yang sesuai.
+            </div>
+            <a href="{% url 'dokumen_publik_download' dokumen.pk %}"
+               style="background:var(--primary-600); color:white; padding:.75rem 1.5rem; border-radius:10px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:.5rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download File
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+{# Info Box #}
+<div class="panel" style="background: #EFF6FF; border-color: var(--primary-200); margin-top: 1.5rem;">
+    <div class="panel-body" style="display:flex; gap:1rem; align-items:start;">
+        <div style="font-size:1.5rem;">ℹ️</div>
+        <div style="flex:1; font-size:.9rem; line-height:1.7; color:var(--text-secondary);">
+            Dokumen ini diterbitkan secara publik oleh <strong>Universitas Ichsan Gorontalo</strong>
+            untuk transparansi dan akuntabilitas akademik. Untuk informasi lebih lanjut atau dokumen internal,
+            silakan <a href="/login/" style="color:var(--primary-600); font-weight:600;">login dengan akun resmi</a>.
+        </div>
+    </div>
+</div>
+
+{% endblock %}

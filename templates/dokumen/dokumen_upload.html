@@ -1,0 +1,293 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Upload Dokumen — SIAKRED{% endblock %}
+{% block page_heading %}Upload Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
+    <span>/</span>
+    <a href="{% url 'dokumen:butir_detail' butir.pk %}">{{ butir.kode }}</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Upload</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Upload Dokumen</h1>
+            <p class="page-subtitle">
+                Untuk butir: <strong>{{ butir.kode }}</strong> — {{ butir.nama_dokumen }}
+            </p>
+        </div>
+        <a href="{% url 'dokumen:butir_detail' butir.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Kembali
+        </a>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 320px; gap:1.5rem;">
+
+    {# Main form #}
+    <form method="post" enctype="multipart/form-data" class="panel">
+        {% csrf_token %}
+        <div class="panel-header">
+            <div class="panel-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload Form
+            </div>
+        </div>
+        <div class="panel-body">
+
+            {# Metode Upload — HYBRID (Local vs GDrive) #}
+            <div class="form-group">
+                <label class="form-label">Metode Upload</label>
+                <div class="radio-group">
+                    <label class="radio-card">
+                        <input type="radio" name="storage_type" value="LOCAL" id="storage-local"
+                               {% if form.storage_type.value|default:"LOCAL" == "LOCAL" %}checked{% endif %}>
+                        <div class="radio-label">
+                            <span class="radio-label-main">📁 Upload File Lokal</span>
+                            <span class="radio-label-sub">Simpan di server (maks {{ butir.ukuran_max_mb }} MB)</span>
+                        </div>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="storage_type" value="GDRIVE" id="storage-gdrive"
+                               {% if form.storage_type.value == "GDRIVE" %}checked{% endif %}>
+                        <div class="radio-label">
+                            <span class="radio-label-main">🔗 Google Drive Link</span>
+                            <span class="radio-label-sub">Share link GDrive untuk file besar</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="form-help">
+                    💡 Gunakan Google Drive untuk file besar (SK scan, dokumen PDF lengkap ratusan halaman).
+                </div>
+            </div>
+
+            {# File Upload (LOCAL) #}
+            <div class="form-group" id="upload-local-section">
+                <label class="form-label">File Dokumen</label>
+                <div class="file-dropzone" id="dropzone">
+                    {{ form.file }}
+                    <div class="file-dropzone-icon">📄</div>
+                    <div class="file-dropzone-text">Klik untuk pilih file atau drag &amp; drop</div>
+                    <div class="file-dropzone-hint">
+                        Format: {{ butir.get_format_diterima_display }} • Maksimal {{ butir.ukuran_max_mb }} MB
+                    </div>
+                </div>
+                <div id="filePreview" class="file-preview">
+                    <div class="file-preview-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div class="file-preview-info">
+                        <div class="file-preview-name" id="fileName">-</div>
+                        <div class="file-preview-meta" id="fileMeta">-</div>
+                    </div>
+                </div>
+                {% if form.file.errors %}
+                    <div class="form-errors">{{ form.file.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            {# GDrive Link Input (GDRIVE) #}
+            <div class="form-group" id="upload-gdrive-section" style="display:none;">
+                <label class="form-label">Google Drive URL</label>
+                {{ form.gdrive_url }}
+                {% if form.gdrive_url.errors %}
+                    <div class="form-errors">{{ form.gdrive_url.errors|join:", " }}</div>
+                {% endif %}
+                <div class="form-help">
+                    📌 <strong>Penting:</strong> Pastikan link sudah di-share dengan permission
+                    <strong>"Anyone with the link — Viewer"</strong> supaya bisa diakses sistem &amp; asesor.
+                </div>
+                <div style="margin-top: .75rem; padding: .75rem 1rem; background:#EFF6FF; border-radius:8px; font-size:.8rem; color:var(--text-secondary);">
+                    <strong>Cara share link GDrive:</strong><br>
+                    1. Buka file di Google Drive<br>
+                    2. Klik "Share" → "General access"<br>
+                    3. Pilih "Anyone with the link" → "Viewer"<br>
+                    4. Klik "Copy link" → paste di atas
+                </div>
+            </div>
+
+            <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-subtle);">
+
+            {# Judul #}
+            <div class="form-group">
+                <label class="form-label form-label-required" for="id_judul">Judul Dokumen</label>
+                {{ form.judul }}
+                {% if form.judul.errors %}
+                    <div class="form-errors">{{ form.judul.errors|join:", " }}</div>
+                {% endif %}
+                <div class="form-help">Default: nama butir ({{ butir.nama_dokumen|truncatechars:60 }})</div>
+            </div>
+
+            {# Tahun Akademik #}
+            <div class="form-group">
+                <label class="form-label" for="id_tahun_akademik">Tahun Akademik</label>
+                {{ form.tahun_akademik }}
+                <div class="form-help">Contoh: 2024/2025 — membedakan dokumen antar tahun</div>
+            </div>
+
+            {# Status Akses #}
+            <div class="form-group">
+                <label class="form-label">Status Akses</label>
+                <div class="radio-group">
+                    <label class="radio-card">
+                        <input type="radio" name="status_akses" value="INTERNAL"
+                               {% if form.status_akses.value|default:"INTERNAL" == "INTERNAL" %}checked{% endif %}>
+                        <div class="radio-label">
+                            <span class="radio-label-main">🔒 Internal</span>
+                            <span class="radio-label-sub">Hanya user SIAKRED yang login</span>
+                        </div>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="status_akses" value="TERBUKA"
+                               {% if form.status_akses.value == "TERBUKA" %}checked{% endif %}>
+                        <div class="radio-label">
+                            <span class="radio-label-main">🌐 Terbuka</span>
+                            <span class="radio-label-sub">Publik bisa akses tanpa login</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="form-help">
+                    Default dari butir: <strong>{{ butir.get_status_akses_default_display }}</strong>
+                </div>
+            </div>
+
+            {# Deskripsi #}
+            <div class="form-group">
+                <label class="form-label" for="id_deskripsi">Deskripsi / Catatan</label>
+                {{ form.deskripsi }}
+            </div>
+
+            {# Catatan Revisi #}
+            <div class="form-group">
+                <label class="form-label" for="id_catatan_revisi">Catatan Revisi</label>
+                {{ form.catatan_revisi }}
+                <div class="form-help">Hanya diperlukan kalau ini revisi dari dokumen existing</div>
+            </div>
+
+            {# Submit #}
+            <div style="display:flex; justify-content:flex-end; gap:.5rem; padding-top:1rem; border-top:1px solid var(--border-subtle); margin-top:1rem;">
+                <a href="{% url 'dokumen:butir_detail' butir.pk %}" class="btn">Batal</a>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 12 5 19 12"/><line x1="12" y1="19" x2="12" y2="5"/></svg>
+                    Simpan Dokumen
+                </button>
+            </div>
+
+        </div>
+    </form>
+
+    {# Info sidebar #}
+    <div style="display:flex; flex-direction:column; gap:1rem;">
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title" style="font-size:.95rem;">📋 Info Butir</div>
+            </div>
+            <div class="panel-body" style="font-size:.85rem;">
+                <div style="margin-bottom:.75rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Kode</div>
+                    <div style="font-weight:600; font-family:'JetBrains Mono', monospace;">{{ butir.kode }}</div>
+                </div>
+                <div style="margin-bottom:.75rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Kategori</div>
+                    <div><span class="badge badge-blue" style="font-size:.7rem;">{{ butir.get_kategori_kepemilikan_display }}</span></div>
+                </div>
+                <div style="margin-bottom:.75rem;">
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Instrumen</div>
+                    <div style="font-weight:600;">{{ butir.sub_standar.standar.instrumen.nama_singkat }}</div>
+                </div>
+                <div>
+                    <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Scope Upload</div>
+                    <div style="font-weight:600; color:var(--primary-700); font-size:.85rem;">{{ user_scope.label }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" style="background:#FEF3C7; border-color:#FBBF24;">
+            <div class="panel-body" style="font-size:.85rem; color:#78350F; line-height:1.7;">
+                <strong>💡 Kapan pakai Google Drive?</strong><br>
+                • File > 10 MB (scan dokumen)<br>
+                • File hasil collab editing<br>
+                • Tidak ingin menghabiskan space VPS<br>
+                <br>
+                <strong>Kapan pakai Upload Lokal?</strong><br>
+                • File kecil &amp; final<br>
+                • Ingin preview PDF inline<br>
+                • Perlu integrity guarantee
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// ============================================
+// Storage type toggle
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    const storageRadios = document.querySelectorAll('input[name="storage_type"]');
+    const localSection = document.getElementById('upload-local-section');
+    const gdriveSection = document.getElementById('upload-gdrive-section');
+
+    function toggleStorageSection() {
+        const selected = document.querySelector('input[name="storage_type"]:checked');
+        if (!selected) return;
+
+        if (selected.value === 'LOCAL') {
+            localSection.style.display = '';
+            gdriveSection.style.display = 'none';
+        } else {
+            localSection.style.display = 'none';
+            gdriveSection.style.display = '';
+        }
+    }
+
+    storageRadios.forEach(r => r.addEventListener('change', toggleStorageSection));
+    toggleStorageSection();  // initial
+
+    // ============================================
+    // File preview
+    // ============================================
+    const fileInput = document.querySelector('input[type="file"]');
+    const fileName = document.getElementById('fileName');
+    const fileMeta = document.getElementById('fileMeta');
+    const filePreview = document.getElementById('filePreview');
+    const dropzone = document.getElementById('dropzone');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const f = e.target.files[0];
+            if (f) {
+                fileName.textContent = f.name;
+                fileMeta.textContent = `${(f.size / 1024).toFixed(1)} KB • ${f.type || 'file'}`;
+                filePreview.classList.add('visible');
+                dropzone.style.borderColor = 'var(--primary-500)';
+            }
+        });
+    }
+
+    if (dropzone) {
+        ['dragover', 'dragenter'].forEach(ev => {
+            dropzone.addEventListener(ev, (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'var(--primary-500)';
+                dropzone.style.background = 'var(--primary-50)';
+            });
+        });
+        ['dragleave', 'drop'].forEach(ev => {
+            dropzone.addEventListener(ev, () => {
+                dropzone.style.background = '';
+            });
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SIAKRED — Dokumen Publik UNISAN{% endblock %}</title>
+
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/siakred.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/logo_unisan.png' %}">
+
+    <style>
+    /* ============================================
+       PUBLIK LAYOUT — Tanpa sidebar
+       ============================================ */
+    body { background: var(--bg-base); }
+
+    .publik-shell {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .publik-header {
+        background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+        color: white;
+        padding: 1rem 0;
+        box-shadow: 0 2px 12px rgba(30, 58, 138, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .publik-header-inner {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .publik-brand {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        text-decoration: none;
+        color: white;
+    }
+
+    .publik-brand img {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: white;
+        padding: 4px;
+    }
+
+    .publik-brand-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    .publik-brand-name {
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+
+    .publik-brand-sub {
+        font-size: .7rem;
+        opacity: .85;
+        font-weight: 500;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+    .publik-nav {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .publik-nav a {
+        color: white;
+        text-decoration: none;
+        font-size: .9rem;
+        font-weight: 500;
+        padding: .5rem .85rem;
+        border-radius: 8px;
+        transition: background .15s;
+    }
+
+    .publik-nav a:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .publik-nav a.active {
+        background: rgba(255, 255, 255, 0.2);
+        font-weight: 600;
+    }
+
+    .publik-nav .btn-login {
+        background: #FBBF24;
+        color: #1E3A8A;
+        font-weight: 700;
+        padding: .55rem 1.25rem;
+    }
+
+    .publik-nav .btn-login:hover {
+        background: #FCD34D;
+    }
+
+    .publik-main {
+        flex: 1;
+        max-width: 1400px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .publik-footer {
+        background: #0F172A;
+        color: #CBD5E1;
+        padding: 2rem 0;
+        margin-top: 3rem;
+    }
+
+    .publik-footer-inner {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        text-align: center;
+        font-size: .85rem;
+    }
+
+    .publik-footer a {
+        color: #FBBF24;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    </style>
+</head>
+<body>
+
+<div class="publik-shell">
+
+    {# Header #}
+    <header class="publik-header">
+        <div class="publik-header-inner">
+            <a href="/" class="publik-brand">
+                <img src="{% static 'img/logo_unisan.png' %}" alt="UNISAN">
+                <div class="publik-brand-text">
+                    <span class="publik-brand-name">SIAKRED</span>
+                    <span class="publik-brand-sub">Universitas Ichsan Gorontalo</span>
+                </div>
+            </a>
+            <nav class="publik-nav">
+                <a href="/" {% if active_publik == 'beranda' %}class="active"{% endif %}>Beranda</a>
+                <a href="{% url 'dokumen_publik_list' %}" {% if active_publik == 'dokumen' %}class="active"{% endif %}>Dokumen Publik</a>
+                <a href="/login/" class="btn-login">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    {# Main Content #}
+    <main class="publik-main">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="margin-bottom: 1rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block page %}{% endblock %}
+    </main>
+
+    {# Footer #}
+    <footer class="publik-footer">
+        <div class="publik-footer-inner">
+            © 2026 <strong style="color:white;">Universitas Ichsan Gorontalo</strong> — Dokumen publik akreditasi disediakan untuk transparansi.
+            <br>
+            Untuk akses dokumen internal &amp; manajemen, silakan <a href="/login/">login dengan akun resmi</a>.
+        </div>
+    </footer>
+
+</div>
+
+</body>
+</html>

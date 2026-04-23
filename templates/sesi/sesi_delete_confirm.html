@@ -1,0 +1,83 @@
+{% extends 'layouts/internal.html' %}
+
+{% block title %}Hapus Sesi - SIAKRED{% endblock %}
+{% block page_heading %}Hapus Sesi Permanent{% endblock %}
+
+{% block breadcrumb %}
+<div class='topbar-breadcrumb'>
+    <a href="{% url 'sesi:sesi_list' %}">Sesi Akreditasi</a>
+    <span>/</span>
+    <a href="{% url 'sesi:sesi_detail' sesi.pk %}">{{ sesi.judul|truncatechars:30 }}</a>
+    <span>/</span>
+    <span style='color:#991B1B; font-weight:600;'>HAPUS PERMANENT</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class='page-header'>
+    <div class='page-header-flex'>
+        <div>
+            <h1 class='page-title' style='color:#991B1B;'>Hapus Sesi Permanent</h1>
+            <p class='page-subtitle'>Aksi ini TIDAK BISA dibatalkan. Semua data terkait akan hilang.</p>
+        </div>
+        <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn' style='background:var(--surface-muted); color:var(--text-primary);'>Kembali (Aman)</a>
+    </div>
+</div>
+
+<div class='panel' style='background:#FEE2E2; border:2px solid #DC2626;'>
+    <div class='panel-body' style='padding:2rem;'>
+        <div style='display:flex; gap:1rem; align-items:start; margin-bottom:1.5rem;'>
+            <div style='font-size:3rem;'>HAPUS</div>
+            <div style='flex:1;'>
+                <h2 style='margin:0 0 .75rem; color:#991B1B; font-size:1.35rem;'>Anda akan MENGHAPUS PERMANENT:</h2>
+                <div style='font-size:1.1rem; font-weight:700; color:#7F1D1D; padding:.85rem 1rem; background:white; border-radius:8px; border:1px solid #DC2626; margin-bottom:1rem;'>
+                    {{ sesi.judul }}
+                </div>
+
+                <div style='background:white; padding:1rem; border-radius:8px; border-left: 4px solid #DC2626;'>
+                    <strong style='color:#991B1B; display:block; margin-bottom:.5rem;'>Yang akan ikut terhapus:</strong>
+                    <ul style='margin:0; padding-left:1.25rem; color:#7F1D1D; line-height:1.8; font-size:.9rem;'>
+                        <li><strong>{{ n_milestones }}</strong> milestone (timeline)</li>
+                        <li><strong>{{ n_catatan }}</strong> catatan sesi</li>
+                        <li>Riwayat status & audit trail</li>
+                    </ul>
+                    <div style='margin-top:.75rem; padding-top:.75rem; border-top:1px dashed #FCA5A5; font-size:.85rem; color:#7F1D1D;'>
+                        <strong>Dokumen tetap aman</strong> (tidak ikut terhapus, hanya keterkaitan dengan sesi ini hilang)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr style='border:none; border-top:1px solid #FCA5A5; margin: 1.5rem 0;'>
+
+        <form method='post'>
+            {% csrf_token %}
+            <div class='form-group'>
+                <label class='form-label' style='color:#991B1B; font-weight:700;'>
+                    Untuk konfirmasi, ketik judul sesi tepat seperti di bawah:
+                </label>
+                <div style="font-family:'JetBrains Mono', monospace; font-size:.95rem; padding:.75rem 1rem; background:white; border:1px solid #DC2626; border-radius:8px; margin-bottom:.5rem; color:#7F1D1D; user-select:all;">
+                    {{ sesi.judul }}
+                </div>
+                <input type='text' name='confirm_text' required
+                       placeholder='Ketik di sini persis seperti di atas'
+                       class='form-input'
+                       style='border:2px solid #DC2626;'
+                       autocomplete='off'>
+                <div class='form-help' style='color:#991B1B;'>Harus persis sama (case-sensitive). Aksi ini tidak bisa dibatalkan!</div>
+            </div>
+
+            <div style='display:flex; gap:.5rem; justify-content:flex-end; margin-top:1.5rem;'>
+                <a href="{% url 'sesi:sesi_detail' sesi.pk %}" class='btn' style='background:#F3F4F6; color:#1F2937;'>
+                    Batal (Lebih Aman)
+                </a>
+                <button type='submit' class='btn' style='background:#DC2626; color:white; font-weight:700;'>
+                    HAPUS PERMANENT
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

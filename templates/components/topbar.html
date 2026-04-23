@@ -1,0 +1,37 @@
+<header class="topbar">
+
+    <div class="topbar-left">
+        <button type="button" class="topbar-menu-toggle" aria-label="Toggle menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+            <div class="topbar-title">{% block page_heading %}{{ page_title }}{% endblock %}</div>
+            {% block breadcrumb %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="topbar-right">
+        <button type="button" class="topbar-action" aria-label="Notifikasi">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+
+        <form method="post" action="{% url 'core:logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="topbar-user" title="Klik untuk logout">
+                <div class="topbar-user-avatar">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+                <div class="topbar-user-info">
+                    <div class="topbar-user-name">{{ user.nama_lengkap|default:user.username }}</div>
+                    <div class="topbar-user-role">
+                        {% if user.is_superuser %}Super Admin
+                        {% elif user.is_staff %}Staff
+                        {% else %}Pengguna
+                        {% endif %}
+                    </div>
+                </div>
+            </button>
+        </form>
+    </div>
+
+</header>
