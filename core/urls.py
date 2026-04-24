@@ -9,4 +9,11 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("app/", views.dashboard_view, name="dashboard"),
+    # Notifikasi (Step 9H)
+    path("notifikasi/", views.notifikasi_list, name="notifikasi_list"),
+    path("notifikasi/<int:notif_id>/read/", views.notifikasi_read, name="notifikasi_read"),
+    path("notifikasi/mark-all-read/", views.notifikasi_mark_all_read, name="notifikasi_mark_all_read"),
+    # Help Center (User Manual)
+    path("bantuan/", views.help_index, name="help_index"),
+    path("bantuan/<str:section>/", views.help_section, name="help_section"),
 ]

@@ -11,9 +11,176 @@
     </div>
 
     <div class="topbar-right">
-        <button type="button" class="topbar-action" aria-label="Notifikasi">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
+        <div class="notif-wrap" id="notifWrap">
+            <button type="button" class="topbar-action notif-trigger" id="notifTrigger" aria-label="Notifikasi" aria-expanded="false">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                {% if notifikasi_unread_count %}
+                <span class="notif-badge">{% if notifikasi_unread_count > 9 %}9+{% else %}{{ notifikasi_unread_count }}{% endif %}</span>
+                {% endif %}
+            </button>
+
+            <div class="notif-dropdown" id="notifDropdown" hidden>
+                <div class="notif-dd-header">
+                    <span>Notifikasi{% if notifikasi_unread_count %} <span class="notif-dd-count">{{ notifikasi_unread_count }} baru</span>{% endif %}</span>
+                    <button type="button" class="notif-dd-close" id="notifClose" aria-label="Tutup">&times;</button>
+                </div>
+
+                <div class="notif-dd-body">
+                    {% for notif in notifikasi_recent %}
+                        <a href="{% url 'core:notifikasi_read' notif.pk %}" class="notif-dd-item {% if not notif.sudah_dibaca %}unread{% endif %}">
+                            <div class="notif-dd-icon {{ notif.icon_class }}">
+                                {% if notif.tipe == 'VERIF_APPROVED' %}&check;
+                                {% elif notif.tipe == 'VERIF_REJECTED' %}&times;
+                                {% elif notif.tipe == 'VERIF_NEED_REVISION' %}&#8635;
+                                {% elif notif.tipe == 'VERIF_RESET' %}&#8634;
+                                {% else %}&#9432;
+                                {% endif %}
+                            </div>
+                            <div class="notif-dd-content">
+                                <div class="notif-dd-judul">{{ notif.judul|truncatechars:55 }}</div>
+                                <div class="notif-dd-meta">
+                                    {{ notif.tanggal_dibuat|date:"d M, H:i" }}
+                                    {% if notif.dibuat_oleh %} &middot; {{ notif.dibuat_oleh.get_full_name|default:notif.dibuat_oleh.username }}{% endif %}
+                                </div>
+                            </div>
+                            {% if not notif.sudah_dibaca %}<div class="notif-dd-dot"></div>{% endif %}
+                        </a>
+                    {% empty %}
+                        <div class="notif-dd-empty">
+                            <div style="font-size:2rem; opacity:.3; margin-bottom:.5rem;">&#128276;</div>
+                            <div style="font-size:.85rem; color:var(--text-primary); font-weight:500;">Tidak ada notifikasi</div>
+                            <div style="font-size:.75rem; margin-top:.2rem;">Notifikasi akan muncul di sini</div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'core:notifikasi_list' %}" class="notif-dd-footer">
+                    Lihat Semua Notifikasi
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <style>
+          .notif-wrap { position:relative; }
+          .notif-trigger { position:relative; }
+          .notif-badge {
+            position:absolute; top:2px; right:2px;
+            min-width:17px; height:17px; padding:0 4px;
+            background:#DC2626; color:#fff; border-radius:999px;
+            font-size:.65rem; font-weight:700; line-height:17px;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 0 0 2px var(--surface, #fff);
+          }
+          .notif-dropdown {
+            position:absolute; top:calc(100% + .5rem); right:0;
+            width:360px; max-width:calc(100vw - 2rem);
+            background:#fff; border:1px solid var(--border, #E5E7EB);
+            border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.12);
+            z-index:1000; overflow:hidden;
+            animation:notifSlide .18s ease-out;
+          }
+          @keyframes notifSlide {
+            from { opacity:0; transform:translateY(-8px); }
+            to { opacity:1; transform:translateY(0); }
+          }
+          .notif-dd-header {
+            padding:.85rem 1rem; background:#F9FAFB;
+            border-bottom:1px solid var(--border, #E5E7EB);
+            display:flex; justify-content:space-between; align-items:center;
+            font-size:.92rem; font-weight:600; color:var(--text-primary, #111827);
+          }
+          .notif-dd-count {
+            background:#2563EB; color:#fff; padding:.1rem .45rem; border-radius:999px;
+            font-size:.7rem; font-weight:600; margin-left:.25rem;
+          }
+          .notif-dd-close {
+            background:none; border:0; font-size:1.3rem; line-height:1;
+            color:var(--text-muted, #6B7280); cursor:pointer; padding:0 .2rem;
+          }
+          .notif-dd-close:hover { color:var(--text-primary, #111827); }
+          .notif-dd-body {
+            max-height:360px; overflow-y:auto;
+          }
+          .notif-dd-item {
+            display:flex; gap:.7rem; padding:.75rem 1rem;
+            border-bottom:1px solid var(--border, #E5E7EB);
+            text-decoration:none; color:inherit;
+            transition:background .1s;
+            align-items:flex-start;
+          }
+          .notif-dd-item:hover { background:#F9FAFB; }
+          .notif-dd-item.unread { background:#EFF6FF; }
+          .notif-dd-item.unread:hover { background:#DBEAFE; }
+          .notif-dd-icon {
+            width:32px; height:32px; border-radius:8px; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center;
+            font-weight:700; font-size:.9rem;
+          }
+          .notif-dd-icon.approved { background:#D1FAE5; color:#065F46; }
+          .notif-dd-icon.rejected { background:#FEE2E2; color:#991B1B; }
+          .notif-dd-icon.revision { background:#FEF3C7; color:#92400E; }
+          .notif-dd-icon.neutral { background:#F3F4F6; color:#6B7280; }
+          .notif-dd-content { flex:1; min-width:0; }
+          .notif-dd-judul {
+            font-weight:600; font-size:.85rem; color:var(--text-primary, #111827);
+            line-height:1.35; margin-bottom:.2rem;
+            overflow:hidden; text-overflow:ellipsis;
+            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+          }
+          .notif-dd-meta { font-size:.72rem; color:var(--text-muted, #6B7280); }
+          .notif-dd-dot {
+            width:8px; height:8px; border-radius:50%;
+            background:#2563EB; flex-shrink:0; margin-top:.55rem;
+          }
+          .notif-dd-empty {
+            padding:2.5rem 1.5rem; text-align:center; color:var(--text-muted, #6B7280);
+          }
+          .notif-dd-footer {
+            display:flex; align-items:center; justify-content:center; gap:.35rem;
+            padding:.75rem; background:#F9FAFB;
+            border-top:1px solid var(--border, #E5E7EB);
+            font-size:.85rem; font-weight:500; color:#2563EB;
+            text-decoration:none;
+          }
+          .notif-dd-footer:hover { background:#EFF6FF; }
+        </style>
+
+        <script>
+        (function(){
+            var trigger = document.getElementById('notifTrigger');
+            var dropdown = document.getElementById('notifDropdown');
+            var closeBtn = document.getElementById('notifClose');
+            var wrap = document.getElementById('notifWrap');
+            if (!trigger || !dropdown) return;
+
+            function openDropdown() {
+                dropdown.hidden = false;
+                trigger.setAttribute('aria-expanded', 'true');
+            }
+            function closeDropdown() {
+                dropdown.hidden = true;
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+            function toggleDropdown(e) {
+                e.stopPropagation();
+                if (dropdown.hidden) openDropdown(); else closeDropdown();
+            }
+
+            trigger.addEventListener('click', toggleDropdown);
+            if (closeBtn) closeBtn.addEventListener('click', function(e){ e.stopPropagation(); closeDropdown(); });
+
+            // Close saat klik di luar
+            document.addEventListener('click', function(e){
+                if (!wrap.contains(e.target)) closeDropdown();
+            });
+
+            // Close saat tekan Escape
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'Escape' && !dropdown.hidden) closeDropdown();
+            });
+        })();
+        </script>
 
         <form method="post" action="{% url 'core:logout' %}" style="margin:0;">
             {% csrf_token %}

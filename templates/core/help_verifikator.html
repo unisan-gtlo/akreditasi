@@ -1,0 +1,232 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Panduan LP3M &amp; Dekan - SIAKRED{% endblock %}
+{% block page_heading %}{{ section_title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'core:help_index' %}">Pusat Bantuan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">LP3M &amp; Dekan</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+
+<a href="{% url 'core:help_index' %}" class="help-back-btn" title="Kembali ke Pusat Bantuan">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Kembali ke Pusat Bantuan</span>
+</a>
+
+<style>
+  .help-back-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border, #E5E7EB); border-radius:8px;
+    color:var(--text-primary, #111827); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1.25rem;
+    transition:all .12s;
+  }
+  .help-back-btn:hover {
+    border-color:#2563EB; color:#2563EB;
+    transform:translateX(-3px);
+  }
+  .help-back-btn svg { transition:transform .12s; }
+  .help-back-btn:hover svg { transform:translateX(-2px); }
+</style>
+
+
+<style>
+  .help-doc { max-width:880px; margin:0 auto; }
+  .help-doc h2 {
+    font-size:1.25rem; margin:2rem 0 .75rem; padding-bottom:.5rem;
+    border-bottom:2px solid #D1FAE5; color:#065F46;
+  }
+  .help-doc h2:first-child { margin-top:.5rem; }
+  .help-doc h3 { font-size:1rem; margin:1.25rem 0 .5rem; font-weight:600; }
+  .help-doc p { margin:0 0 .75rem; line-height:1.65; }
+  .help-doc ul { margin:0 0 1rem 1.25rem; line-height:1.7; }
+  .help-doc li { margin-bottom:.3rem; }
+  .help-step {
+    background:#F0FDF4; border-left:3px solid #059669; border-radius:0 8px 8px 0;
+    padding:1rem 1.25rem; margin:1rem 0;
+  }
+  .help-step-num {
+    display:inline-block; background:#059669; color:#fff;
+    width:26px; height:26px; border-radius:50%; text-align:center; line-height:26px;
+    font-weight:600; font-size:.82rem; margin-right:.5rem;
+  }
+  .help-tip {
+    background:#FEF3C7; border-left:3px solid #F59E0B; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#78350F;
+  }
+  .help-warn {
+    background:#FEE2E2; border-left:3px solid #DC2626; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#991B1B;
+  }
+  .help-toc {
+    background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px;
+    padding:1rem 1.25rem; margin-bottom:1.5rem;
+  }
+  .help-toc h3 { margin:0 0 .5rem; font-size:.88rem; color:#065F46; font-weight:600; }
+  .help-toc ol { margin:0 0 0 1.25rem; line-height:1.7; }
+  .help-toc a { color:#059669; font-size:.88rem; }
+  .help-doc code {
+    background:#F3F4F6; padding:.1rem .4rem; border-radius:4px;
+    font-family:ui-monospace,monospace; font-size:.85rem; color:#059669;
+  }
+  .status-badge {
+    display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.75rem;
+    font-weight:600; margin-right:.35rem;
+  }
+  .status-approved { background:#D1FAE5; color:#065F46; }
+  .status-rejected { background:#FEE2E2; color:#991B1B; }
+  .status-revision { background:#FEF3C7; color:#92400E; }
+  .status-pending { background:#DBEAFE; color:#1E40AF; }
+</style>
+
+<div class="help-doc">
+
+<div class="help-toc">
+    <h3>Daftar Isi</h3>
+    <ol>
+        <li><a href="#dashboard">Akses Dashboard Verifikasi</a></li>
+        <li><a href="#review">Review Dokumen Satuan</a></li>
+        <li><a href="#actions">4 Pilihan Aksi Verifikasi</a></li>
+        <li><a href="#bulk">Bulk Actions (Massal)</a></li>
+        <li><a href="#feedback">Menulis Catatan Feedback yang Baik</a></li>
+        <li><a href="#queue">Kelola Queue Pending</a></li>
+    </ol>
+</div>
+
+<h2 id="dashboard">1. Akses Dashboard Verifikasi</h2>
+
+<p>Dashboard verifikasi adalah pusat kerja Anda sebagai verifikator. Semua dokumen yang perlu di-review ada di sini.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Login ke SIAKRED dengan akun verifikator (LP3M/BIRO atau Dekan)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Klik menu sidebar <strong>Verifikasi Dokumen</strong> (ada badge angka kalau ada dokumen pending)
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Dashboard muncul dengan <strong>5 tab filter</strong>: Total / Menunggu Review / Disetujui / Ditolak / Perlu Revisi
+</div>
+
+<div class="help-tip">
+    <strong>Permission Scope:</strong> LP3M (BIRO) bisa review semua dokumen universitas. Dekan hanya bisa review dokumen prodi di fakultas-nya.
+</div>
+
+<h2 id="review">2. Review Dokumen Satuan</h2>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Pilih tab <strong>Menunggu Review</strong> (default)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Cari dokumen yang mau di-review. Pakai search bar kalau perlu filter (search by judul/kode butir/prodi)
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Klik tombol <strong>Review</strong> di kolom Aksi
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Halaman review dokumen terbuka dengan 2 kolom:
+    <ul>
+        <li><strong>Kiri:</strong> Info dokumen + preview file + form verifikasi</li>
+        <li><strong>Kanan:</strong> Riwayat verifikasi (history log)</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">5</span>Klik <strong>Preview</strong> atau <strong>Download</strong> untuk buka file
+</div>
+<div class="help-step">
+    <span class="help-step-num">6</span>Pilih radio aksi, isi catatan (opsional tapi disarankan), klik <strong>Simpan Verifikasi</strong>
+</div>
+
+<h2 id="actions">3. 4 Pilihan Aksi Verifikasi</h2>
+
+<p><span class="status-badge status-approved">✓ Approved</span> <strong>Disetujui</strong></p>
+<p>Dokumen diterima apa adanya. Akan masuk Bundle Export untuk asesor. Gunakan saat dokumen sudah lengkap, benar, dan sesuai standar.</p>
+
+<p><span class="status-badge status-rejected">✗ Rejected</span> <strong>Ditolak</strong></p>
+<p>Dokumen ditolak total, TIDAK masuk Bundle. Uploader perlu upload ulang dari awal. Gunakan saat dokumen sangat tidak sesuai (salah butir, file korup, dll). <strong>Wajib isi catatan</strong> supaya uploader tau alasan.</p>
+
+<p><span class="status-badge status-revision">⟳ Need Revision</span> <strong>Perlu Revisi</strong></p>
+<p>Dokumen butuh perbaikan tapi basic-nya benar. Uploader akan upload revisi baru (r2, r3, dst). <strong>Wajib isi catatan spesifik</strong> tentang apa yang harus diperbaiki.</p>
+
+<p><span class="status-badge status-pending">↺ Reset</span> <strong>Reset ke Pending</strong></p>
+<p>Batalkan verifikasi sebelumnya, kembalikan ke status Pending. Gunakan kalau tadi salah pilih. History audit tetap tersimpan.</p>
+
+<h2 id="bulk">4. Bulk Actions (Massal)</h2>
+
+<p>Kalau banyak dokumen yang perlu di-review sekaligus (misal 20+ dokumen pending), gunakan fitur bulk action untuk hemat waktu.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Di dashboard, centang <strong>checkbox</strong> di row dokumen yang mau di-proses (atau centang header untuk select all)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span><strong>Floating action bar</strong> muncul di bagian bawah layar
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Isi <strong>catatan bersama</strong> (sama untuk semua dokumen yang dipilih)
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Klik salah satu dari 3 tombol:
+    <ul>
+        <li><strong>Approve Semua</strong> (hijau) - approve massal</li>
+        <li><strong>Need Revision</strong> (orange) - revisi massal</li>
+        <li><strong>Reject Semua</strong> (merah) - tolak massal</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">5</span>Confirm dialog - klik OK - aksi di-apply ke semua dokumen terpilih
+</div>
+
+<div class="help-warn">
+    <strong>Hati-hati:</strong> Bulk action tidak bisa di-undo per dokumen. Kalau ada yang salah, masing-masing perlu di-Reset ke Pending manual.
+</div>
+
+<h2 id="feedback">5. Menulis Catatan Feedback yang Baik</h2>
+
+<p>Catatan verifikator sangat penting untuk uploader. Berikut contoh baik vs buruk:</p>
+
+<h3>❌ Catatan Buruk (jangan begini)</h3>
+<ul>
+    <li>"Perbaiki" - terlalu vague, uploader tidak tahu apa yang salah</li>
+    <li>"Tidak sesuai" - tidak sesuai apa? bagian mana?</li>
+    <li>"Upload ulang" - tanpa alasan membuang waktu</li>
+</ul>
+
+<h3>✅ Catatan Baik (contoh)</h3>
+<ul>
+    <li>"Mohon tambahkan tanda tangan Rektor di halaman 3. Juga periksa tahun SK yang tertera seharusnya 2024 bukan 2023."</li>
+    <li>"Data jumlah dosen di tabel halaman 5 perlu diperbarui ke angka 2024/2025. Sumber bisa ambil dari laporan SDM semester lalu."</li>
+    <li>"File yang di-upload adalah versi draft. Tolong upload versi final yang sudah ditandatangani."</li>
+</ul>
+
+<h2 id="queue">6. Kelola Queue Pending</h2>
+
+<p>Strategi praktis untuk mengelola banyak dokumen pending:</p>
+
+<ul>
+    <li><strong>Prioritaskan dokumen yang deadline dekat</strong> - sort by tanggal upload asc</li>
+    <li><strong>Batch per prodi</strong> - filter search by kode prodi (misal "T21"), review semua dalam 1 sesi</li>
+    <li><strong>Pakai bulk approve</strong> untuk dokumen yang obviously OK (SK rutin, dokumen template)</li>
+    <li><strong>Review individual</strong> untuk dokumen yang butuh perhatian khusus (laporan, dokumen kompleks)</li>
+    <li><strong>Set target harian</strong> - misal 20 dokumen/hari, jangan tunggu sampai deadline</li>
+</ul>
+
+<div style="background:#ECFDF5; border-radius:10px; padding:1.25rem; margin-top:2rem; text-align:center;">
+    <strong style="color:#065F46;">Butuh bantuan lebih?</strong><br>
+    <span style="font-size:.88rem; color:var(--text-muted);">
+        Cek <a href="{% url 'core:help_section' 'faq' %}">FAQ</a> atau hubungi <strong>pustikom@unisan-g.id</strong>
+    </span>
+</div>
+
+</div>
+{% endblock %}

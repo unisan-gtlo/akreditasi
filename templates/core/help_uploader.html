@@ -1,0 +1,234 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Panduan Kaprodi &amp; Dosen - SIAKRED{% endblock %}
+{% block page_heading %}{{ section_title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'core:help_index' %}">Pusat Bantuan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Kaprodi &amp; Dosen</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+
+<a href="{% url 'core:help_index' %}" class="help-back-btn" title="Kembali ke Pusat Bantuan">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Kembali ke Pusat Bantuan</span>
+</a>
+
+<style>
+  .help-back-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border, #E5E7EB); border-radius:8px;
+    color:var(--text-primary, #111827); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1.25rem;
+    transition:all .12s;
+  }
+  .help-back-btn:hover {
+    border-color:#2563EB; color:#2563EB;
+    transform:translateX(-3px);
+  }
+  .help-back-btn svg { transition:transform .12s; }
+  .help-back-btn:hover svg { transform:translateX(-2px); }
+</style>
+
+
+<style>
+  .help-doc { max-width:880px; margin:0 auto; }
+  .help-doc h2 {
+    font-size:1.25rem; margin:2rem 0 .75rem; padding-bottom:.5rem;
+    border-bottom:2px solid #DBEAFE; color:#1E3A8A;
+  }
+  .help-doc h2:first-child { margin-top:.5rem; }
+  .help-doc h3 {
+    font-size:1rem; margin:1.25rem 0 .5rem; color:var(--text-primary);
+    font-weight:600;
+  }
+  .help-doc p { margin:0 0 .75rem; line-height:1.65; color:var(--text-primary); }
+  .help-doc ol, .help-doc ul { margin:0 0 1rem 1.25rem; line-height:1.7; }
+  .help-doc li { margin-bottom:.3rem; }
+  .help-step {
+    background:#F8FAFC; border-left:3px solid #2563EB; border-radius:0 8px 8px 0;
+    padding:1rem 1.25rem; margin:1rem 0; position:relative;
+  }
+  .help-step-num {
+    display:inline-block; background:#2563EB; color:#fff;
+    width:26px; height:26px; border-radius:50%; text-align:center; line-height:26px;
+    font-weight:600; font-size:.82rem; margin-right:.5rem;
+  }
+  .help-step strong { color:#1E3A8A; }
+  .help-tip {
+    background:#FEF3C7; border-left:3px solid #F59E0B; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#78350F;
+  }
+  .help-tip strong { color:#92400E; }
+  .help-warn {
+    background:#FEE2E2; border-left:3px solid #DC2626; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#991B1B;
+  }
+  .help-toc {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:1rem 1.25rem; margin-bottom:1.5rem;
+  }
+  .help-toc h3 { margin:0 0 .5rem; font-size:.88rem; color:#1E40AF; font-weight:600; }
+  .help-toc ol { margin:0 0 0 1.25rem; line-height:1.7; }
+  .help-toc a { color:#2563EB; text-decoration:none; font-size:.88rem; }
+  .help-toc a:hover { text-decoration:underline; }
+  kbd {
+    background:#F3F4F6; border:1px solid #D1D5DB; border-radius:4px;
+    padding:.1rem .4rem; font-family:ui-monospace,monospace; font-size:.82rem;
+  }
+  .help-doc code {
+    background:#F3F4F6; padding:.1rem .4rem; border-radius:4px;
+    font-family:ui-monospace,monospace; font-size:.85rem; color:#DC2626;
+  }
+</style>
+
+<div class="help-doc">
+
+<div class="help-toc">
+    <h3>Daftar Isi</h3>
+    <ol>
+        <li><a href="#login">Login ke SIAKRED</a></li>
+        <li><a href="#upload">Upload Dokumen Pertama Kali</a></li>
+        <li><a href="#revisi">Upload Revisi Dokumen</a></li>
+        <li><a href="#status">Cek Status Verifikasi</a></li>
+        <li><a href="#notif">Baca Notifikasi Feedback</a></li>
+        <li><a href="#tips">Tips &amp; Trik</a></li>
+    </ol>
+</div>
+
+<h2 id="login">1. Login ke SIAKRED</h2>
+
+<p>Gunakan kredensial kampus UNISAN Anda untuk masuk ke sistem.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span><strong>Buka browser</strong>, kunjungi <code>https://siakred.unisan-g.id/login/</code>
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span><strong>Masukkan username &amp; password</strong> UNISAN Anda
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Klik tombol <strong>Login</strong>
+</div>
+
+<div class="help-tip">
+    <strong>Tips:</strong> Kalau gagal 3 kali berturut-turut, sistem akan meminta CAPTCHA. Kalau gagal 5 kali, akun dikunci sementara 15 menit. Kalau lupa password, hubungi admin Pustikom.
+</div>
+
+<h2 id="upload">2. Upload Dokumen Pertama Kali</h2>
+
+<p>Setelah login, Anda akan melihat daftar butir dokumen yang menjadi tanggung jawab prodi Anda.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Klik menu sidebar <strong>Dokumen &raquo; Butir Saya</strong>
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Pilih butir yang ingin diisi (misal <code>EM-1.1-P</code>), klik <strong>Upload</strong>
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Isi form:
+    <ul>
+        <li><strong>Judul Dokumen</strong> - nama jelas dokumen (wajib)</li>
+        <li><strong>Deskripsi</strong> - ringkasan singkat (opsional)</li>
+        <li><strong>Tahun Akademik</strong> - pilih tahun relevan (misal 2025/2026)</li>
+        <li><strong>File</strong> - PDF/DOCX/XLSX (max 20 MB)</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Klik <strong>Submit Upload</strong>
+</div>
+
+<div class="help-tip">
+    <strong>Format file yang diterima:</strong> PDF (diutamakan), DOCX, XLSX, PPTX, PNG, JPG. Ukuran maksimal 20 MB per file.
+</div>
+
+<p>Setelah upload berhasil, dokumen otomatis masuk status <strong>Pending</strong> - menunggu review LP3M/Dekan.</p>
+
+<h2 id="revisi">3. Upload Revisi Dokumen</h2>
+
+<p>Kalau dokumen Anda mendapat feedback "Perlu Revisi" dari verifikator, Anda perlu upload versi perbaikan.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Buka dokumen yang butuh revisi (dari menu <strong>Dokumen Saya</strong> atau dari link di notifikasi)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Baca <strong>catatan verifikator</strong> dengan teliti di bagian "Riwayat Verifikasi"
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Perbaiki dokumen Anda sesuai catatan
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Klik tombol <strong>Upload Revisi</strong>, pilih file baru, dan beri catatan singkat tentang perubahan
+</div>
+<div class="help-step">
+    <span class="help-step-num">5</span>Submit - dokumen kembali ke status <strong>Pending</strong> untuk di-review ulang
+</div>
+
+<div class="help-warn">
+    <strong>Penting:</strong> Setiap revisi akan dinomori (r1, r2, r3, dst). File lama tidak dihapus tetapi menjadi history. Verifikator akan review berdasarkan revisi terbaru.
+</div>
+
+<h2 id="status">4. Cek Status Verifikasi</h2>
+
+<p>Setiap dokumen punya <strong>4 status</strong>:</p>
+
+<ul>
+    <li>🔵 <strong>Pending</strong> - Menunggu review verifikator</li>
+    <li>🟢 <strong>Approved</strong> - Disetujui, masuk Bundle Export untuk asesor</li>
+    <li>🔴 <strong>Rejected</strong> - Ditolak, perlu review ulang dari awal</li>
+    <li>🟠 <strong>Need Revision</strong> - Perlu perbaikan sesuai catatan</li>
+</ul>
+
+<p>Cek status via:</p>
+<ul>
+    <li>Menu sidebar <strong>Dokumen Saya</strong> - lihat semua dokumen Anda dengan status</li>
+    <li>Dashboard utama - summary progress</li>
+    <li>Notifikasi - saat ada perubahan status, auto terkirim</li>
+</ul>
+
+<h2 id="notif">5. Baca Notifikasi Feedback</h2>
+
+<p>Setiap kali verifikator approve/reject dokumen Anda, notifikasi otomatis terkirim.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Lihat <strong>bell icon</strong> di topbar kanan - kalau ada badge merah angka, artinya ada notifikasi baru
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Klik bell - dropdown muncul dengan 5 notifikasi terakhir
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Klik notifikasi untuk lihat detail + baca catatan verifikator
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Kalau perlu lihat history lengkap, klik <strong>"Lihat Semua Notifikasi"</strong> di footer dropdown
+</div>
+
+<h2 id="tips">6. Tips &amp; Trik</h2>
+
+<ul>
+    <li><strong>Upload lebih awal</strong> - jangan nunggu deadline, biar ada waktu revisi kalau ada feedback</li>
+    <li><strong>Beri judul yang jelas</strong> - "VMTS Prodi Teknik Elektro 2025" lebih baik daripada "VMTS"</li>
+    <li><strong>Baca catatan verifikator dengan teliti</strong> - kebanyakan revisi ditolak karena tidak mengikuti catatan</li>
+    <li><strong>Gunakan format PDF</strong> - lebih profesional dan konsisten tampilan di semua device</li>
+    <li><strong>Scan dengan resolusi wajar</strong> - jangan terlalu tinggi (bikin file besar), tidak terlalu rendah (tulisan tidak jelas)</li>
+</ul>
+
+<div style="background:#EFF6FF; border-radius:10px; padding:1.25rem; margin-top:2rem; text-align:center;">
+    <strong style="color:#1E3A8A;">Masih ada pertanyaan?</strong><br>
+    <span style="font-size:.88rem; color:var(--text-muted);">
+        Cek <a href="{% url 'core:help_section' 'faq' %}">FAQ &amp; Troubleshooting</a> atau hubungi admin Pustikom di <strong>pustikom@unisan-g.id</strong>
+    </span>
+</div>
+
+</div>
+{% endblock %}

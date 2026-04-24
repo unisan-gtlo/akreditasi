@@ -40,4 +40,5 @@ urlpatterns = [
     # Dashboard Verifikasi (Step 9)
     path('verifikasi/', views.verifikasi_dashboard, name='verifikasi_dashboard'),
     path('verifikasi/<int:verifikasi_id>/review/', views.verifikasi_review, name='verifikasi_review'),
+    path("verifikasi/bulk-action/", views.verifikasi_bulk_action, name="verifikasi_bulk_action"),
 ]

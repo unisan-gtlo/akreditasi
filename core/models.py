@@ -324,4 +324,179 @@ class DeviceSession(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.browser_name} {self.os_name} ({self.ip_address})"
-        
+
+
+# ============================================
+# NOTIFIKASI (Step 9H)
+# ============================================
+
+class Notifikasi(models.Model):
+    """Notifikasi untuk user, terutama feedback hasil verifikasi dokumen."""
+    
+    class Tipe(models.TextChoices):
+        VERIFIKASI_APPROVED = 'VERIF_APPROVED', 'Dokumen Disetujui'
+        VERIFIKASI_REJECTED = 'VERIF_REJECTED', 'Dokumen Ditolak'
+        VERIFIKASI_NEED_REVISION = 'VERIF_NEED_REVISION', 'Dokumen Perlu Revisi'
+        VERIFIKASI_RESET = 'VERIF_RESET', 'Verifikasi Di-reset'
+        SISTEM = 'SISTEM', 'Pemberitahuan Sistem'
+    
+    penerima = models.ForeignKey(
+        'core.User',
+        on_delete=models.CASCADE,
+        related_name='notifikasi_diterima',
+        verbose_name='Penerima',
+    )
+    tipe = models.CharField(
+        max_length=30,
+        choices=Tipe.choices,
+        default=Tipe.SISTEM,
+        db_index=True,
+    )
+    judul = models.CharField(max_length=200, verbose_name='Judul')
+    pesan = models.TextField(blank=True, default='', verbose_name='Pesan')
+    
+    # Links ke object terkait (nullable karena sistem notif bisa generic)
+    dokumen = models.ForeignKey(
+        'dokumen.Dokumen',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='notifikasi_terkait',
+    )
+    verifikasi = models.ForeignKey(
+        'dokumen.VerifikasiDokumen',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='notifikasi_terkait',
+    )
+    url_action = models.CharField(
+        max_length=500, blank=True, default='',
+        verbose_name='URL Aksi',
+        help_text='URL target saat notifikasi di-klik',
+    )
+    
+    dibuat_oleh = models.ForeignKey(
+        'core.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='notifikasi_dibuat',
+        verbose_name='Pemicu',
+    )
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True, db_index=True)
+    
+    sudah_dibaca = models.BooleanField(default=False, db_index=True, verbose_name='Sudah Dibaca')
+    tanggal_dibaca = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'notifikasi'
+        verbose_name = 'Notifikasi'
+        verbose_name_plural = 'Notifikasi'
+        ordering = ['-tanggal_dibuat']
+        indexes = [
+            models.Index(fields=['penerima', '-tanggal_dibuat']),
+            models.Index(fields=['penerima', 'sudah_dibaca']),
+        ]
+    
+    def __str__(self):
+        return f'[{self.get_tipe_display()}] {self.judul} - {self.penerima}'
+    
+    def tandai_dibaca(self):
+        """Mark notifikasi sebagai sudah dibaca."""
+        if not self.sudah_dibaca:
+            from django.utils import timezone
+            self.sudah_dibaca = True
+            self.tanggal_dibaca = timezone.now()
+            self.save(update_fields=['sudah_dibaca', 'tanggal_dibaca'])
+    
+    def icon_class(self):
+        """Return class nama icon untuk UI (approved/rejected/revision/neutral)."""
+        return {
+            'VERIF_APPROVED': 'approved',
+            'VERIF_REJECTED': 'rejected',
+            'VERIF_NEED_REVISION': 'revision',
+            'VERIF_RESET': 'neutral',
+            'SISTEM': 'neutral',
+        }.get(self.tipe, 'neutral')
+
+
+# ============================================
+# HELPER: BUAT NOTIFIKASI VERIFIKASI (Step 9H.2)
+# ============================================
+
+def buat_notifikasi_verifikasi(verifikasi, aksi, dibuat_oleh, catatan=''):
+    """Buat record Notifikasi untuk uploader dokumen setelah aksi verifikasi.
+    
+    Args:
+        verifikasi: instance VerifikasiDokumen yang baru di-update
+        aksi: 'APPROVED', 'REJECTED', 'NEED_REVISION', atau 'RESET'
+        dibuat_oleh: User yang men-trigger aksi (verifikator)
+        catatan: catatan verifikator (optional)
+    
+    Return: instance Notifikasi yang dibuat, atau None kalau di-skip.
+    """
+    revisi = verifikasi.revisi
+    dokumen = revisi.dokumen
+    uploader = revisi.uploaded_by
+    
+    # Skip kalau uploader tidak ada atau sama dengan verifikator
+    if not uploader:
+        return None
+    if dibuat_oleh and uploader.pk == dibuat_oleh.pk:
+        return None
+    
+    # Mapping aksi -> tipe + judul + emoji
+    mapping = {
+        'APPROVED': {
+            'tipe': Notifikasi.Tipe.VERIFIKASI_APPROVED,
+            'judul': f'Dokumen disetujui: {dokumen.judul[:100]}',
+            'emoji': 'disetujui',
+        },
+        'REJECTED': {
+            'tipe': Notifikasi.Tipe.VERIFIKASI_REJECTED,
+            'judul': f'Dokumen ditolak: {dokumen.judul[:100]}',
+            'emoji': 'ditolak',
+        },
+        'NEED_REVISION': {
+            'tipe': Notifikasi.Tipe.VERIFIKASI_NEED_REVISION,
+            'judul': f'Perlu revisi: {dokumen.judul[:100]}',
+            'emoji': 'perlu direvisi',
+        },
+        'RESET': {
+            'tipe': Notifikasi.Tipe.VERIFIKASI_RESET,
+            'judul': f'Verifikasi di-reset: {dokumen.judul[:100]}',
+            'emoji': 'direset ke pending',
+        },
+    }
+    
+    info = mapping.get(aksi)
+    if not info:
+        return None
+    
+    # Build pesan body
+    verifikator_nama = dibuat_oleh.get_full_name() or dibuat_oleh.username if dibuat_oleh else 'Sistem'
+    pesan_lines = [
+        f'Dokumen Anda "{dokumen.judul}" {info["emoji"]} oleh {verifikator_nama}.',
+    ]
+    if catatan:
+        pesan_lines.append(f'Catatan: {catatan}')
+    
+    pesan = '\n\n'.join(pesan_lines)
+    
+    # Build URL action
+    url_action = f'/dokumen/{dokumen.pk}/'  # fallback ke detail dokumen
+    try:
+        from django.urls import reverse
+        url_action = reverse('dokumen:dokumen_detail', args=[dokumen.pk])
+    except Exception:
+        pass
+    
+    return Notifikasi.objects.create(
+        penerima=uploader,
+        tipe=info['tipe'],
+        judul=info['judul'],
+        pesan=pesan,
+        dokumen=dokumen,
+        verifikasi=verifikasi,
+        url_action=url_action,
+        dibuat_oleh=dibuat_oleh,
+    )
+

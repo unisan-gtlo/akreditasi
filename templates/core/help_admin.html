@@ -1,0 +1,228 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Panduan Admin &amp; Rektorat - SIAKRED{% endblock %}
+{% block page_heading %}{{ section_title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'core:help_index' %}">Pusat Bantuan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Admin &amp; Rektorat</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+
+<a href="{% url 'core:help_index' %}" class="help-back-btn" title="Kembali ke Pusat Bantuan">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Kembali ke Pusat Bantuan</span>
+</a>
+
+<style>
+  .help-back-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border, #E5E7EB); border-radius:8px;
+    color:var(--text-primary, #111827); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1.25rem;
+    transition:all .12s;
+  }
+  .help-back-btn:hover {
+    border-color:#2563EB; color:#2563EB;
+    transform:translateX(-3px);
+  }
+  .help-back-btn svg { transition:transform .12s; }
+  .help-back-btn:hover svg { transform:translateX(-2px); }
+</style>
+
+
+<style>
+  .help-doc { max-width:880px; margin:0 auto; }
+  .help-doc h2 {
+    font-size:1.25rem; margin:2rem 0 .75rem; padding-bottom:.5rem;
+    border-bottom:2px solid #FEF3C7; color:#78350F;
+  }
+  .help-doc h2:first-child { margin-top:.5rem; }
+  .help-doc h3 { font-size:1rem; margin:1.25rem 0 .5rem; font-weight:600; }
+  .help-doc p { margin:0 0 .75rem; line-height:1.65; }
+  .help-doc ul { margin:0 0 1rem 1.25rem; line-height:1.7; }
+  .help-doc li { margin-bottom:.3rem; }
+  .help-step {
+    background:#FFFBEB; border-left:3px solid #D97706; border-radius:0 8px 8px 0;
+    padding:1rem 1.25rem; margin:1rem 0;
+  }
+  .help-step-num {
+    display:inline-block; background:#D97706; color:#fff;
+    width:26px; height:26px; border-radius:50%; text-align:center; line-height:26px;
+    font-weight:600; font-size:.82rem; margin-right:.5rem;
+  }
+  .help-tip {
+    background:#DBEAFE; border-left:3px solid #2563EB; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#1E3A8A;
+  }
+  .help-warn {
+    background:#FEE2E2; border-left:3px solid #DC2626; border-radius:0 8px 8px 0;
+    padding:.85rem 1rem; margin:1rem 0; font-size:.9rem; color:#991B1B;
+  }
+  .help-toc {
+    background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px;
+    padding:1rem 1.25rem; margin-bottom:1.5rem;
+  }
+  .help-toc h3 { margin:0 0 .5rem; font-size:.88rem; color:#78350F; font-weight:600; }
+  .help-toc ol { margin:0 0 0 1.25rem; line-height:1.7; }
+  .help-toc a { color:#D97706; font-size:.88rem; }
+  .help-doc code {
+    background:#F3F4F6; padding:.1rem .4rem; border-radius:4px;
+    font-family:ui-monospace,monospace; font-size:.85rem; color:#D97706;
+  }
+</style>
+
+<div class="help-doc">
+
+<div class="help-toc">
+    <h3>Daftar Isi</h3>
+    <ol>
+        <li><a href="#sesi">Kelola Sesi Akreditasi</a></li>
+        <li><a href="#timeline">Timeline &amp; Milestone</a></li>
+        <li><a href="#bundle">Bundle Export</a></li>
+        <li><a href="#token">Token Share untuk Asesor</a></li>
+        <li><a href="#zip">Export ZIP</a></li>
+        <li><a href="#monitor">Monitoring &amp; Laporan</a></li>
+    </ol>
+</div>
+
+<h2 id="sesi">1. Kelola Sesi Akreditasi</h2>
+
+<p>Sesi adalah "proyek akreditasi" - misal "Re-akreditasi Manajemen LAMEMBA 2025" atau "Akreditasi Baru Teknik Elektro BAN-PT 2026".</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Menu sidebar <strong>Sesi Akreditasi</strong> - list semua sesi yang pernah dibuat
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Klik <strong>+ Buat Sesi Baru</strong>, isi form:
+    <ul>
+        <li><strong>Judul</strong> - deskriptif, misal "Re-akreditasi Manajemen LAMEMBA 2026"</li>
+        <li><strong>Instrumen</strong> - pilih LAMEMBA/BAN-PT/dll</li>
+        <li><strong>Kode Prodi</strong> - misal E21 (opsional, untuk akreditasi prodi)</li>
+        <li><strong>Tahun TS</strong> - tahun akademik aktif sesi</li>
+        <li><strong>Tanggal Target</strong> - deadline submission</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Simpan - sesi terbuat dengan status <strong>Persiapan</strong>
+</div>
+
+<h2 id="timeline">2. Timeline &amp; Milestone</h2>
+
+<p>Setiap sesi punya timeline untuk tracking progres.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Buka detail sesi, klik tombol <strong>Timeline</strong> (biru)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Lihat milestone default yang ter-generate (Persiapan, Upload, Review LP3M, Submission, Visitasi, Sertifikat)
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Klik <strong>Edit Milestone</strong> untuk tanggal target &amp; catatan
+</div>
+
+<h2 id="bundle">3. Bundle Export</h2>
+
+<p>Bundle Export menggabungkan semua dokumen sesi dalam 1 tampilan terstruktur (Standar &rarr; Sub-Standar &rarr; Butir &rarr; Dokumen).</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Buka detail sesi, klik tombol <strong>Bundle</strong> (ungu)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Halaman bundle tampilkan:
+    <ul>
+        <li>Stats: total butir, terisi, kosong, dokumen, progress %</li>
+        <li>Tree hierarkis Standar &rarr; SubStandar &rarr; Butir</li>
+        <li>Status verifikasi per dokumen (badge warna-warni)</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Pakai <strong>search bar</strong> untuk filter butir tertentu, atau <strong>collapse/expand</strong> section
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Klik <strong>Print</strong> untuk print-friendly view (otomatis expand semua, hide toolbar)
+</div>
+
+<h2 id="token">4. Token Share untuk Asesor</h2>
+
+<p>Share bundle ke asesor LAM/BAN-PT tanpa perlu mereka login.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Di halaman bundle, scroll ke section <strong>Kelola Token Share</strong> (kuning)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Isi form:
+    <ul>
+        <li><strong>Label</strong> - keperluan token, misal "Asesor Dr. Budi LAMEMBA"</li>
+        <li><strong>Expired</strong> (opsional) - tanggal kadaluarsa link</li>
+    </ul>
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Klik <strong>+ Buat Token</strong>
+</div>
+<div class="help-step">
+    <span class="help-step-num">4</span>Token link muncul di daftar. Klik <strong>Copy</strong> - paste ke email/WA asesor
+</div>
+<div class="help-step">
+    <span class="help-step-num">5</span>Asesor buka link di browser - langsung lihat bundle TANPA login (dengan watermark "BUNDLE ASESOR")
+</div>
+
+<div class="help-warn">
+    <strong>Penting:</strong> Bundle Public hanya tampilkan dokumen berstatus <strong>Approved</strong>. Pastikan semua dokumen sudah di-verifikasi LP3M sebelum share token.
+</div>
+
+<h3>Revoke Token</h3>
+<p>Kalau asesor sudah selesai atau link bocor, klik tombol <strong>Revoke</strong> pada token tersebut. Link langsung tidak bisa diakses.</p>
+
+<h2 id="zip">5. Export ZIP</h2>
+
+<p>Download semua dokumen bundle dalam 1 file ZIP untuk submission offline atau arsip.</p>
+
+<div class="help-step">
+    <span class="help-step-num">1</span>Di halaman bundle, klik tombol <strong>Export ZIP</strong> (ungu)
+</div>
+<div class="help-step">
+    <span class="help-step-num">2</span>Browser download file <code>bundle_[INSTRUMEN]_[PRODI]_[TAHUN]_[TANGGAL].zip</code>
+</div>
+<div class="help-step">
+    <span class="help-step-num">3</span>Isi ZIP:
+    <ul>
+        <li><code>README.txt</code> - info sesi + stats</li>
+        <li><code>manifest.json</code> - metadata semua dokumen</li>
+        <li>Folder hierarkis <strong>Standar/SubStandar/Butir/</strong> berisi file dokumen</li>
+    </ul>
+</div>
+
+<div class="help-tip">
+    <strong>Catatan:</strong> File yang disimpan di Google Drive tidak disertakan langsung di ZIP (biar tidak besar), tapi link aksesnya tercatat di <code>manifest.json</code>.
+</div>
+
+<h2 id="monitor">6. Monitoring &amp; Laporan</h2>
+
+<ul>
+    <li><strong>Dashboard utama</strong> - summary semua sesi aktif dengan progress</li>
+    <li><strong>Django Admin</strong> - akses raw database untuk audit (hanya superuser)</li>
+    <li><strong>Log Verifikasi</strong> - history lengkap siapa approve/reject apa kapan (Django Admin &rarr; Log Verifikasi)</li>
+    <li><strong>Log Akses Dokumen</strong> - track siapa yang pernah buka dokumen sensitif</li>
+</ul>
+
+<div style="background:#FFFBEB; border-radius:10px; padding:1.25rem; margin-top:2rem; text-align:center;">
+    <strong style="color:#78350F;">Admin Pustikom standby 24/7</strong><br>
+    <span style="font-size:.88rem; color:var(--text-muted);">
+        Email <strong>pustikom@unisan-g.id</strong> atau WA grup Admin SIAKRED
+    </span>
+</div>
+
+</div>
+{% endblock %}

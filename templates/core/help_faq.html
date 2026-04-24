@@ -1,0 +1,246 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}FAQ &amp; Troubleshooting - SIAKRED{% endblock %}
+{% block page_heading %}{{ section_title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'core:help_index' %}">Pusat Bantuan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">FAQ</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+
+<a href="{% url 'core:help_index' %}" class="help-back-btn" title="Kembali ke Pusat Bantuan">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    <span>Kembali ke Pusat Bantuan</span>
+</a>
+
+<style>
+  .help-back-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border, #E5E7EB); border-radius:8px;
+    color:var(--text-primary, #111827); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1.25rem;
+    transition:all .12s;
+  }
+  .help-back-btn:hover {
+    border-color:#2563EB; color:#2563EB;
+    transform:translateX(-3px);
+  }
+  .help-back-btn svg { transition:transform .12s; }
+  .help-back-btn:hover svg { transform:translateX(-2px); }
+</style>
+
+
+<style>
+  .faq-doc { max-width:880px; margin:0 auto; }
+  .faq-category { margin-bottom:1.5rem; }
+  .faq-category h2 {
+    font-size:1.1rem; margin:0 0 .85rem; padding-bottom:.5rem;
+    color:var(--text-primary); font-weight:600;
+    border-bottom:2px solid var(--border);
+  }
+  .faq-item {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    margin-bottom:.6rem; overflow:hidden;
+  }
+  .faq-question {
+    padding:.85rem 1.1rem; font-weight:600; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:.92rem; color:var(--text-primary);
+    transition:background .15s;
+  }
+  .faq-question:hover { background:#F9FAFB; }
+  .faq-question .chevron {
+    color:var(--text-muted); transition:transform .2s;
+  }
+  .faq-item.open .chevron { transform:rotate(180deg); }
+  .faq-answer {
+    padding:0 1.1rem 1rem;
+    font-size:.88rem; line-height:1.65; color:var(--text-primary);
+    display:none;
+  }
+  .faq-item.open .faq-answer { display:block; }
+  .faq-answer strong { color:#1E3A8A; }
+  .faq-answer code {
+    background:#F3F4F6; padding:.1rem .4rem; border-radius:4px;
+    font-family:ui-monospace,monospace; font-size:.82rem; color:#DC2626;
+  }
+  .faq-contact {
+    background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;
+    padding:1.5rem; margin-top:1.5rem; text-align:center;
+  }
+</style>
+
+<div class="faq-doc">
+
+<!-- KATEGORI: LOGIN & AKUN -->
+<div class="faq-category">
+    <h2>Login &amp; Akun</h2>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Saya lupa password, apa yang harus dilakukan?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Reset password hanya bisa dilakukan oleh admin Pustikom. Kirim email ke <strong>pustikom@unisan-g.id</strong> dengan subjek "Reset Password SIAKRED", sebutkan username/NIDN Anda. Admin akan reset password dan kirim password baru via email resmi.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Akun saya terkunci, bagaimana cara buka?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Akun terkunci 15 menit setelah 5 kali gagal login berturut-turut. Tunggu 15 menit, akun otomatis bisa login lagi. Kalau tidak mau menunggu, hubungi admin Pustikom untuk unlock manual.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Kenapa muncul CAPTCHA saat login?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            CAPTCHA muncul setelah 2 kali gagal login untuk mencegah brute force attack. Isi sesuai pertanyaan matematika yang muncul, lalu login normal.
+        </div>
+    </div>
+</div>
+
+<!-- KATEGORI: UPLOAD DOKUMEN -->
+<div class="faq-category">
+    <h2>Upload Dokumen</h2>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>File saya tidak bisa di-upload, muncul error</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Cek beberapa hal:
+            <ul style="margin:.5rem 0 0 1.2rem;">
+                <li>Ukuran file maksimal <strong>20 MB</strong> - kalau lebih, compress dulu atau gunakan link Google Drive</li>
+                <li>Format yang diterima: <code>PDF, DOCX, XLSX, PPTX, PNG, JPG</code></li>
+                <li>Nama file tidak boleh mengandung karakter spesial seperti <code>/ \ : * ? " &lt; &gt; |</code></li>
+                <li>Pastikan koneksi internet stabil</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Saya upload dokumen tapi tidak muncul di daftar</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Coba <strong>refresh halaman</strong> (F5 atau Ctrl+R). Kalau masih tidak muncul, cek apakah upload-nya benar masuk dengan buka menu <strong>Dokumen Saya</strong>. Kalau tidak ada juga, hubungi admin dengan menyertakan screenshot.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Bagaimana cara ganti file yang sudah di-upload?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Gunakan fitur <strong>Upload Revisi</strong> di halaman detail dokumen. Setiap revisi akan dinomori (r2, r3, dst). File lama TIDAK terhapus tapi menjadi history. Verifikator akan review revisi terbaru.
+        </div>
+    </div>
+</div>
+
+<!-- KATEGORI: VERIFIKASI -->
+<div class="faq-category">
+    <h2>Verifikasi &amp; Notifikasi</h2>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Kenapa dokumen saya belum di-review setelah berhari-hari?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            LP3M biasanya review dokumen berdasarkan deadline sesi. Kalau sudah lebih dari 1 minggu, Anda bisa:
+            <ul style="margin:.5rem 0 0 1.2rem;">
+                <li>Ingatkan LP3M via email atau WA</li>
+                <li>Hubungi Dekan fakultas Anda (yang juga bisa review)</li>
+                <li>Cek deadline sesi di menu Sesi Akreditasi - jangan tunggu sampai mepet</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Notifikasi tidak muncul di bell icon padahal ada aktivitas</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Coba <strong>refresh halaman</strong> terlebih dahulu. Kalau masih tidak muncul, mungkin Anda bukan penerima notif-nya (notif hanya ke uploader dokumen, bukan ke verifikator sendiri). Cek halaman <strong>Notifikasi</strong> lengkap untuk lihat semua history.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Perbedaan Rejected vs Need Revision?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            <strong>Rejected</strong> = dokumen ditolak total, Anda perlu upload file baru dari awal (biasanya karena salah butir atau file sama sekali tidak relevan). <strong>Need Revision</strong> = dokumen basic-nya OK tapi perlu perbaikan, Anda upload versi revisi (r2) dengan fix sesuai catatan verifikator.
+        </div>
+    </div>
+</div>
+
+<!-- KATEGORI: BUNDLE & ASESOR -->
+<div class="faq-category">
+    <h2>Bundle &amp; Share Asesor</h2>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Asesor bilang link bundle tidak bisa dibuka</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Cek status token di halaman Bundle:
+            <ul style="margin:.5rem 0 0 1.2rem;">
+                <li>Apakah token masih <strong>Aktif</strong>? Kalau sudah di-revoke, buat token baru</li>
+                <li>Apakah tanggal expired sudah lewat? Kalau iya, buat token baru dengan expiry lebih panjang</li>
+                <li>Pastikan asesor copy link lengkap (tidak ada spasi/karakter terpotong)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+            <span>Kenapa beberapa dokumen tidak muncul di bundle public asesor?</span>
+            <span class="chevron">&rsaquo;</span>
+        </div>
+        <div class="faq-answer">
+            Bundle Public <strong>hanya menampilkan dokumen berstatus APPROVED</strong>. Dokumen Pending/Rejected/Need Revision tidak tampil ke asesor. Pastikan LP3M sudah verifikasi semua dokumen sebelum share token ke asesor.
+        </div>
+    </div>
+</div>
+
+<!-- KONTAK -->
+<div class="faq-contact">
+    <strong style="color:#92400E; font-size:1rem;">Pertanyaan Anda belum terjawab?</strong>
+    <p style="margin:.5rem 0; color:#78350F;">
+        Hubungi admin Pustikom UNISAN di <strong>pustikom@unisan-g.id</strong><br>
+        atau melalui WhatsApp grup <strong>Admin SIAKRED</strong>
+    </p>
+    <p style="font-size:.82rem; margin:.75rem 0 0; color:var(--text-muted);">
+        Admin bertanggung jawab atas infrastruktur dan bug teknis. Untuk pertanyaan tentang konten dokumen akreditasi, hubungi LP3M.
+    </p>
+</div>
+
+</div>
+{% endblock %}

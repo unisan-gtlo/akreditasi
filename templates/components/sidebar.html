@@ -104,6 +104,20 @@
             </ul>
         </div>
 
+        <div class="sidebar-group">
+            <div class="sidebar-group-title">Bantuan</div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'core:help_index' %}" class="sidebar-menu-item {% if active_menu == 'help' %}active{% endif %}">
+                        <span class="sidebar-menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </span>
+                        Pusat Bantuan
+                    </a>
+                </li>
+            </ul>
+        </div>
+
         {% if user.is_staff %}
         <div class="sidebar-group">
             <div class="sidebar-group-title">Sistem</div>

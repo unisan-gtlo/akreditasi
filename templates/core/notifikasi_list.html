@@ -1,0 +1,131 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Notifikasi - SIAKRED{% endblock %}
+{% block page_heading %}Notifikasi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Notifikasi</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .notif-toolbar {
+    display:flex; gap:.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center;
+  }
+  .notif-tab {
+    padding:.45rem .9rem; border:1px solid var(--border); border-radius:8px;
+    background:var(--surface); color:var(--text-primary); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+  }
+  .notif-tab.active { background:#2563EB; color:#fff; border-color:#2563EB; }
+  .notif-tab .count { opacity:.75; font-weight:400; margin-left:.25rem; }
+
+  .notif-list {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+  }
+  .notif-item {
+    display:flex; gap:1rem; padding:1rem 1.25rem; border-bottom:1px solid var(--border);
+    transition:background .12s;
+    text-decoration:none; color:inherit;
+    align-items:flex-start;
+  }
+  .notif-item:last-child { border-bottom:0; }
+  .notif-item:hover { background:#FAFAFB; }
+  .notif-item.unread { background:#EFF6FF; }
+  .notif-item.unread:hover { background:#DBEAFE; }
+
+  .notif-icon {
+    width:36px; height:36px; border-radius:8px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:.95rem;
+  }
+  .notif-icon.approved { background:#D1FAE5; color:#065F46; }
+  .notif-icon.rejected { background:#FEE2E2; color:#991B1B; }
+  .notif-icon.revision { background:#FEF3C7; color:#92400E; }
+  .notif-icon.neutral { background:#F3F4F6; color:#6B7280; }
+
+  .notif-content { flex:1; min-width:0; }
+  .notif-judul { font-weight:600; font-size:.92rem; color:var(--text-primary); margin-bottom:.2rem; }
+  .notif-pesan { font-size:.82rem; color:var(--text-muted); line-height:1.45; white-space:pre-line; word-break:break-word; }
+  .notif-meta { font-size:.72rem; color:var(--text-muted); margin-top:.35rem; }
+  .notif-dot {
+    width:8px; height:8px; border-radius:50%; background:#2563EB; flex-shrink:0; margin-top:1rem;
+  }
+
+  .empty-state { padding:3rem 1.5rem; text-align:center; color:var(--text-muted); }
+</style>
+
+<div class="notif-toolbar">
+    <a href="?filter=all" class="notif-tab {% if filter_by == 'all' %}active{% endif %}">
+        Semua <span class="count">{{ total_count }}</span>
+    </a>
+    <a href="?filter=unread" class="notif-tab {% if filter_by == 'unread' %}active{% endif %}">
+        Belum Dibaca <span class="count">{{ unread_count }}</span>
+    </a>
+    <a href="?filter=read" class="notif-tab {% if filter_by == 'read' %}active{% endif %}">
+        Sudah Dibaca
+    </a>
+
+    {% if unread_count > 0 %}
+    <form method="post" action="{% url 'core:notifikasi_mark_all_read' %}" style="margin-left:auto; margin-bottom:0;">
+        {% csrf_token %}
+        <button type="submit" class="notif-tab" style="cursor:pointer; background:#F3F4F6; border:1px solid var(--border);">
+            Tandai Semua Dibaca
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="notif-list">
+    {% for notif in page %}
+        <a href="{% url 'core:notifikasi_read' notif.pk %}" class="notif-item {% if not notif.sudah_dibaca %}unread{% endif %}">
+            <div class="notif-icon {{ notif.icon_class }}">
+                {% if notif.tipe == 'VERIF_APPROVED' %}&check;
+                {% elif notif.tipe == 'VERIF_REJECTED' %}&times;
+                {% elif notif.tipe == 'VERIF_NEED_REVISION' %}&#8635;
+                {% elif notif.tipe == 'VERIF_RESET' %}&#8634;
+                {% else %}&#9432;
+                {% endif %}
+            </div>
+            <div class="notif-content">
+                <div class="notif-judul">{{ notif.judul }}</div>
+                <div class="notif-pesan">{{ notif.pesan|truncatechars:200 }}</div>
+                <div class="notif-meta">
+                    {{ notif.tanggal_dibuat|date:"d M Y, H:i" }}
+                    {% if notif.dibuat_oleh %} &middot; {{ notif.dibuat_oleh.get_full_name|default:notif.dibuat_oleh.username }}{% endif %}
+                </div>
+            </div>
+            {% if not notif.sudah_dibaca %}<div class="notif-dot"></div>{% endif %}
+        </a>
+    {% empty %}
+        <div class="empty-state">
+            <div style="font-size:.95rem; font-weight:500; color:var(--text-primary); margin-bottom:.3rem;">
+                Tidak ada notifikasi
+            </div>
+            <div style="font-size:.85rem;">
+                {% if filter_by == 'unread' %}
+                    Semua notifikasi sudah dibaca
+                {% else %}
+                    Notifikasi akan muncul di sini saat ada aktivitas
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if page.has_other_pages %}
+<div style="padding:1rem 0; text-align:center; font-size:.85rem; color:var(--text-muted);">
+    {% if page.has_previous %}
+        <a href="?filter={{ filter_by }}&page={{ page.previous_page_number }}">&laquo; Prev</a>
+    {% endif %}
+    <span style="margin:0 .75rem;">Halaman {{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+        <a href="?filter={{ filter_by }}&page={{ page.next_page_number }}">Next &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

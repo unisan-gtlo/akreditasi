@@ -1,7 +1,8 @@
 {% extends "layouts/internal.html" %}
 {% load static %}
 
-{% block title %}Dashboard Verifikasi LP3M - SIAKRED{% endblock %}
+{% block title %}Dashboard Verifikasi LP3M - SIAKRED
+{% endblock %}
 {% block page_heading %}Dashboard Verifikasi{% endblock %}
 
 {% block breadcrumb %}
@@ -190,6 +191,7 @@
     <table class="verif-table">
         <thead>
             <tr>
+                <th style="width:36px;"><input type="checkbox" id="selectAll" aria-label="Pilih semua"></th>
                 <th>Butir &amp; Dokumen</th>
                 <th>Scope</th>
                 <th>Rev</th>
@@ -202,7 +204,8 @@
         <tbody>
             {% for v in items %}
             {% with rev=v.revisi dok=v.revisi.dokumen butir=v.revisi.dokumen.butir_dokumen %}
-            <tr>
+            <tr data-v-id="{{ v.pk }}">
+                <td><input type="checkbox" class="row-check" value="{{ v.pk }}" aria-label="Pilih {{ dok.judul }}"></td>
                 <td>
                     <span class="v-butir">{{ butir.kode }}</span>
                     <div style="margin-top:.25rem; font-weight:500; color:var(--text-primary);">
@@ -280,4 +283,176 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Floating Bulk Action Bar (Step 9E) -->
+<div id="bulkBar" class="bulk-bar" hidden>
+    <form method="post" action="{% url 'dokumen:verifikasi_bulk_action' %}" id="bulkForm">
+        {% csrf_token %}
+        <input type="hidden" name="aksi" id="bulkAksi" value="">
+        <div id="bulkIds"></div>
+
+        <div class="bulk-bar-header">
+            <span id="bulkCount">0 dokumen dipilih</span>
+            <button type="button" id="bulkCancel" class="btn-cancel-bulk" title="Batal">&times; Batal</button>
+        </div>
+
+        <div class="bulk-bar-catatan">
+            <label for="bulkCatatan" style="font-size:.78rem; color:var(--text-muted); margin-bottom:.2rem; display:block;">
+                Catatan bersama (opsional)
+            </label>
+            <input type="text" name="catatan" id="bulkCatatan" placeholder="Catatan untuk semua dokumen yang dipilih..." maxlength="500">
+        </div>
+
+        <div class="bulk-bar-actions">
+            <button type="button" class="bulk-btn bulk-approve" data-aksi="APPROVED">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Approve Semua
+            </button>
+            <button type="button" class="bulk-btn bulk-revision" data-aksi="NEED_REVISION">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+                Need Revision
+            </button>
+            <button type="button" class="bulk-btn bulk-reject" data-aksi="REJECTED">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Reject Semua
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+  .bulk-bar {
+    position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+    background:#fff; border:1px solid var(--border, #E5E7EB);
+    border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,.15);
+    padding:1rem 1.25rem; min-width:480px; max-width:calc(100vw - 2rem);
+    z-index:100;
+    animation:bulkSlide .2s ease-out;
+  }
+  @keyframes bulkSlide {
+    from { opacity:0; transform:translateX(-50%) translateY(20px); }
+    to { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+  .bulk-bar-header {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:.75rem;
+  }
+  #bulkCount { font-weight:600; font-size:.92rem; }
+  .btn-cancel-bulk {
+    background:#F3F4F6; border:0; padding:.3rem .7rem; border-radius:6px;
+    cursor:pointer; font-size:.75rem; color:#6B7280; font-weight:500;
+  }
+  .btn-cancel-bulk:hover { background:#E5E7EB; color:#374151; }
+  .bulk-bar-catatan { margin-bottom:.75rem; }
+  .bulk-bar-catatan input {
+    width:100%; padding:.55rem .75rem; border:1px solid var(--border, #E5E7EB);
+    border-radius:7px; font-size:.85rem;
+  }
+  .bulk-bar-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .bulk-btn {
+    flex:1; min-width:130px; padding:.6rem 1rem; border-radius:8px;
+    border:1.5px solid; cursor:pointer; font-size:.85rem; font-weight:600;
+    display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+    color:#fff;
+  }
+  .bulk-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+  .bulk-approve { background:#10B981; border-color:#10B981; }
+  .bulk-approve:hover { background:#059669; }
+  .bulk-revision { background:#F59E0B; border-color:#F59E0B; }
+  .bulk-revision:hover { background:#D97706; }
+  .bulk-reject { background:#EF4444; border-color:#EF4444; }
+  .bulk-reject:hover { background:#DC2626; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var selectAll = document.getElementById('selectAll');
+    var bulkBar = document.getElementById('bulkBar');
+    var bulkCount = document.getElementById('bulkCount');
+    var bulkIds = document.getElementById('bulkIds');
+    var bulkAksi = document.getElementById('bulkAksi');
+    var bulkCancel = document.getElementById('bulkCancel');
+    var bulkForm = document.getElementById('bulkForm');
+
+    if (!bulkBar) {
+        console.warn('Bulk bar element not found');
+        return;
+    }
+
+    function getChecked() {
+        return document.querySelectorAll('.row-check:checked');
+    }
+
+    function updateBar() {
+        var checked = getChecked();
+        var n = checked.length;
+
+        if (n === 0) {
+            bulkBar.hidden = true;
+            if (selectAll) selectAll.indeterminate = false;
+            return;
+        }
+
+        bulkBar.hidden = false;
+        bulkCount.textContent = n + ' dokumen dipilih';
+
+        bulkIds.innerHTML = '';
+        checked.forEach(function(cb){
+            var inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = 'verifikasi_ids';
+            inp.value = cb.value;
+            bulkIds.appendChild(inp);
+        });
+
+        if (selectAll) {
+            var allRows = document.querySelectorAll('.row-check');
+            selectAll.indeterminate = n > 0 && n < allRows.length;
+            selectAll.checked = n === allRows.length && n > 0;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function(){
+            document.querySelectorAll('.row-check').forEach(function(cb){
+                cb.checked = selectAll.checked;
+            });
+            updateBar();
+        });
+    }
+
+    document.querySelectorAll('.row-check').forEach(function(cb){
+        cb.addEventListener('change', updateBar);
+    });
+
+    if (bulkCancel) {
+        bulkCancel.addEventListener('click', function(){
+            document.querySelectorAll('.row-check').forEach(function(cb){ cb.checked = false; });
+            if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+            updateBar();
+        });
+    }
+
+    document.querySelectorAll('.bulk-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var aksi = btn.dataset.aksi;
+            var n = getChecked().length;
+            if (n === 0) return;
+
+            var aksiLabel = {
+                'APPROVED': 'menyetujui',
+                'REJECTED': 'menolak',
+                'NEED_REVISION': 'menandai perlu revisi'
+            }[aksi];
+
+            if (!confirm('Anda akan ' + aksiLabel + ' ' + n + ' dokumen sekaligus. Lanjutkan?')) return;
+
+            bulkAksi.value = aksi;
+            bulkForm.submit();
+        });
+    });
+
+    updateBar();
+});
+</script>
+
 {% endblock %}

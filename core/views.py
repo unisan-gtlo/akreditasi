@@ -340,3 +340,133 @@ def dashboard_view(request):
         "last_device": last_device,
     }
     return render(request, "dashboard/index.html", context)
+
+
+# ============================================
+# NOTIFIKASI VIEWS (Step 9H.3)
+# ============================================
+
+from django.core.paginator import Paginator
+from django.utils import timezone as _tz
+from django.views.decorators.http import require_POST
+
+
+@login_required(login_url='/login/')
+def notifikasi_list(request):
+    """Halaman list semua notifikasi user."""
+    from core.models import Notifikasi
+    
+    filter_by = request.GET.get('filter', 'all')
+    base_qs = Notifikasi.objects.filter(penerima=request.user)
+    
+    if filter_by == 'unread':
+        qs = base_qs.filter(sudah_dibaca=False)
+    elif filter_by == 'read':
+        qs = base_qs.filter(sudah_dibaca=True)
+    else:
+        qs = base_qs
+    
+    qs = qs.select_related('dibuat_oleh', 'dokumen').order_by('-tanggal_dibuat')
+    
+    paginator = Paginator(qs, 20)
+    page_num = request.GET.get('page', 1)
+    page = paginator.get_page(page_num)
+    
+    context = {
+        'page_title': 'Notifikasi',
+        'active_menu': 'notifikasi',
+        'page': page,
+        'filter_by': filter_by,
+        'total_count': base_qs.count(),
+        'unread_count': base_qs.filter(sudah_dibaca=False).count(),
+    }
+    return render(request, 'core/notifikasi_list.html', context)
+
+
+@login_required(login_url='/login/')
+def notifikasi_read(request, notif_id):
+    """Mark notifikasi sebagai dibaca + redirect ke url_action."""
+    from core.models import Notifikasi
+    from django.shortcuts import get_object_or_404
+    
+    notif = get_object_or_404(Notifikasi, pk=notif_id, penerima=request.user)
+    notif.tandai_dibaca()
+    
+    # Redirect ke url_action kalau ada, kalau tidak ke list
+    target = notif.url_action or '/notifikasi/'
+    return redirect(target)
+
+
+@login_required(login_url='/login/')
+@require_POST
+def notifikasi_mark_all_read(request):
+    """Mark semua notifikasi user sebagai dibaca."""
+    from core.models import Notifikasi
+    
+    updated = Notifikasi.objects.filter(
+        penerima=request.user,
+        sudah_dibaca=False,
+    ).update(
+        sudah_dibaca=True,
+        tanggal_dibaca=_tz.now(),
+    )
+    
+    messages.success(request, f'{updated} notifikasi ditandai dibaca.')
+    return redirect('core:notifikasi_list')
+
+
+# ============================================
+# HELP CENTER (Step User Manual)
+# ============================================
+
+@login_required(login_url='/login/')
+def help_index(request):
+    """Halaman index pusat bantuan dengan kategori per role."""
+    user = request.user
+    
+    # Detect role user untuk highlight section yang relevan
+    user_roles = []
+    if user.is_superuser:
+        user_roles.append('admin')
+    if hasattr(user, 'scopes'):
+        for scope in user.scopes.filter(aktif=True):
+            lvl = (scope.level or '').upper()
+            if lvl in ('UNIVERSITAS', 'REKTORAT', 'SUPER', 'ADMIN'):
+                user_roles.append('admin')
+            elif lvl in ('BIRO', 'LP3M', 'LP2M'):
+                user_roles.append('lp3m')
+            elif lvl == 'FAKULTAS':
+                user_roles.append('dekan')
+            elif lvl == 'PRODI':
+                user_roles.append('kaprodi')
+    
+    context = {
+        'page_title': 'Pusat Bantuan',
+        'active_menu': 'help',
+        'user_roles': list(set(user_roles)),
+    }
+    return render(request, 'core/help_index.html', context)
+
+
+@login_required(login_url='/login/')
+def help_section(request, section):
+    """Halaman detail per section: 'uploader', 'verifikator', 'admin', 'faq'."""
+    valid_sections = {'uploader', 'verifikator', 'admin', 'faq'}
+    if section not in valid_sections:
+        return redirect('core:help_index')
+    
+    section_titles = {
+        'uploader': 'Panduan untuk Kaprodi/Dosen',
+        'verifikator': 'Panduan untuk LP3M/Dekan',
+        'admin': 'Panduan untuk Admin/Rektorat',
+        'faq': 'FAQ & Troubleshooting',
+    }
+    
+    context = {
+        'page_title': section_titles.get(section, 'Pusat Bantuan'),
+        'active_menu': 'help',
+        'section': section,
+        'section_title': section_titles.get(section),
+    }
+    return render(request, f'core/help_{section}.html', context)
+

@@ -293,7 +293,7 @@ def dokumen_detail(request, pk):
 import hashlib
 from pathlib import Path
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone, timezone as _tz
 
 from .forms import DokumenUploadForm
 
@@ -1341,7 +1341,7 @@ def verifikasi_dashboard(request):
 
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_POST, require_http_methods
 from django.utils import timezone
 from django.http import HttpResponseForbidden
 
@@ -1423,6 +1423,20 @@ def verifikasi_review(request, verifikasi_id):
             dilakukan_oleh=request.user,
         )
         
+        # Buat notifikasi untuk uploader (Step 9H.2)
+        try:
+            from core.models import buat_notifikasi_verifikasi
+            buat_notifikasi_verifikasi(
+                verifikasi=verifikasi,
+                aksi=aksi,
+                dibuat_oleh=request.user,
+                catatan=catatan,
+            )
+        except Exception as e:
+            # Notifikasi tidak kritis -- log tapi jangan gagalkan aksi
+            import logging
+            logging.getLogger(__name__).warning(f'Gagal buat notifikasi verifikasi: {e}')
+        
         # Flash message berdasarkan aksi
         action_messages = {
             'APPROVED': f'Dokumen "{dokumen.judul}" berhasil DISETUJUI.',
@@ -1448,4 +1462,112 @@ def verifikasi_review(request, verifikasi_id):
         'history': history,
     }
     return render(request, 'dokumen/verifikasi_review.html', context)
+
+
+# ============================================
+# BULK VERIFIKASI (Step 9E)
+# ============================================
+
+from django.db import transaction
+
+
+@login_required(login_url='/login/')
+@require_POST
+def verifikasi_bulk_action(request):
+    """Bulk approve/reject/need-revision untuk multiple dokumen sekaligus."""
+    from dokumen.models import VerifikasiDokumen, VerifikasiLog
+    from core.models import buat_notifikasi_verifikasi
+    
+    aksi = request.POST.get('aksi', '').strip().upper()
+    catatan = request.POST.get('catatan', '').strip()
+    ids_raw = request.POST.getlist('verifikasi_ids')
+    
+    # Validasi aksi
+    valid_aksi = {'APPROVED', 'REJECTED', 'NEED_REVISION'}
+    if aksi not in valid_aksi:
+        messages.error(request, 'Aksi tidak valid.')
+        return redirect('dokumen:verifikasi_dashboard')
+    
+    # Parse IDs
+    try:
+        ids = [int(x) for x in ids_raw if x.strip().isdigit()]
+    except (ValueError, TypeError):
+        ids = []
+    
+    if not ids:
+        messages.error(request, 'Tidak ada dokumen yang dipilih.')
+        return redirect('dokumen:verifikasi_dashboard')
+    
+    # Ambil verifikasi + cek permission per dokumen
+    verifikasi_qs = VerifikasiDokumen.objects.select_related(
+        'revisi', 'revisi__dokumen',
+    ).filter(pk__in=ids)
+    
+    success_count = 0
+    skipped_count = 0
+    notif_count = 0
+    
+    with transaction.atomic():
+        for v in verifikasi_qs:
+            dokumen = v.revisi.dokumen
+            
+            # Permission check per dokumen
+            if not _user_can_verify_dokumen(request.user, dokumen):
+                skipped_count += 1
+                continue
+            
+            # Update verifikasi
+            status_lama = v.status
+            v.status = aksi
+            v.verifikator = request.user
+            v.tanggal_verifikasi = _tz.now() if True else None  # selalu set timestamp
+            if catatan:
+                v.catatan = catatan
+            v.save()
+            
+            # Create audit log
+            VerifikasiLog.objects.create(
+                verifikasi=v,
+                aksi=aksi,
+                status_lama=status_lama,
+                status_baru=v.status,
+                catatan=catatan,
+                dilakukan_oleh=request.user,
+            )
+            
+            # Create notifikasi
+            try:
+                notif = buat_notifikasi_verifikasi(
+                    verifikasi=v,
+                    aksi=aksi,
+                    dibuat_oleh=request.user,
+                    catatan=catatan,
+                )
+                if notif:
+                    notif_count += 1
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f'Gagal buat notifikasi bulk: {e}')
+            
+            success_count += 1
+    
+    # Flash message
+    aksi_label = {
+        'APPROVED': 'DISETUJUI',
+        'REJECTED': 'DITOLAK',
+        'NEED_REVISION': 'ditandai PERLU REVISI',
+    }.get(aksi, aksi)
+    
+    msg_parts = [f'{success_count} dokumen berhasil {aksi_label}']
+    if notif_count:
+        msg_parts.append(f'{notif_count} notifikasi terkirim')
+    if skipped_count:
+        msg_parts.append(f'{skipped_count} di-skip (tidak ada akses)')
+    
+    messages.success(request, ' - '.join(msg_parts) + '.')
+    
+    # Redirect ke tab yang sesuai
+    tab_map = {'APPROVED': 'approved', 'REJECTED': 'rejected', 'NEED_REVISION': 'need_revision'}
+    next_tab = tab_map.get(aksi, 'pending')
+    return redirect(f'/dokumen/verifikasi/?tab={next_tab}')
 

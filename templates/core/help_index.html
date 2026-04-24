@@ -1,0 +1,175 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Pusat Bantuan - SIAKRED{% endblock %}
+{% block page_heading %}Pusat Bantuan SIAKRED{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Pusat Bantuan</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .help-hero {
+    background:linear-gradient(135deg, #1E40AF, #3B82F6);
+    color:#fff; padding:2rem; border-radius:14px; margin-bottom:1.5rem;
+  }
+  .help-hero h2 { margin:0 0 .5rem; font-size:1.5rem; }
+  .help-hero p { margin:0; opacity:.92; font-size:.95rem; max-width:640px; }
+  .help-hero-search { margin-top:1.25rem; position:relative; max-width:520px; }
+  .help-hero-search input {
+    width:100%; padding:.75rem 1rem .75rem 2.75rem;
+    border:0; border-radius:10px; font-size:.95rem;
+  }
+  .help-hero-search svg { position:absolute; left:1rem; top:50%; transform:translateY(-50%); color:#6B7280; }
+
+  .help-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:1rem; margin-bottom:1.5rem; }
+  @media (max-width:800px) { .help-grid { grid-template-columns:1fr; } }
+  .help-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.5rem; text-decoration:none; color:inherit;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+    display:block; position:relative;
+  }
+  .help-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.08); }
+  .help-card.recommended { border-color:#F59E0B; border-width:2px; }
+  .help-card.recommended::before {
+    content:"DIREKOMENDASIKAN UNTUK ANDA"; position:absolute; top:-10px; left:1rem;
+    background:#F59E0B; color:#fff; font-size:.65rem; font-weight:700;
+    padding:.2rem .6rem; border-radius:6px; letter-spacing:.03em;
+  }
+  .help-card-icon {
+    width:48px; height:48px; border-radius:10px; margin-bottom:1rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .help-card.uploader .help-card-icon { background:#DBEAFE; color:#1E40AF; }
+  .help-card.verifikator .help-card-icon { background:#D1FAE5; color:#059669; }
+  .help-card.admin .help-card-icon { background:#FEF3C7; color:#92400E; }
+  .help-card.faq .help-card-icon { background:#F3F4F6; color:#374151; }
+  .help-card-title { font-size:1.05rem; font-weight:600; margin-bottom:.35rem; color:var(--text-primary); }
+  .help-card-desc { font-size:.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:.75rem; }
+  .help-card-items { font-size:.78rem; color:var(--text-muted); }
+  .help-card-items li { margin-bottom:.2rem; }
+  .help-card-link {
+    display:inline-flex; align-items:center; gap:.3rem;
+    color:#2563EB; font-weight:500; font-size:.85rem; margin-top:.75rem;
+  }
+
+  .help-quicklinks {
+    background:#F9FAFB; border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; margin-bottom:1.5rem;
+  }
+  .help-quicklinks h3 { margin:0 0 .85rem; font-size:.95rem; font-weight:600; }
+  .help-quicklinks-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:.5rem; }
+  .quicklink {
+    display:flex; align-items:center; gap:.5rem; padding:.55rem .85rem;
+    background:#fff; border:1px solid var(--border); border-radius:8px;
+    text-decoration:none; color:var(--text-primary); font-size:.85rem;
+    transition:border-color .12s;
+  }
+  .quicklink:hover { border-color:#2563EB; color:#2563EB; }
+
+  .help-contact {
+    background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;
+    padding:1.25rem; text-align:center; color:#78350F;
+  }
+  .help-contact strong { color:#92400E; }
+</style>
+
+<div class="help-hero">
+    <h2>Selamat datang di Pusat Bantuan SIAKRED</h2>
+    <p>Temukan panduan penggunaan sistem akreditasi sesuai dengan peran Anda. Kalau masih bingung, jangan ragu hubungi admin Pustikom UNISAN.</p>
+</div>
+
+<div class="help-grid">
+    <a href="{% url 'core:help_section' 'uploader' %}" class="help-card uploader {% if 'kaprodi' in user_roles %}recommended{% endif %}">
+        <div class="help-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="help-card-title">Untuk Kaprodi &amp; Dosen</div>
+        <div class="help-card-desc">Panduan upload dokumen akreditasi, revisi, dan pantau status verifikasi.</div>
+        <ul class="help-card-items">
+            <li>&rsaquo; Upload dokumen per butir</li>
+            <li>&rsaquo; Upload revisi &amp; perbaikan</li>
+            <li>&rsaquo; Cek status verifikasi</li>
+            <li>&rsaquo; Baca notifikasi feedback</li>
+        </ul>
+        <span class="help-card-link">Baca Panduan &rsaquo;</span>
+    </a>
+
+    <a href="{% url 'core:help_section' 'verifikator' %}" class="help-card verifikator {% if 'lp3m' in user_roles or 'dekan' in user_roles %}recommended{% endif %}">
+        <div class="help-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="help-card-title">Untuk LP3M &amp; Dekan</div>
+        <div class="help-card-desc">Panduan verifikasi dokumen, bulk approve, dan memberikan feedback.</div>
+        <ul class="help-card-items">
+            <li>&rsaquo; Dashboard verifikasi</li>
+            <li>&rsaquo; Review satuan &amp; massal</li>
+            <li>&rsaquo; Menolak dengan catatan</li>
+            <li>&rsaquo; Kelola queue pending</li>
+        </ul>
+        <span class="help-card-link">Baca Panduan &rsaquo;</span>
+    </a>
+
+    <a href="{% url 'core:help_section' 'admin' %}" class="help-card admin {% if 'admin' in user_roles %}recommended{% endif %}">
+        <div class="help-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+        <div class="help-card-title">Untuk Admin &amp; Rektorat</div>
+        <div class="help-card-desc">Kelola sesi, bundle export, token share asesor, dan monitoring.</div>
+        <ul class="help-card-items">
+            <li>&rsaquo; Buat sesi akreditasi</li>
+            <li>&rsaquo; Bundle Export untuk asesor</li>
+            <li>&rsaquo; Generate token share</li>
+            <li>&rsaquo; Timeline &amp; milestone</li>
+        </ul>
+        <span class="help-card-link">Baca Panduan &rsaquo;</span>
+    </a>
+
+    <a href="{% url 'core:help_section' 'faq' %}" class="help-card faq">
+        <div class="help-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="help-card-title">FAQ &amp; Troubleshooting</div>
+        <div class="help-card-desc">Jawaban cepat untuk masalah umum dan pertanyaan yang sering ditanyakan.</div>
+        <ul class="help-card-items">
+            <li>&rsaquo; Lupa password</li>
+            <li>&rsaquo; Upload gagal</li>
+            <li>&rsaquo; Akun terkunci</li>
+            <li>&rsaquo; Hubungi Pustikom</li>
+        </ul>
+        <span class="help-card-link">Baca FAQ &rsaquo;</span>
+    </a>
+</div>
+
+<div class="help-quicklinks">
+    <h3>Akses Cepat</h3>
+    <div class="help-quicklinks-grid">
+        <a href="{% url 'dokumen:butir_saya' %}" class="quicklink">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            Butir Saya
+        </a>
+        <a href="{% url 'sesi:sesi_list' %}" class="quicklink">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Sesi Akreditasi
+        </a>
+        <a href="{% url 'core:notifikasi_list' %}" class="quicklink">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+            Notifikasi
+        </a>
+        <a href="{% url 'core:dashboard' %}" class="quicklink">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="help-contact">
+    <strong>Butuh bantuan lebih lanjut?</strong><br>
+    Hubungi admin Pustikom UNISAN di <strong>pustikom@unisan-g.id</strong> atau melalui WA grup LP3M.
+</div>
+{% endblock %}

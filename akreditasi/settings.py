@@ -76,6 +76,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "dokumen.context_processors.verifikasi_context",
+                "core.context_processors.notifikasi_context",
                 "core.context_processors.sidebar_stats",
             ],
         },

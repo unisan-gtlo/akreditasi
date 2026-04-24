@@ -22,3 +22,26 @@ def sidebar_stats(request):
         "stat_butir_count": ButirDokumen.objects.filter(aktif=True).count(),
         "stat_mapping_count": MappingProdiInstrumen.objects.filter(aktif=True).count(),
     }
+
+def notifikasi_context(request):
+    """Inject notifikasi recent + unread count ke semua template."""
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return {'notifikasi_recent': [], 'notifikasi_unread_count': 0}
+    
+    try:
+        from core.models import Notifikasi
+        qs = Notifikasi.objects.filter(penerima=user).order_by('-tanggal_dibuat')
+        
+        # Recent 5 untuk dropdown
+        recent = list(qs[:5])
+        
+        # Total unread untuk badge
+        unread_count = qs.filter(sudah_dibaca=False).count()
+        
+        return {
+            'notifikasi_recent': recent,
+            'notifikasi_unread_count': unread_count,
+        }
+    except Exception:
+        return {'notifikasi_recent': [], 'notifikasi_unread_count': 0}
