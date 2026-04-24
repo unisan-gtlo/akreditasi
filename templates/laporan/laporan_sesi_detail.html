@@ -1,0 +1,369 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+
+{% block title %}Laporan Progress: {{ sesi.judul|truncatechars:40 }}{% endblock %}
+{% block page_heading %}Laporan Progress Sesi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'laporan:laporan_index' %}">Laporan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Progress Sesi</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .lp-back {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1rem;
+    transition:all .12s;
+  }
+  .lp-back:hover { border-color:#2563EB; color:#2563EB; transform:translateX(-3px); }
+
+  .lp-header {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.5rem; margin-bottom:1.25rem;
+    display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+  }
+  .lp-header-info h2 { margin:0 0 .5rem; font-size:1.3rem; color:var(--text-primary); }
+  .lp-header-info p { margin:0; color:var(--text-muted); font-size:.88rem; line-height:1.55; }
+  .lp-header-actions { display:flex; gap:.5rem; flex-wrap:wrap; align-items:flex-start; }
+  .lp-btn {
+    padding:.55rem 1rem; border-radius:8px; border:1px solid;
+    text-decoration:none; font-size:.85rem; font-weight:500;
+    display:inline-flex; align-items:center; gap:.4rem;
+    cursor:pointer;
+  }
+  .lp-btn-pdf { background:#DC2626; color:#fff; border-color:#DC2626; }
+  .lp-btn-pdf:hover { background:#B91C1C; }
+  .lp-btn-excel { background:#059669; color:#fff; border-color:#059669; }
+  .lp-btn-excel:hover { background:#047857; }
+
+  .lp-info-grid {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:.75rem 1.5rem;
+    background:#F9FAFB; border:1px solid var(--border); border-radius:10px;
+    padding:1rem 1.25rem; margin-bottom:1.25rem;
+  }
+  .lp-info-item { display:flex; flex-direction:column; gap:.1rem; }
+  .lp-info-label { font-size:.72rem; color:var(--text-muted); font-weight:500; text-transform:uppercase; letter-spacing:.02em; }
+  .lp-info-value { font-size:.92rem; color:var(--text-primary); font-weight:500; }
+  .status-badge {
+    display:inline-block; padding:.15rem .55rem; border-radius:999px; font-size:.72rem; font-weight:600;
+  }
+  .status-badge.PERSIAPAN { background:#DBEAFE; color:#1E40AF; }
+  .status-badge.REVIEW_INTERNAL { background:#FEF3C7; color:#92400E; }
+  .status-badge.SUBMITTED { background:#CFFAFE; color:#0E7490; }
+  .status-badge.VISITASI_AKTIF { background:#E9D5FF; color:#6B21A8; }
+  .status-badge.MENUNGGU_HASIL { background:#FEF3C7; color:#92400E; }
+  .status-badge.SELESAI { background:#D1FAE5; color:#065F46; }
+
+  /* STATS CARDS */
+  .lp-stats { display:grid; grid-template-columns:repeat(5, 1fr); gap:.85rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .lp-stats { grid-template-columns:repeat(2, 1fr); } }
+  .lp-stat {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:.85rem 1rem; border-top:3px solid;
+  }
+  .lp-stat.total { border-top-color:#64748B; }
+  .lp-stat.terisi { border-top-color:#2563EB; }
+  .lp-stat.approved { border-top-color:#059669; }
+  .lp-stat.pending { border-top-color:#2563EB; background:#EFF6FF; }
+  .lp-stat.rejected { border-top-color:#DC2626; }
+  .lp-stat.revision { border-top-color:#F59E0B; }
+  .lp-stat-label { font-size:.68rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.2rem; }
+  .lp-stat-value { font-size:1.65rem; font-weight:700; line-height:1.1; }
+
+  /* PROGRESS BAR */
+  .lp-progress {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+  }
+  .lp-progress-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.6rem; }
+  .lp-progress-title { font-weight:600; font-size:.95rem; }
+  .lp-progress-pct { font-size:1.5rem; font-weight:700; color:#059669; }
+  .lp-progress-bar-outer {
+    height:14px; background:#E5E7EB; border-radius:999px; overflow:hidden;
+  }
+  .lp-progress-bar-inner {
+    height:100%; background:linear-gradient(90deg, #10B981, #059669);
+    border-radius:999px; transition:width .3s;
+  }
+  .lp-progress-hint { font-size:.78rem; color:var(--text-muted); margin-top:.5rem; }
+
+  /* CHART + TABEL LAYOUT */
+  .lp-row { display:grid; grid-template-columns:320px 1fr; gap:1rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .lp-row { grid-template-columns:1fr; } }
+
+  .lp-donut-card, .lp-detail-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem;
+  }
+  .lp-donut-card h3, .lp-detail-card h3 {
+    margin:0 0 1rem; font-size:.95rem; font-weight:600; color:var(--text-primary);
+    padding-bottom:.6rem; border-bottom:1px solid var(--border);
+  }
+  
+  .lp-donut-legend { margin-top:1rem; display:flex; flex-direction:column; gap:.4rem; }
+  .lp-legend-item { display:flex; align-items:center; gap:.5rem; font-size:.82rem; }
+  .lp-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .lp-legend-label { flex:1; color:var(--text-primary); }
+  .lp-legend-value { font-weight:600; color:var(--text-muted); }
+
+  /* STANDAR GROUPS */
+  .lp-standar { margin-bottom:1rem; }
+  .lp-standar-header {
+    background:#F9FAFB; border:1px solid var(--border); border-radius:8px 8px 0 0;
+    padding:.75rem 1rem; font-size:.88rem; font-weight:600; color:var(--text-primary);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .lp-standar-summary { font-size:.78rem; font-weight:500; color:var(--text-muted); }
+  .lp-butir-table {
+    border:1px solid var(--border); border-top:0; border-radius:0 0 8px 8px; overflow:hidden;
+    width:100%; font-size:.82rem;
+  }
+  .lp-butir-table th {
+    background:#F9FAFB; padding:.55rem .8rem; text-align:left;
+    font-size:.7rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:.02em; border-bottom:1px solid var(--border);
+  }
+  .lp-butir-table td {
+    padding:.55rem .8rem; border-bottom:1px solid var(--border); vertical-align:top;
+  }
+  .lp-butir-table tr:last-child td { border-bottom:0; }
+  .lp-butir-table .kode {
+    font-family:ui-monospace,monospace; font-weight:600;
+    background:#EFF6FF; color:#1E40AF; padding:.12rem .45rem; border-radius:4px; font-size:.75rem;
+  }
+  .vstatus {
+    display:inline-block; padding:.1rem .5rem; border-radius:999px; font-size:.68rem; font-weight:600;
+  }
+  .vstatus.APPROVED { background:#D1FAE5; color:#065F46; }
+  .vstatus.REJECTED { background:#FEE2E2; color:#991B1B; }
+  .vstatus.NEED_REVISION { background:#FEF3C7; color:#92400E; }
+  .vstatus.PENDING { background:#DBEAFE; color:#1E40AF; }
+  .vstatus.KOSONG { background:#F3F4F6; color:#6B7280; }
+
+  @media print {
+    .lp-back, .lp-header-actions { display:none !important; }
+    .lp-header, .lp-stats, .lp-progress, .lp-row { page-break-inside:avoid; }
+  }
+</style>
+
+<a href="{% url 'laporan:laporan_index' %}" class="lp-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Kembali ke Dashboard Laporan
+</a>
+
+<!-- HEADER -->
+<div class="lp-header">
+    <div class="lp-header-info">
+        <h2>{{ sesi.judul }}</h2>
+        <p>
+            Laporan progress kelengkapan dokumen akreditasi, status verifikasi,
+            dan detail per butir untuk sesi ini.
+        </p>
+    </div>
+    <div class="lp-header-actions">
+        <a href="?export=pdf" class="lp-btn lp-btn-pdf">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export PDF
+        </a>
+        <a href="?export=excel" class="lp-btn lp-btn-excel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Export Excel
+        </a>
+    </div>
+</div>
+
+<!-- INFO SESI -->
+<div class="lp-info-grid">
+    <div class="lp-info-item">
+        <span class="lp-info-label">Prodi</span>
+        <span class="lp-info-value">{% if sesi.kode_prodi %}{{ sesi.kode_prodi }} {{ sesi.nama_prodi_snapshot }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="lp-info-item">
+        <span class="lp-info-label">Instrumen</span>
+        <span class="lp-info-value">{{ sesi.instrumen.nama }}</span>
+    </div>
+    <div class="lp-info-item">
+        <span class="lp-info-label">Tahun TS</span>
+        <span class="lp-info-value">{{ sesi.tahun_ts }}</span>
+    </div>
+    <div class="lp-info-item">
+        <span class="lp-info-label">Status</span>
+        <span class="lp-info-value"><span class="status-badge {{ sesi.status }}">{{ sesi.get_status_display }}</span></span>
+    </div>
+    <div class="lp-info-item">
+        <span class="lp-info-label">Tanggal Mulai</span>
+        <span class="lp-info-value">{% if sesi.tanggal_mulai %}{{ sesi.tanggal_mulai|date:"d M Y" }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="lp-info-item">
+        <span class="lp-info-label">Target Selesai</span>
+        <span class="lp-info-value">{% if sesi.tanggal_target_selesai %}{{ sesi.tanggal_target_selesai|date:"d M Y" }}{% else %}—{% endif %}</span>
+    </div>
+</div>
+
+<!-- STATS CARDS -->
+<div class="lp-stats">
+    <div class="lp-stat total">
+        <div class="lp-stat-label">Total Butir</div>
+        <div class="lp-stat-value" style="color:#334155;">{{ stats.total_butir }}</div>
+    </div>
+    <div class="lp-stat terisi">
+        <div class="lp-stat-label">Terisi</div>
+        <div class="lp-stat-value" style="color:#2563EB;">{{ stats.butir_terisi }}</div>
+    </div>
+    <div class="lp-stat approved">
+        <div class="lp-stat-label">Approved</div>
+        <div class="lp-stat-value" style="color:#059669;">{{ stats.status_approved }}</div>
+    </div>
+    <div class="lp-stat revision">
+        <div class="lp-stat-label">Perlu Revisi</div>
+        <div class="lp-stat-value" style="color:#D97706;">{{ stats.status_revision }}</div>
+    </div>
+    <div class="lp-stat rejected">
+        <div class="lp-stat-label">Ditolak</div>
+        <div class="lp-stat-value" style="color:#DC2626;">{{ stats.status_rejected }}</div>
+    </div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="lp-progress">
+    <div class="lp-progress-header">
+        <div class="lp-progress-title">Progress Kelengkapan Dokumen</div>
+        <div class="lp-progress-pct">{{ stats.progress_pct }}%</div>
+    </div>
+    <div class="lp-progress-bar-outer">
+        <div class="lp-progress-bar-inner" style="width:{{ stats.progress_pct }}%;"></div>
+    </div>
+    <div class="lp-progress-hint">
+        {{ stats.butir_terisi }} dari {{ stats.total_butir }} butir sudah diisi
+        ({{ stats.butir_kosong }} butir belum diisi).
+        Approved: {{ stats.approved_pct }}%.
+    </div>
+</div>
+
+<!-- DONUT CHART + DETAIL LAYOUT -->
+<div class="lp-row">
+    <!-- DONUT CHART -->
+    <div class="lp-donut-card">
+        <h3>Status Verifikasi</h3>
+        {% if stats.butir_terisi > 0 %}
+        <div style="display:flex; justify-content:center;">
+            <svg width="180" height="180" viewBox="0 0 180 180">
+                {% with total=stats.butir_terisi %}
+                <circle cx="90" cy="90" r="65" fill="none" stroke="#F3F4F6" stroke-width="25"/>
+                
+                {% with app_len=stats.status_approved|default:0 pen_len=stats.status_pending|default:0 rev_len=stats.status_revision|default:0 rej_len=stats.status_rejected|default:0 %}
+                {% if app_len > 0 %}
+                <circle cx="90" cy="90" r="65" fill="none" stroke="#059669" stroke-width="25" 
+                        stroke-dasharray="{% widthratio app_len total 408 %} 408" 
+                        transform="rotate(-90 90 90)"/>
+                {% endif %}
+                {% endwith %}
+                
+                <text x="90" y="85" text-anchor="middle" font-size="26" font-weight="700" fill="#059669">{{ stats.approved_pct }}%</text>
+                <text x="90" y="103" text-anchor="middle" font-size="11" fill="#6B7280">Approved</text>
+                {% endwith %}
+            </svg>
+        </div>
+        <div class="lp-donut-legend">
+            <div class="lp-legend-item">
+                <span class="lp-legend-dot" style="background:#059669;"></span>
+                <span class="lp-legend-label">Approved</span>
+                <span class="lp-legend-value">{{ stats.status_approved }}</span>
+            </div>
+            <div class="lp-legend-item">
+                <span class="lp-legend-dot" style="background:#2563EB;"></span>
+                <span class="lp-legend-label">Pending</span>
+                <span class="lp-legend-value">{{ stats.status_pending }}</span>
+            </div>
+            <div class="lp-legend-item">
+                <span class="lp-legend-dot" style="background:#F59E0B;"></span>
+                <span class="lp-legend-label">Perlu Revisi</span>
+                <span class="lp-legend-value">{{ stats.status_revision }}</span>
+            </div>
+            <div class="lp-legend-item">
+                <span class="lp-legend-dot" style="background:#DC2626;"></span>
+                <span class="lp-legend-label">Ditolak</span>
+                <span class="lp-legend-value">{{ stats.status_rejected }}</span>
+            </div>
+            <div class="lp-legend-item">
+                <span class="lp-legend-dot" style="background:#9CA3AF;"></span>
+                <span class="lp-legend-label">Belum Diisi</span>
+                <span class="lp-legend-value">{{ stats.butir_kosong }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted);">
+            <div style="font-size:2.5rem; opacity:.3; margin-bottom:.5rem;">📊</div>
+            <div style="font-size:.85rem;">Belum ada dokumen yang di-upload untuk sesi ini.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- DETAIL PER STANDAR -->
+    <div class="lp-detail-card">
+        <h3>Detail per Standar</h3>
+        {% for group in standar_groups %}
+        <div class="lp-standar">
+            <div class="lp-standar-header">
+                <div>
+                    <strong>Standar {{ group.nomor }}</strong> &middot; {{ group.nama }}
+                </div>
+                <div class="lp-standar-summary">{{ group.terisi }}/{{ group.total }} terisi</div>
+            </div>
+            <table class="lp-butir-table">
+                <thead>
+                    <tr>
+                        <th style="width:110px;">Butir</th>
+                        <th>Dokumen</th>
+                        <th style="width:130px;">Status</th>
+                        <th style="width:140px;">Verifikator</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in group.butir_list %}
+                    <tr>
+                        <td><span class="kode">{{ item.kode }}</span></td>
+                        <td>
+                            {% if item.dokumen %}
+                                {{ item.dokumen.judul|truncatechars:60 }}
+                            {% else %}
+                                <span style="color:var(--text-muted); font-style:italic;">— belum diisi —</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.status == 'APPROVED' %}<span class="vstatus APPROVED">Approved</span>
+                            {% elif item.status == 'REJECTED' %}<span class="vstatus REJECTED">Rejected</span>
+                            {% elif item.status == 'NEED_REVISION' %}<span class="vstatus NEED_REVISION">Need Revision</span>
+                            {% elif item.status == 'PENDING' %}<span class="vstatus PENDING">Pending</span>
+                            {% else %}<span class="vstatus KOSONG">Kosong</span>
+                            {% endif %}
+                        </td>
+                        <td style="color:var(--text-muted); font-size:.78rem;">
+                            {% if item.verifikator %}{{ item.verifikator }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% empty %}
+        <p style="color:var(--text-muted); text-align:center; padding:2rem;">
+            Belum ada butir dokumen untuk instrumen ini.
+        </p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

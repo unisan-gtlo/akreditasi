@@ -109,3 +109,27 @@ class DeviceSessionAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+# ============================================
+# NOTIFIKASI ADMIN (Step 9H)
+# ============================================
+
+from .models import Notifikasi
+
+
+@admin.register(Notifikasi)
+class NotifikasiAdmin(admin.ModelAdmin):
+    list_display = ['judul', 'penerima', 'tipe', 'sudah_dibaca', 'tanggal_dibuat']
+    list_filter = ['tipe', 'sudah_dibaca', 'tanggal_dibuat']
+    search_fields = ['judul', 'pesan', 'penerima__username', 'penerima__nama_lengkap']
+    readonly_fields = ['tanggal_dibuat', 'tanggal_dibaca']
+    date_hierarchy = 'tanggal_dibuat'
+    
+    fieldsets = (
+        ('Penerima & Tipe', {'fields': ('penerima', 'tipe', 'dibuat_oleh')}),
+        ('Konten', {'fields': ('judul', 'pesan', 'url_action')}),
+        ('Object Terkait', {'fields': ('dokumen', 'verifikasi'), 'classes': ('collapse',)}),
+        ('Status', {'fields': ('sudah_dibaca', 'tanggal_dibaca', 'tanggal_dibuat')}),
+    )
+

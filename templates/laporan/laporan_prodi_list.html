@@ -1,0 +1,281 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Completeness per Prodi - SIAKRED{% endblock %}
+{% block page_heading %}Completeness per Prodi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'laporan:laporan_index' %}">Laporan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Completeness Prodi</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .lpd-back {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1rem;
+    transition:all .12s;
+  }
+  .lpd-back:hover { border-color:#2563EB; color:#2563EB; transform:translateX(-3px); }
+
+  .lpd-header {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+    display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;
+  }
+  .lpd-header-info h2 { margin:0 0 .3rem; font-size:1.2rem; }
+  .lpd-header-info p { margin:0; color:var(--text-muted); font-size:.85rem; }
+  .lpd-btn-excel {
+    background:#059669; color:#fff; border:1px solid #059669;
+    padding:.55rem 1rem; border-radius:8px; text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    display:inline-flex; align-items:center; gap:.4rem; cursor:pointer;
+  }
+  .lpd-btn-excel:hover { background:#047857; }
+
+  .lpd-toolbar {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:.85rem 1rem; margin-bottom:1rem;
+    display:flex; gap:.85rem; align-items:center; flex-wrap:wrap;
+  }
+  .lpd-toolbar label { font-size:.8rem; color:var(--text-muted); font-weight:500; }
+  .lpd-toolbar select, .lpd-toolbar input {
+    padding:.4rem .7rem; border:1px solid var(--border); border-radius:7px;
+    font-size:.85rem; background:#fff;
+  }
+  .lpd-toolbar .stats {
+    margin-left:auto; font-size:.8rem; color:var(--text-muted);
+  }
+
+  /* OVERALL STATS */
+  .lpd-agg-stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:.85rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .lpd-agg-stats { grid-template-columns:repeat(2, 1fr); } }
+  .lpd-agg {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:.85rem 1rem; border-top:3px solid;
+  }
+  .lpd-agg.prodi { border-top-color:#2563EB; }
+  .lpd-agg.butir { border-top-color:#7C3AED; }
+  .lpd-agg.terisi { border-top-color:#059669; }
+  .lpd-agg.progress { border-top-color:#F59E0B; }
+  .lpd-agg-label { font-size:.68rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.2rem; }
+  .lpd-agg-value { font-size:1.55rem; font-weight:700; line-height:1.1; }
+
+  /* BAR CHART */
+  .lpd-chart {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; margin-bottom:1.25rem;
+  }
+  .lpd-chart h3 {
+    margin:0 0 1rem; font-size:.95rem; font-weight:600;
+    padding-bottom:.6rem; border-bottom:1px solid var(--border);
+  }
+  .lpd-bar-item {
+    display:grid; grid-template-columns:110px 1fr 60px; gap:.75rem;
+    align-items:center; margin-bottom:.5rem;
+  }
+  .lpd-bar-label { font-size:.8rem; font-weight:500; color:var(--text-primary); }
+  .lpd-bar-label small { color:var(--text-muted); font-weight:400; display:block; }
+  .lpd-bar-outer {
+    height:22px; background:#F3F4F6; border-radius:6px; overflow:hidden;
+    position:relative;
+  }
+  .lpd-bar-inner {
+    height:100%; border-radius:6px; transition:width .3s;
+    display:flex; align-items:center; padding-left:.5rem;
+    font-size:.7rem; font-weight:600; color:#fff;
+  }
+  .lpd-bar-inner.high { background:linear-gradient(90deg, #10B981, #059669); }
+  .lpd-bar-inner.mid { background:linear-gradient(90deg, #FBBF24, #F59E0B); }
+  .lpd-bar-inner.low { background:linear-gradient(90deg, #F87171, #DC2626); }
+  .lpd-bar-value {
+    font-size:.85rem; font-weight:600; text-align:right;
+    color:var(--text-primary);
+  }
+
+  /* TABEL */
+  .lpd-table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .lpd-table-wrap h3 {
+    margin:0; font-size:.95rem; font-weight:600;
+    padding:1rem 1.25rem; border-bottom:1px solid var(--border);
+  }
+  .lpd-table { width:100%; font-size:.85rem; }
+  .lpd-table th {
+    background:#F9FAFB; padding:.65rem .9rem; text-align:left;
+    font-size:.7rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:.02em; border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  .lpd-table th.num { text-align:center; }
+  .lpd-table td {
+    padding:.6rem .9rem; border-bottom:1px solid var(--border); vertical-align:middle;
+  }
+  .lpd-table tr:last-child td { border-bottom:0; }
+  .lpd-table tr:hover td { background:#FAFAFB; }
+  .lpd-table .rank {
+    font-weight:700; color:var(--text-muted); text-align:center;
+  }
+  .lpd-table .rank.top3 { color:#F59E0B; }
+  .lpd-table .kode {
+    font-family:ui-monospace,monospace; font-weight:600;
+    background:#EFF6FF; color:#1E40AF; padding:.12rem .45rem; border-radius:4px; font-size:.75rem;
+  }
+  .lpd-table .pct-cell { text-align:center; font-weight:600; }
+  .lpd-table .pct-cell.high { color:#059669; }
+  .lpd-table .pct-cell.mid { color:#D97706; }
+  .lpd-table .pct-cell.low { color:#DC2626; }
+  .lpd-table .num-cell { text-align:center; color:var(--text-muted); }
+  .lpd-table .badge-status {
+    display:inline-block; padding:.1rem .45rem; border-radius:999px; font-size:.65rem; font-weight:600;
+    margin-right:.2rem;
+  }
+  .lpd-table .badge-status.app { background:#D1FAE5; color:#065F46; }
+  .lpd-table .badge-status.pen { background:#DBEAFE; color:#1E40AF; }
+  .lpd-table .badge-status.rev { background:#FEF3C7; color:#92400E; }
+  .lpd-table .badge-status.rej { background:#FEE2E2; color:#991B1B; }
+</style>
+
+<a href="{% url 'laporan:laporan_index' %}" class="lpd-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Kembali ke Dashboard Laporan
+</a>
+
+<div class="lpd-header">
+    <div class="lpd-header-info">
+        <h2>Completeness per Prodi</h2>
+        <p>Ranking prodi berdasarkan persentase kelengkapan dokumen akreditasi.</p>
+    </div>
+    <a href="?export=excel" class="lpd-btn-excel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Export Excel
+    </a>
+</div>
+
+<!-- FILTER TOOLBAR -->
+<div class="lpd-toolbar">
+    <form method="get" style="display:flex; gap:.85rem; align-items:center; flex-wrap:wrap; margin:0;">
+        <label for="fakultasFilter">Fakultas:</label>
+        <select name="fakultas" id="fakultasFilter" onchange="this.form.submit()">
+            <option value="">Semua Fakultas</option>
+            {% for kode, nama in fakultas_options %}
+            <option value="{{ kode }}" {% if kode == fakultas_filter %}selected{% endif %}>{{ nama }} ({{ kode }})</option>
+            {% endfor %}
+        </select>
+    </form>
+    <div class="stats">
+        Menampilkan <strong>{{ prodi_list|length }}</strong> prodi
+        {% if fakultas_filter %} di <strong>{{ fakultas_filter_nama|default:fakultas_filter }}</strong>{% endif %}
+    </div>
+</div>
+
+<!-- AGGREGATE STATS -->
+<div class="lpd-agg-stats">
+    <div class="lpd-agg prodi">
+        <div class="lpd-agg-label">Total Prodi</div>
+        <div class="lpd-agg-value" style="color:#2563EB;">{{ agg.total_prodi }}</div>
+    </div>
+    <div class="lpd-agg butir">
+        <div class="lpd-agg-label">Total Butir</div>
+        <div class="lpd-agg-value" style="color:#7C3AED;">{{ agg.total_butir }}</div>
+    </div>
+    <div class="lpd-agg terisi">
+        <div class="lpd-agg-label">Butir Terisi</div>
+        <div class="lpd-agg-value" style="color:#059669;">{{ agg.total_terisi }}</div>
+    </div>
+    <div class="lpd-agg progress">
+        <div class="lpd-agg-label">Progress Keseluruhan</div>
+        <div class="lpd-agg-value" style="color:#F59E0B;">{{ agg.overall_progress }}%</div>
+    </div>
+</div>
+
+<!-- BAR CHART TOP 10 -->
+{% if top10 %}
+<div class="lpd-chart">
+    <h3>Top {{ top10|length }} Prodi — Progress Kelengkapan</h3>
+    {% for p in top10 %}
+    <div class="lpd-bar-item">
+        <div class="lpd-bar-label">
+            {{ p.kode_prodi }}
+            <small>{{ p.nama_prodi|truncatechars:20 }}</small>
+        </div>
+        <div class="lpd-bar-outer">
+            <div class="lpd-bar-inner {{ p.tier }}" style="width:{% if p.progress_pct > 0 %}{{ p.progress_pct }}%{% else %}2%{% endif %};">
+                {% if p.progress_pct > 15 %}{{ p.progress_pct }}%{% endif %}
+            </div>
+        </div>
+        <div class="lpd-bar-value">{{ p.progress_pct }}%</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- TABEL DETAIL -->
+<div class="lpd-table-wrap">
+    <h3>Detail Semua Prodi</h3>
+    {% if prodi_list %}
+    <table class="lpd-table">
+        <thead>
+            <tr>
+                <th class="num" style="width:50px;">#</th>
+                <th style="width:85px;">Kode</th>
+                <th>Nama Prodi</th>
+                <th style="width:80px;">Fakultas</th>
+                <th>Instrumen</th>
+                <th class="num" style="width:70px;">Total</th>
+                <th class="num" style="width:70px;">Terisi</th>
+                <th style="width:170px;">Status</th>
+                <th class="num" style="width:90px;">Progress</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in prodi_list %}
+            <tr>
+                <td class="rank {% if forloop.counter <= 3 %}top3{% endif %}">{{ forloop.counter }}</td>
+                <td><span class="kode">{{ p.kode_prodi }}</span></td>
+                <td><strong>{{ p.nama_prodi }}</strong></td>
+                <td style="color:var(--text-muted); font-size:.8rem;">
+                    {% if p.nama_fakultas and p.nama_fakultas != '—' %}
+                        <div style="font-weight:500; color:var(--text-primary); font-size:.78rem;">{{ p.kode_fakultas }}</div>
+                        <div style="font-size:.72rem;">{{ p.nama_fakultas|truncatechars:20 }}</div>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="font-size:.78rem; color:var(--text-muted);">{{ p.instrumen_nama|truncatechars:25 }}</td>
+                <td class="num-cell">{{ p.total_butir }}</td>
+                <td class="num-cell">{{ p.butir_terisi }}</td>
+                <td>
+                    {% if p.approved_count > 0 %}<span class="badge-status app">✓ {{ p.approved_count }}</span>{% endif %}
+                    {% if p.pending_count > 0 %}<span class="badge-status pen">⊕ {{ p.pending_count }}</span>{% endif %}
+                    {% if p.revision_count > 0 %}<span class="badge-status rev">⟳ {{ p.revision_count }}</span>{% endif %}
+                    {% if p.rejected_count > 0 %}<span class="badge-status rej">✗ {{ p.rejected_count }}</span>{% endif %}
+                    {% if p.butir_terisi == 0 %}<span style="color:var(--text-muted); font-size:.78rem; font-style:italic;">—</span>{% endif %}
+                </td>
+                <td class="pct-cell {{ p.tier }}">{{ p.progress_pct }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding:3rem 2rem; text-align:center; color:var(--text-muted);">
+        <div style="font-size:2.5rem; opacity:.3; margin-bottom:.75rem;">📊</div>
+        <div style="font-size:.95rem; font-weight:500; color:var(--text-primary); margin-bottom:.25rem;">Belum ada data prodi</div>
+        <div style="font-size:.85rem;">Pastikan mapping prodi → instrumen sudah dibuat di menu Master Akreditasi.</div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

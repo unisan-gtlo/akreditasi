@@ -1,0 +1,325 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Audit Trail Verifikasi - SIAKRED{% endblock %}
+{% block page_heading %}Audit Trail Verifikasi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'laporan:laporan_index' %}">Laporan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Audit Trail</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .at-back {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1rem;
+    transition:all .12s;
+  }
+  .at-back:hover { border-color:#2563EB; color:#2563EB; transform:translateX(-3px); }
+
+  .at-header {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+    display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;
+  }
+  .at-header-info h2 { margin:0 0 .3rem; font-size:1.2rem; }
+  .at-header-info p { margin:0; color:var(--text-muted); font-size:.85rem; }
+  .at-btn-excel {
+    background:#059669; color:#fff; border:1px solid #059669;
+    padding:.55rem 1rem; border-radius:8px; text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    display:inline-flex; align-items:center; gap:.4rem; cursor:pointer;
+  }
+  .at-btn-excel:hover { background:#047857; }
+
+  /* FILTER FORM */
+  .at-filter {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; margin-bottom:1.25rem;
+  }
+  .at-filter h3 { margin:0 0 .85rem; font-size:.9rem; font-weight:600; color:var(--text-primary); }
+  .at-filter-grid {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:.75rem;
+    margin-bottom:.85rem;
+  }
+  .at-form-group label {
+    display:block; font-size:.72rem; font-weight:500; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.03em; margin-bottom:.25rem;
+  }
+  .at-form-group input, .at-form-group select {
+    width:100%; padding:.5rem .75rem; border:1px solid var(--border); border-radius:7px;
+    font-size:.85rem; background:#fff;
+  }
+  .at-filter-actions { display:flex; gap:.5rem; }
+  .at-btn-filter {
+    padding:.5rem 1rem; border-radius:7px; font-size:.85rem; font-weight:500;
+    border:1px solid; cursor:pointer; text-decoration:none;
+    display:inline-flex; align-items:center; gap:.35rem;
+  }
+  .at-btn-filter.primary { background:#2563EB; color:#fff; border-color:#2563EB; }
+  .at-btn-filter.primary:hover { background:#1D4ED8; }
+  .at-btn-filter.reset { background:#fff; color:var(--text-primary); border-color:var(--border); }
+  .at-btn-filter.reset:hover { background:#F3F4F6; }
+
+  /* STATS */
+  .at-stats { display:grid; grid-template-columns:repeat(5, 1fr); gap:.75rem; margin-bottom:1.25rem; }
+  @media (max-width:900px) { .at-stats { grid-template-columns:repeat(2, 1fr); } }
+  .at-stat {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:.75rem 1rem; border-top:3px solid;
+  }
+  .at-stat.total { border-top-color:#64748B; }
+  .at-stat.approved { border-top-color:#059669; }
+  .at-stat.rejected { border-top-color:#DC2626; }
+  .at-stat.revision { border-top-color:#F59E0B; }
+  .at-stat.reset { border-top-color:#6B7280; }
+  .at-stat-label { font-size:.68rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-bottom:.2rem; }
+  .at-stat-value { font-size:1.5rem; font-weight:700; line-height:1.1; }
+
+  /* TABEL */
+  .at-table-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    overflow:hidden;
+  }
+  .at-table { width:100%; font-size:.82rem; }
+  .at-table th {
+    background:#F9FAFB; padding:.65rem .85rem; text-align:left;
+    font-size:.7rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:.02em; border-bottom:1px solid var(--border); white-space:nowrap;
+  }
+  .at-table td {
+    padding:.6rem .85rem; border-bottom:1px solid var(--border); vertical-align:top;
+  }
+  .at-table tr:last-child td { border-bottom:0; }
+  .at-table tr:hover td { background:#FAFAFB; }
+  .at-table .tgl { font-size:.78rem; color:var(--text-primary); }
+  .at-table .tgl small { color:var(--text-muted); display:block; font-size:.7rem; }
+  .at-badge {
+    display:inline-block; padding:.15rem .55rem; border-radius:999px; font-size:.68rem; font-weight:600;
+  }
+  .at-badge.APPROVED { background:#D1FAE5; color:#065F46; }
+  .at-badge.REJECTED { background:#FEE2E2; color:#991B1B; }
+  .at-badge.NEED_REVISION { background:#FEF3C7; color:#92400E; }
+  .at-badge.RESET { background:#F3F4F6; color:#374151; }
+  .at-table .dokumen-info { max-width:280px; }
+  .at-table .dokumen-judul { font-weight:500; color:var(--text-primary); margin-bottom:.15rem; }
+  .at-table .dokumen-meta { font-size:.72rem; color:var(--text-muted); }
+  .at-table .butir-kode {
+    font-family:ui-monospace,monospace; font-weight:600;
+    background:#EFF6FF; color:#1E40AF; padding:.08rem .4rem; border-radius:4px; font-size:.7rem;
+  }
+  .at-table .verif-nama { font-weight:500; color:var(--text-primary); }
+  .at-table .verif-meta { font-size:.7rem; color:var(--text-muted); margin-top:.15rem; }
+  .at-table .catatan-text {
+    max-width:250px; font-size:.78rem; color:var(--text-primary);
+    font-style:italic; line-height:1.4;
+  }
+  .at-table .status-change {
+    font-size:.7rem; color:var(--text-muted); font-family:ui-monospace,monospace;
+  }
+
+  .at-pagination {
+    padding:1rem; text-align:center; font-size:.85rem; color:var(--text-muted);
+    border-top:1px solid var(--border);
+  }
+  .at-pagination a { color:#2563EB; text-decoration:none; font-weight:500; margin:0 .5rem; }
+  .at-pagination a:hover { text-decoration:underline; }
+
+  .at-empty {
+    padding:3rem 1.5rem; text-align:center; color:var(--text-muted);
+  }
+</style>
+
+<a href="{% url 'laporan:laporan_index' %}" class="at-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Kembali ke Dashboard Laporan
+</a>
+
+<div class="at-header">
+    <div class="at-header-info">
+        <h2>Audit Trail Verifikasi</h2>
+        <p>Log lengkap aktivitas approve/reject dokumen oleh verifikator. Filter lanjut untuk analisis forensik.</p>
+    </div>
+    <a href="?{% for k, v in filters.items %}{% if v %}{{ k }}={{ v }}&{% endif %}{% endfor %}export=excel" class="at-btn-excel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Export Excel
+    </a>
+</div>
+
+<!-- FILTER FORM -->
+<form method="get" class="at-filter">
+    <h3>🔍 Filter Audit</h3>
+    <div class="at-filter-grid">
+        <div class="at-form-group">
+            <label for="date_from">Dari Tanggal</label>
+            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}">
+        </div>
+        <div class="at-form-group">
+            <label for="date_to">Sampai Tanggal</label>
+            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}">
+        </div>
+        <div class="at-form-group">
+            <label for="aksi">Aksi</label>
+            <select name="aksi" id="aksi">
+                <option value="">Semua Aksi</option>
+                {% for kode, nama in aksi_options %}
+                <option value="{{ kode }}" {% if kode == filters.aksi %}selected{% endif %}>{{ nama }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="at-form-group">
+            <label for="verifikator_id">Verifikator</label>
+            <select name="verifikator_id" id="verifikator_id">
+                <option value="">Semua Verifikator</option>
+                {% for u in verifikator_options %}
+                <option value="{{ u.id }}" {% if filters.verifikator_id == u.id|stringformat:"s" %}selected{% endif %}>
+                    {{ u.get_full_name|default:u.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="at-form-group" style="grid-column:span 2;">
+            <label for="search">Cari (Judul Dokumen / Catatan)</label>
+            <input type="text" name="search" id="search" value="{{ filters.search }}" placeholder="Ketik keyword...">
+        </div>
+    </div>
+    <div class="at-filter-actions">
+        <button type="submit" class="at-btn-filter primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Terapkan Filter
+        </button>
+        <a href="{% url 'laporan:laporan_audit_trail' %}" class="at-btn-filter reset">Reset</a>
+    </div>
+</form>
+
+<!-- STATS -->
+<div class="at-stats">
+    <div class="at-stat total">
+        <div class="at-stat-label">Total Log</div>
+        <div class="at-stat-value" style="color:#334155;">{{ stats.total }}</div>
+    </div>
+    <div class="at-stat approved">
+        <div class="at-stat-label">Approved</div>
+        <div class="at-stat-value" style="color:#059669;">{{ stats.approved }}</div>
+    </div>
+    <div class="at-stat rejected">
+        <div class="at-stat-label">Rejected</div>
+        <div class="at-stat-value" style="color:#DC2626;">{{ stats.rejected }}</div>
+    </div>
+    <div class="at-stat revision">
+        <div class="at-stat-label">Need Revision</div>
+        <div class="at-stat-value" style="color:#D97706;">{{ stats.revision }}</div>
+    </div>
+    <div class="at-stat reset">
+        <div class="at-stat-label">Reset</div>
+        <div class="at-stat-value" style="color:#6B7280;">{{ stats.reset }}</div>
+    </div>
+</div>
+
+<!-- TABEL AUDIT LOG -->
+<div class="at-table-wrap">
+    {% if page %}
+    <table class="at-table">
+        <thead>
+            <tr>
+                <th style="width:130px;">Tanggal</th>
+                <th style="width:120px;">Aksi</th>
+                <th>Dokumen</th>
+                <th style="width:180px;">Verifikator</th>
+                <th>Catatan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in page %}
+            <tr>
+                <td class="tgl">
+                    {{ log.tanggal|date:"d M Y" }}
+                    <small>{{ log.tanggal|date:"H:i:s" }}</small>
+                </td>
+                <td>
+                    <span class="at-badge {{ log.aksi }}">
+                        {% if log.aksi == 'APPROVED' %}✓ Approved
+                        {% elif log.aksi == 'REJECTED' %}✗ Rejected
+                        {% elif log.aksi == 'NEED_REVISION' %}⟳ Revision
+                        {% elif log.aksi == 'RESET' %}↺ Reset
+                        {% else %}{{ log.aksi }}{% endif %}
+                    </span>
+                    {% if log.status_lama and log.status_baru %}
+                    <div class="status-change">{{ log.status_lama }} → {{ log.status_baru }}</div>
+                    {% endif %}
+                </td>
+                <td class="dokumen-info">
+                    {% if log.verifikasi.revisi.dokumen %}
+                    <div class="dokumen-judul">{{ log.verifikasi.revisi.dokumen.judul|truncatechars:60 }}</div>
+                    <div class="dokumen-meta">
+                        {% if log.verifikasi.revisi.dokumen.butir_dokumen %}
+                        <span class="butir-kode">{{ log.verifikasi.revisi.dokumen.butir_dokumen.kode }}</span>
+                        {% endif %}
+                        {% if log.verifikasi.revisi.dokumen.scope_kode_prodi %}
+                         &middot; Prodi: {{ log.verifikasi.revisi.dokumen.scope_kode_prodi }}
+                        {% endif %}
+                        {% if log.verifikasi.revisi.nomor_revisi %}
+                         &middot; r{{ log.verifikasi.revisi.nomor_revisi }}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <span style="color:var(--text-muted); font-style:italic;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log.dilakukan_oleh %}
+                    <div class="verif-nama">{{ log.dilakukan_oleh.get_full_name|default:log.dilakukan_oleh.username }}</div>
+                    <div class="verif-meta">@{{ log.dilakukan_oleh.username }}</div>
+                    {% else %}
+                    <span style="color:var(--text-muted); font-style:italic;">(sistem)</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log.catatan %}
+                    <div class="catatan-text">"{{ log.catatan|truncatechars:120 }}"</div>
+                    {% else %}
+                    <span style="color:var(--text-muted); font-size:.75rem;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if page.has_other_pages %}
+    <div class="at-pagination">
+        {% if page.has_previous %}
+        <a href="?{% for k, v in filters.items %}{% if v %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page.previous_page_number }}">&laquo; Prev</a>
+        {% endif %}
+        <span>Halaman {{ page.number }} / {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+        <a href="?{% for k, v in filters.items %}{% if v %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page.next_page_number }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="at-empty">
+        <div style="font-size:2.5rem; opacity:.3; margin-bottom:.75rem;">📜</div>
+        <div style="font-size:.95rem; font-weight:500; color:var(--text-primary); margin-bottom:.25rem;">
+            Tidak ada log audit
+        </div>
+        <div style="font-size:.85rem;">
+            Coba perluas filter atau reset filter.
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

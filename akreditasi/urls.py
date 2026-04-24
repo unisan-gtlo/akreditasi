@@ -19,6 +19,7 @@ urlpatterns = [
     # Internal apps
     path("master/", include("master_akreditasi.urls")),
     path("dokumen/", include("dokumen.urls")),
+        path("laporan/", include("laporan.urls")),
     path("sesi/", include("sesi.urls")),     # ← TAMBAH BARIS INI
 
     # Core (landing, login, dashboard)

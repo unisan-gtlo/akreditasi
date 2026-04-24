@@ -1,0 +1,242 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Dashboard Laporan - SIAKRED{% endblock %}
+{% block page_heading %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Laporan</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .lap-stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:1rem; margin-bottom:1.5rem; }
+  @media (max-width:900px) { .lap-stats { grid-template-columns:repeat(2, 1fr); } }
+  .lap-stat {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem 1.1rem; border-top:3px solid;
+  }
+  .lap-stat.sesi { border-top-color:#2563EB; }
+  .lap-stat.dokumen { border-top-color:#7C3AED; }
+  .lap-stat.approved { border-top-color:#059669; }
+  .lap-stat.progress { border-top-color:#F59E0B; }
+  .lap-stat-label { font-size:.78rem; color:var(--text-muted); font-weight:500; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.03em; }
+  .lap-stat-value { font-size:2rem; font-weight:700; color:var(--text-primary); line-height:1; margin-bottom:.25rem; }
+  .lap-stat-hint { font-size:.72rem; color:var(--text-muted); }
+
+  .lap-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:1.25rem; margin-bottom:1.5rem; }
+  @media (max-width:900px) { .lap-grid { grid-template-columns:1fr; } }
+  .lap-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.5rem; text-decoration:none; color:inherit;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+    display:flex; flex-direction:column; min-height:180px;
+  }
+  .lap-card:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(0,0,0,.08); }
+  .lap-card-header { display:flex; align-items:flex-start; gap:1rem; margin-bottom:.85rem; }
+  .lap-card-icon {
+    width:52px; height:52px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:1.5rem;
+  }
+  .lap-card.progress .lap-card-icon { background:#DBEAFE; color:#1E40AF; }
+  .lap-card.completeness .lap-card-icon { background:#D1FAE5; color:#065F46; }
+  .lap-card.heatmap .lap-card-icon { background:#FEE2E2; color:#991B1B; }
+  .lap-card.audit .lap-card-icon { background:#FEF3C7; color:#92400E; }
+  .lap-card-title { font-size:1.1rem; font-weight:600; color:var(--text-primary); margin:0 0 .25rem; }
+  .lap-card-subtitle { font-size:.82rem; color:var(--text-muted); }
+  .lap-card-desc { font-size:.88rem; color:var(--text-primary); line-height:1.55; margin:0 0 1rem; flex:1; }
+  .lap-card-footer { display:flex; align-items:center; justify-content:space-between; padding-top:.75rem; border-top:1px solid var(--border); }
+  .lap-card-features { display:flex; gap:.35rem; flex-wrap:wrap; }
+  .lap-card-badge {
+    display:inline-block; padding:.15rem .5rem; border-radius:999px; font-size:.68rem; font-weight:500;
+    background:#F3F4F6; color:#374151;
+  }
+  .lap-card-link { color:#2563EB; font-weight:600; font-size:.85rem; display:inline-flex; align-items:center; gap:.25rem; }
+
+  .lap-sesi-section {
+    background:#F9FAFB; border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; margin-top:.5rem;
+  }
+  .lap-sesi-section h3 { margin:0 0 1rem; font-size:.95rem; font-weight:600; color:var(--text-primary); }
+  .lap-sesi-list { display:flex; flex-direction:column; gap:.5rem; }
+  .lap-sesi-item {
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    background:#fff; border:1px solid var(--border); border-radius:8px;
+    padding:.75rem 1rem; text-decoration:none; color:inherit; transition:border-color .1s;
+  }
+  .lap-sesi-item:hover { border-color:#2563EB; }
+  .lap-sesi-info { flex:1; min-width:0; }
+  .lap-sesi-judul { font-size:.9rem; font-weight:500; color:var(--text-primary); margin-bottom:.15rem; }
+  .lap-sesi-meta { font-size:.75rem; color:var(--text-muted); }
+  .lap-sesi-action { font-size:.82rem; color:#2563EB; white-space:nowrap; }
+  .lap-sesi-status {
+    display:inline-block; padding:.1rem .45rem; border-radius:999px; font-size:.68rem; font-weight:600;
+    margin-right:.5rem;
+  }
+  .lap-sesi-status.PERSIAPAN { background:#DBEAFE; color:#1E40AF; }
+  .lap-sesi-status.REVIEW_INTERNAL { background:#FEF3C7; color:#92400E; }
+  .lap-sesi-status.SUBMITTED { background:#CFFAFE; color:#0E7490; }
+  .lap-sesi-status.VISITASI_AKTIF { background:#E9D5FF; color:#6B21A8; }
+  .lap-sesi-status.MENUNGGU_HASIL { background:#FEF3C7; color:#92400E; }
+
+  .lap-scope-note {
+    background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px;
+    padding:.85rem 1.1rem; font-size:.85rem; color:#1E40AF;
+    margin-bottom:1.25rem; display:flex; align-items:center; gap:.6rem;
+  }
+</style>
+
+{% if not scope_info.is_admin and scope_info.fakultas_ids %}
+<div class="lap-scope-note">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Data di bawah terbatas pada fakultas Anda: <strong>{{ scope_info.fakultas_ids|join:", " }}</strong>
+</div>
+{% endif %}
+
+<!-- GLOBAL STATS -->
+<div class="lap-stats">
+    <div class="lap-stat sesi">
+        <div class="lap-stat-label">Sesi Aktif</div>
+        <div class="lap-stat-value">{{ sesi_aktif_count }}</div>
+        <div class="lap-stat-hint">Sesi sedang berjalan</div>
+    </div>
+    <div class="lap-stat dokumen">
+        <div class="lap-stat-label">Total Dokumen</div>
+        <div class="lap-stat-value">{{ total_dokumen }}</div>
+        <div class="lap-stat-hint">{{ total_verifikasi }} revisi diverifikasi</div>
+    </div>
+    <div class="lap-stat approved">
+        <div class="lap-stat-label">Tingkat Approval</div>
+        <div class="lap-stat-value">{{ approved_pct }}%</div>
+        <div class="lap-stat-hint">{{ approved_count }} dari {{ total_verifikasi }} disetujui</div>
+    </div>
+    <div class="lap-stat progress">
+        <div class="lap-stat-label">Menunggu Review</div>
+        <div class="lap-stat-value">{{ pending_count }}</div>
+        <div class="lap-stat-hint">{{ revision_count }} butuh revisi, {{ rejected_count }} ditolak</div>
+    </div>
+</div>
+
+<!-- 4 LAPORAN CARDS -->
+<div class="lap-grid">
+    {% if sesi_aktif_list %}
+    <a href="{% url 'laporan:laporan_sesi_detail' sesi_aktif_list.0.id %}" class="lap-card progress">
+    {% else %}
+    <a href="#" class="lap-card progress" onclick="alert('Belum ada sesi aktif untuk ditampilkan.'); return false;">
+    {% endif %}
+        <div class="lap-card-header">
+            <div class="lap-card-icon">📊</div>
+            <div>
+                <h3 class="lap-card-title">Progress per Sesi</h3>
+                <div class="lap-card-subtitle">Detail per sesi akreditasi</div>
+            </div>
+        </div>
+        <p class="lap-card-desc">
+            Monitor progress kelengkapan dokumen, status verifikasi, dan milestone timeline
+            untuk setiap sesi akreditasi. Dilengkapi visualisasi chart dan export PDF.
+        </p>
+        <div class="lap-card-footer">
+            <div class="lap-card-features">
+                <span class="lap-card-badge">Progress Bar</span>
+                <span class="lap-card-badge">Donut Chart</span>
+                <span class="lap-card-badge">PDF</span>
+            </div>
+            <span class="lap-card-link">Buka &rsaquo;</span>
+        </div>
+    </a>
+
+    <a href="{% url 'laporan:laporan_prodi_list' %}" class="lap-card completeness">
+        <div class="lap-card-header">
+            <div class="lap-card-icon">📈</div>
+            <div>
+                <h3 class="lap-card-title">Completeness per Prodi</h3>
+                <div class="lap-card-subtitle">Ranking kelengkapan dokumen</div>
+            </div>
+        </div>
+        <p class="lap-card-desc">
+            Tabel ranking prodi berdasarkan persentase kelengkapan dokumen akreditasi.
+            Dilengkapi bar chart horizontal dan filter per fakultas. Export Excel untuk
+            rapat pimpinan.
+        </p>
+        <div class="lap-card-footer">
+            <div class="lap-card-features">
+                <span class="lap-card-badge">Tabel Sortable</span>
+                <span class="lap-card-badge">Bar Chart</span>
+                <span class="lap-card-badge">Excel</span>
+            </div>
+            <span class="lap-card-link">Buka &rsaquo;</span>
+        </div>
+    </a>
+
+    <a href="{% url 'laporan:laporan_heatmap' %}" class="lap-card heatmap">
+        <div class="lap-card-header">
+            <div class="lap-card-icon">🔥</div>
+            <div>
+                <h3 class="lap-card-title">Heatmap Verifikasi</h3>
+                <div class="lap-card-subtitle">Matrix status per Standar</div>
+            </div>
+        </div>
+        <p class="lap-card-desc">
+            Visualisasi matriks dengan baris Standar dan kolom Prodi. Warna cell indicator
+            status verifikasi. Identifikasi butir bottleneck yang sering butuh revisi.
+        </p>
+        <div class="lap-card-footer">
+            <div class="lap-card-features">
+                <span class="lap-card-badge">Grid Matrix</span>
+                <span class="lap-card-badge">Color Coded</span>
+                <span class="lap-card-badge">PDF</span>
+            </div>
+            <span class="lap-card-link">Buka &rsaquo;</span>
+        </div>
+    </a>
+
+    <a href="{% url 'laporan:laporan_audit_trail' %}" class="lap-card audit">
+        <div class="lap-card-header">
+            <div class="lap-card-icon">📜</div>
+            <div>
+                <h3 class="lap-card-title">Audit Trail</h3>
+                <div class="lap-card-subtitle">Log aktivitas verifikator</div>
+            </div>
+        </div>
+        <p class="lap-card-desc">
+            Log lengkap aktivitas verifikasi: siapa approve/reject dokumen apa kapan,
+            dengan catatan. Filter by date range, user, aksi. Export Excel untuk audit internal.
+        </p>
+        <div class="lap-card-footer">
+            <div class="lap-card-features">
+                <span class="lap-card-badge">Filter Lanjut</span>
+                <span class="lap-card-badge">Date Range</span>
+                <span class="lap-card-badge">Excel</span>
+            </div>
+            <span class="lap-card-link">Buka &rsaquo;</span>
+        </div>
+    </a>
+</div>
+
+<!-- SESI AKTIF QUICK ACCESS -->
+{% if sesi_aktif_list %}
+<div class="lap-sesi-section">
+    <h3>Akses Cepat — Sesi Aktif</h3>
+    <div class="lap-sesi-list">
+        {% for sesi in sesi_aktif_list %}
+        <a href="{% url 'laporan:laporan_sesi_detail' sesi.id %}" class="lap-sesi-item">
+            <div class="lap-sesi-info">
+                <div class="lap-sesi-judul">
+                    <span class="lap-sesi-status {{ sesi.status }}">{{ sesi.status|cut:"_" }}</span>
+                    {{ sesi.judul }}
+                </div>
+                <div class="lap-sesi-meta">
+                    {% if sesi.kode_prodi %}Prodi: {{ sesi.kode_prodi }} {{ sesi.nama_prodi_snapshot }}{% endif %}
+                    {% if sesi.tahun_ts %} &middot; TS: {{ sesi.tahun_ts }}{% endif %}
+                </div>
+            </div>
+            <span class="lap-sesi-action">Lihat Laporan &rsaquo;</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,264 @@
+{% extends "layouts/internal.html" %}
+{% load laporan_extras %}
+
+{% block title %}Heatmap Verifikasi - SIAKRED{% endblock %}
+{% block page_heading %}Heatmap Verifikasi{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a href="{% url 'core:dashboard' %}">Dashboard</a>
+    <span class="sep">&rsaquo;</span>
+    <a href="{% url 'laporan:laporan_index' %}">Laporan</a>
+    <span class="sep">&rsaquo;</span>
+    <span class="current">Heatmap</span>
+</nav>
+{% endblock %}
+
+{% block page %}
+<style>
+  .hm-back {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.5rem .9rem; background:#fff;
+    border:1px solid var(--border); border-radius:8px;
+    color:var(--text-primary); text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    margin-bottom:1rem;
+    transition:all .12s;
+  }
+  .hm-back:hover { border-color:#2563EB; color:#2563EB; transform:translateX(-3px); }
+
+  .hm-header {
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+    display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;
+  }
+  .hm-header-info h2 { margin:0 0 .3rem; font-size:1.2rem; }
+  .hm-header-info p { margin:0; color:var(--text-muted); font-size:.85rem; }
+  .hm-btn-pdf {
+    background:#DC2626; color:#fff; border:1px solid #DC2626;
+    padding:.55rem 1rem; border-radius:8px; text-decoration:none;
+    font-size:.85rem; font-weight:500;
+    display:inline-flex; align-items:center; gap:.4rem; cursor:pointer;
+  }
+  .hm-btn-pdf:hover { background:#B91C1C; }
+
+  .hm-toolbar {
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:.85rem 1rem; margin-bottom:1rem;
+    display:flex; gap:1rem; align-items:center; flex-wrap:wrap;
+  }
+  .hm-toolbar label { font-size:.8rem; color:var(--text-muted); font-weight:500; }
+  .hm-toolbar select {
+    padding:.4rem .7rem; border:1px solid var(--border); border-radius:7px;
+    font-size:.85rem; background:#fff;
+  }
+  .hm-toolbar .info {
+    margin-left:auto; font-size:.8rem; color:var(--text-muted);
+  }
+
+  /* LEGEND */
+  .hm-legend {
+    background:#F9FAFB; border:1px solid var(--border); border-radius:10px;
+    padding:.85rem 1rem; margin-bottom:1rem;
+    display:flex; gap:1rem; flex-wrap:wrap; align-items:center;
+  }
+  .hm-legend-title { font-size:.8rem; font-weight:600; color:var(--text-muted); }
+  .hm-legend-item { display:flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--text-primary); }
+  .hm-legend-box { width:18px; height:18px; border-radius:4px; border:1px solid rgba(0,0,0,.08); }
+  .hm-legend-box.green { background:#10B981; }
+  .hm-legend-box.yellow { background:#FBBF24; }
+  .hm-legend-box.blue { background:#60A5FA; }
+  .hm-legend-box.orange { background:#F97316; }
+  .hm-legend-box.red { background:#EF4444; }
+  .hm-legend-box.empty { background:#E5E7EB; }
+
+  /* MATRIX */
+  .hm-matrix-wrap {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1rem; margin-bottom:1.25rem; overflow-x:auto;
+  }
+  .hm-matrix {
+    border-collapse:separate; border-spacing:2px;
+    font-size:.78rem;
+    min-width:600px;
+  }
+  .hm-matrix th, .hm-matrix td {
+    text-align:center; vertical-align:middle;
+    padding:.35rem; min-width:60px; height:50px;
+  }
+  .hm-matrix thead th {
+    background:#F9FAFB; font-weight:600; color:var(--text-muted);
+    font-size:.72rem; padding:.5rem .35rem;
+    writing-mode:horizontal-tb;
+  }
+  .hm-matrix thead th:first-child {
+    text-align:left; min-width:180px;
+    background:transparent;
+  }
+  .hm-matrix tbody th {
+    text-align:left; background:#F9FAFB;
+    font-weight:500; color:var(--text-primary);
+    padding:.5rem .75rem; min-width:180px;
+  }
+  .hm-matrix tbody th small { color:var(--text-muted); font-weight:400; display:block; font-size:.7rem; margin-top:.15rem; }
+
+  .hm-cell {
+    border-radius:6px; cursor:help;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#fff; font-weight:600; font-size:.72rem;
+    transition:transform .1s, box-shadow .1s;
+  }
+  .hm-cell:hover { transform:scale(1.08); box-shadow:0 3px 10px rgba(0,0,0,.15); z-index:2; position:relative; }
+  .hm-cell.green { background:#10B981; }
+  .hm-cell.yellow { background:#FBBF24; color:#78350F; }
+  .hm-cell.blue { background:#60A5FA; }
+  .hm-cell.orange { background:#F97316; }
+  .hm-cell.red { background:#EF4444; }
+  .hm-cell.empty { background:#E5E7EB; color:#9CA3AF; }
+  .hm-cell-fraction { font-size:.85rem; line-height:1; }
+
+  .hm-prodi-header {
+    font-family:ui-monospace,monospace; font-weight:600;
+    background:#EFF6FF !important; color:#1E40AF !important;
+    border-radius:6px;
+    min-width:60px !important;
+  }
+  .hm-prodi-header small { color:#6B7280; font-weight:400; font-size:.65rem; display:block; }
+
+  /* INSIGHTS */
+  .hm-insights {
+    background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px;
+    padding:1rem 1.25rem;
+  }
+  .hm-insights h3 { margin:0 0 .6rem; font-size:.9rem; color:#78350F; }
+  .hm-insights ul { margin:0; padding-left:1.25rem; }
+  .hm-insights li { font-size:.85rem; color:#78350F; line-height:1.5; margin-bottom:.3rem; }
+</style>
+
+<a href="{% url 'laporan:laporan_index' %}" class="hm-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Kembali ke Dashboard Laporan
+</a>
+
+<div class="hm-header">
+    <div class="hm-header-info">
+        <h2>Heatmap Verifikasi</h2>
+        <p>Matrix status verifikasi per Standar (baris) × Prodi (kolom). Identifikasi bottleneck.</p>
+    </div>
+    <a href="?export=pdf" class="hm-btn-pdf">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export PDF
+    </a>
+</div>
+
+<!-- FILTER TOOLBAR -->
+<div class="hm-toolbar">
+    <form method="get" style="display:flex; gap:.85rem; align-items:center; flex-wrap:wrap; margin:0;">
+        <label for="instrumenFilter">Instrumen:</label>
+        <select name="instrumen" id="instrumenFilter" onchange="this.form.submit()">
+            {% for i in instrumen_options %}
+            <option value="{{ i.id }}" {% if selected_instrumen and selected_instrumen.id == i.id %}selected{% endif %}>
+                {% firstof i.nama i.judul i.kode %}
+            </option>
+            {% endfor %}
+        </select>
+        
+        {% if fakultas_options %}
+        <label for="fakultasFilter">Fakultas:</label>
+        <select name="fakultas" id="fakultasFilter" onchange="this.form.submit()">
+            <option value="">Semua Fakultas</option>
+            {% for kode, nama in fakultas_options %}
+            <option value="{{ kode }}" {% if kode == fakultas_filter %}selected{% endif %}>{{ nama }} ({{ kode }})</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+    </form>
+    <div class="info">
+        Menampilkan <strong>{{ standar_list|length }}</strong> standar × <strong>{{ prodi_list|length }}</strong> prodi
+    </div>
+</div>
+
+<!-- LEGEND -->
+<div class="hm-legend">
+    <span class="hm-legend-title">Legenda:</span>
+    <div class="hm-legend-item"><div class="hm-legend-box green"></div> Semua Approved</div>
+    <div class="hm-legend-item"><div class="hm-legend-box yellow"></div> Sebagian Approved</div>
+    <div class="hm-legend-item"><div class="hm-legend-box blue"></div> Pending Review</div>
+    <div class="hm-legend-item"><div class="hm-legend-box orange"></div> Perlu Revisi</div>
+    <div class="hm-legend-item"><div class="hm-legend-box red"></div> Ada Ditolak</div>
+    <div class="hm-legend-item"><div class="hm-legend-box empty"></div> Belum Diisi</div>
+</div>
+
+<!-- MATRIX -->
+{% if standar_list and prodi_list %}
+<div class="hm-matrix-wrap">
+    <table class="hm-matrix">
+        <thead>
+            <tr>
+                <th>Standar</th>
+                {% for p in prodi_list %}
+                <th class="hm-prodi-header" title="{{ p.nama_prodi }}">
+                    {{ p.kode_prodi }}
+                    <small>{{ p.nama_prodi|truncatechars:12 }}</small>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in standar_list %}
+            <tr>
+                <th>
+                    <strong>Std {{ s.nomor }}</strong>
+                    <small>{{ s.nama|truncatechars:35 }}</small>
+                </th>
+                {% for p in prodi_list %}
+                    {% with cell=matrix|dictkey:s.id|dictkey:p.kode_prodi %}
+                    <td>
+                        <div class="hm-cell {{ cell.color|default:'empty' }}" title="{{ s.nama }} × {{ p.nama_prodi }}: {{ cell.label|default:'Belum diisi' }}">
+                            {% if cell.terisi %}
+                                <span class="hm-cell-fraction">{{ cell.terisi }}/{{ cell.total }}</span>
+                            {% else %}
+                                <span style="opacity:.5;">—</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endwith %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="hm-matrix-wrap" style="text-align:center; padding:3rem;">
+    <div style="font-size:2.5rem; opacity:.3; margin-bottom:.75rem;">🔥</div>
+    <div style="font-size:.95rem; font-weight:500; color:var(--text-primary); margin-bottom:.25rem;">
+        {% if not selected_instrumen %}
+            Belum ada instrumen aktif
+        {% elif not standar_list %}
+            Instrumen ini belum punya standar
+        {% else %}
+            Tidak ada prodi yang mapped ke instrumen ini
+        {% endif %}
+    </div>
+    <div style="font-size:.85rem; color:var(--text-muted);">
+        Coba pilih instrumen lain dari dropdown di atas.
+    </div>
+</div>
+{% endif %}
+
+<!-- INSIGHTS -->
+{% if insights %}
+<div class="hm-insights">
+    <h3>💡 Insights &amp; Rekomendasi</h3>
+    <ul>
+        {% for insight in insights %}
+        <li>{{ insight }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}
