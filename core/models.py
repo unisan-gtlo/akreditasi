@@ -500,3 +500,283 @@ def buat_notifikasi_verifikasi(verifikasi, aksi, dibuat_oleh, catatan=''):
         dibuat_oleh=dibuat_oleh,
     )
 
+
+class SiteProfile(models.Model):
+    """Singleton model untuk profil universitas yang ditampilkan di landing publik."""
+    
+    nama_institusi = models.CharField(max_length=200, default='Universitas Ichsan Gorontalo')
+    nama_singkat = models.CharField(max_length=50, default='UNISAN')
+    tagline = models.CharField(max_length=200, default='Sistem Informasi Arsip Akreditasi')
+    tahun_berdiri = models.IntegerField(null=True, blank=True)
+    
+    deskripsi_singkat = models.TextField(blank=True)
+    visi = models.TextField(blank=True)
+    misi = models.TextField(blank=True)
+    
+    alamat = models.TextField(blank=True)
+    telepon = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    website = models.URLField(blank=True)
+    
+    instagram = models.URLField(blank=True)
+    facebook = models.URLField(blank=True)
+    youtube = models.URLField(blank=True)
+    twitter_x = models.URLField(max_length=500, blank=True, verbose_name="Twitter / X", help_text="URL Twitter / X")
+    tiktok = models.URLField(max_length=500, blank=True, help_text="URL TikTok")
+    linkedin = models.URLField(max_length=500, blank=True, help_text="URL LinkedIn")
+    whatsapp_channel = models.URLField(max_length=500, blank=True, verbose_name="WhatsApp Channel", help_text="URL WhatsApp Channel")
+    telegram = models.URLField(max_length=500, blank=True, help_text="URL Telegram")
+    
+    # Rektor (tidak ada di SIMDA, SIAKRED-only)
+    nama_rektor = models.CharField(max_length=200, blank=True, help_text="Nama lengkap Rektor dengan gelar")
+    foto_rektor = models.ImageField(upload_to="profile/institusi/", blank=True, null=True, help_text="Foto close-up Rektor")
+    periode_rektor = models.CharField(max_length=50, blank=True, help_text="Periode jabatan (e.g. 2023-2027)")
+    kata_sambutan = models.TextField(blank=True, help_text="Kata sambutan Rektor untuk publik")
+    
+    # Tujuan (extension visi/misi)
+    tujuan = models.TextField(blank=True, help_text="Tujuan universitas (1 poin per baris)")
+    
+    # Akreditasi Institusi (extend dari SIMDA)
+    akreditasi_peringkat = models.CharField(max_length=30, blank=True, help_text="e.g. 'Unggul', 'Baik Sekali', 'B'")
+    akreditasi_no_sk = models.CharField(max_length=100, blank=True, help_text="Nomor SK akreditasi institusi")
+    akreditasi_tanggal_sk = models.DateField(blank=True, null=True, help_text="Tanggal SK akreditasi")
+    akreditasi_berlaku_sampai = models.DateField(blank=True, null=True, help_text="Berlaku sampai tanggal")
+    akreditasi_lembaga = models.CharField(max_length=50, blank=True, default="BAN-PT", help_text="Lembaga pemberi akreditasi")
+    
+    aktif = models.BooleanField(default=True)
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+    tanggal_diubah = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Profil Institusi'
+        verbose_name_plural = 'Profil Institusi'
+    
+    def __str__(self):
+        return self.nama_institusi
+    
+    def save(self, *args, **kwargs):
+        if not self.pk and SiteProfile.objects.exists():
+            existing = SiteProfile.objects.first()
+            self.pk = existing.pk
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_instance(cls):
+        obj, created = cls.objects.get_or_create(pk=1, defaults={
+            'nama_institusi': 'Universitas Ichsan Gorontalo',
+            'nama_singkat': 'UNISAN',
+            'tagline': 'Sistem Informasi Arsip Akreditasi',
+        })
+        return obj
+
+
+class FakultasTheme(models.Model):
+    """Theme warna per fakultas, sync via kode_fakultas dengan SIMDA.
+    
+    Tujuan: Kasih identitas visual konsisten untuk setiap fakultas di:
+    - Landing page (card border, icon tint, arrow circle)
+    - Laporan (heatmap, chart)
+    - Badge fakultas di list dokumen, sesi, dll
+    
+    Data SIMDA master.fakultas di-lookup by kode_fakultas,
+    lalu di-enrich dengan warna dari model ini.
+    """
+    kode_fakultas = models.CharField(
+        max_length=10,
+        unique=True,
+        help_text="Kode fakultas (sync dengan SIMDA master.fakultas.kode_fakultas). Contoh: FE, FH, FT",
+    )
+    nama_fakultas = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Nama fakultas (cached dari SIMDA untuk display cepat)",
+    )
+    warna_primary = models.CharField(
+        max_length=7,
+        default="#2563EB",
+        help_text="Hex color utama, dipakai untuk border-top, icon, arrow. Contoh: #059669",
+    )
+    warna_light = models.CharField(
+        max_length=7,
+        default="#DBEAFE",
+        help_text="Hex color terang, dipakai untuk background tint kartu. Contoh: #D1FAE5",
+    )
+    icon_nama = models.CharField(
+        max_length=50,
+        blank=True,
+        default="graduation-cap",
+        help_text="Nama icon Lucide (opsional, default graduation-cap)",
+    )
+    urutan = models.IntegerField(
+        default=0,
+        help_text="Urutan tampil di UI (lower = first). Biasanya ikut urutan SIMDA.",
+    )
+    aktif = models.BooleanField(
+        default=True,
+        help_text="Nonaktifkan untuk sembunyikan dari UI tanpa delete",
+    )
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+    tanggal_diubah = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Theme Fakultas"
+        verbose_name_plural = "Theme Fakultas"
+        ordering = ["urutan", "kode_fakultas"]
+    
+    def __str__(self):
+        return f"{self.kode_fakultas} - {self.nama_fakultas}"
+    
+    @classmethod
+    def get_theme_map(cls):
+        """Return dict {kode_fakultas: {primary, light, icon}} untuk enrich data landing.
+        
+        Dipakai di helper _get_fakultas_list() untuk inject warna ke setiap fakultas.
+        """
+        return {
+            t.kode_fakultas: {
+                "primary": t.warna_primary,
+                "light": t.warna_light,
+                "icon": t.icon_nama,
+            }
+            for t in cls.objects.filter(aktif=True)
+        }
+
+
+# ============================================================
+# PROFILE ENRICHMENT: Foto & Visi Misi (SIAKRED override SIMDA)
+# ============================================================
+
+def _foto_dekan_path(instance, filename):
+    ext = filename.split(".")[-1]
+    return f"profile/fakultas/{instance.kode_fakultas}.{ext}"
+
+
+def _foto_kaprodi_path(instance, filename):
+    ext = filename.split(".")[-1]
+    return f"profile/prodi/{instance.kode_prodi}.{ext}"
+
+
+class FakultasProfile(models.Model):
+    """Profile lengkap fakultas untuk landing publik.
+    
+    Sync via kode_fakultas dengan SIMDA master.fakultas.
+    Menambahkan data yang tidak ada di SIMDA (foto dekan) atau override kalau SIMDA kosong (visi/misi).
+    """
+    kode_fakultas = models.CharField(
+        max_length=10, unique=True,
+        help_text="Kode fakultas sync dengan SIMDA master.fakultas.kode_fakultas (FE, FH, FS, FK, FP, FT, S2)",
+    )
+    
+    # Pejabat
+    nama_dekan = models.CharField(
+        max_length=200, blank=True,
+        help_text="Nama lengkap dekan dengan gelar (e.g. Dr. H. Budi Santoso, M.Si.)",
+    )
+    foto_dekan = models.ImageField(
+        upload_to=_foto_dekan_path, blank=True, null=True,
+        help_text="Foto close-up dekan, ratio 1:1 atau 3:4 (min 400x400px)",
+    )
+    periode_dekan = models.CharField(
+        max_length=50, blank=True,
+        help_text="Periode jabatan (e.g. 2023-2027)",
+    )
+    
+    # Visi Misi (override SIMDA kalau kosong)
+    visi = models.TextField(
+        blank=True,
+        help_text="Visi fakultas. Kalau kosong, fallback ke SIMDA.",
+    )
+    misi = models.TextField(
+        blank=True,
+        help_text="Misi fakultas (bisa multi-line, 1 baris per poin).",
+    )
+    tujuan = models.TextField(
+        blank=True,
+        help_text="Tujuan fakultas (opsional).",
+    )
+    
+    # Meta
+    aktif = models.BooleanField(default=True)
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+    tanggal_diubah = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Profile Fakultas"
+        verbose_name_plural = "Profile Fakultas"
+        ordering = ["kode_fakultas"]
+    
+    def __str__(self):
+        return f"{self.kode_fakultas} Profile"
+    
+    def get_misi_list(self):
+        """Return misi sebagai list dari baris-baris yang non-empty."""
+        if not self.misi:
+            return []
+        return [line.strip() for line in self.misi.splitlines() if line.strip()]
+    
+    def get_foto_dekan_url(self):
+        """Return URL foto dekan atau None."""
+        if self.foto_dekan and hasattr(self.foto_dekan, "url"):
+            try:
+                return self.foto_dekan.url
+            except Exception:
+                return None
+        return None
+
+
+class ProdiProfile(models.Model):
+    """Profile lengkap program studi untuk landing publik."""
+    kode_prodi = models.CharField(
+        max_length=10, unique=True,
+        help_text="Kode prodi sync dengan SIMDA master.program_studi.kode_prodi",
+    )
+    
+    # Pejabat
+    nama_kaprodi = models.CharField(
+        max_length=200, blank=True,
+        help_text="Nama lengkap ketua program studi dengan gelar",
+    )
+    foto_kaprodi = models.ImageField(
+        upload_to=_foto_kaprodi_path, blank=True, null=True,
+        help_text="Foto close-up kaprodi, ratio 1:1 atau 3:4 (min 400x400px)",
+    )
+    periode_kaprodi = models.CharField(
+        max_length=50, blank=True,
+        help_text="Periode jabatan (e.g. 2024-2028)",
+    )
+    
+    # Visi Misi
+    visi = models.TextField(blank=True, help_text="Visi prodi")
+    misi = models.TextField(blank=True, help_text="Misi prodi (1 baris per poin)")
+    tujuan = models.TextField(blank=True, help_text="Tujuan prodi (opsional)")
+    profil_lulusan = models.TextField(
+        blank=True,
+        help_text="Profil lulusan / kompetensi utama (opsional)",
+    )
+    
+    # Meta
+    aktif = models.BooleanField(default=True)
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+    tanggal_diubah = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Profile Prodi"
+        verbose_name_plural = "Profile Prodi"
+        ordering = ["kode_prodi"]
+    
+    def __str__(self):
+        return f"{self.kode_prodi} Profile"
+    
+    def get_misi_list(self):
+        if not self.misi:
+            return []
+        return [line.strip() for line in self.misi.splitlines() if line.strip()]
+    
+    def get_foto_kaprodi_url(self):
+        if self.foto_kaprodi and hasattr(self.foto_kaprodi, "url"):
+            try:
+                return self.foto_kaprodi.url
+            except Exception:
+                return None
+        return None
+

@@ -189,20 +189,200 @@ https://akreditasi.unisan-g.id
 # LANDING PAGE PUBLIK
 # ============================================
 
-def landing_page(request):
-    """Halaman landing publik SIAKRED."""
-    context = {
-        "page_title": "SIAKRED UNISAN — Arsip Akreditasi",
+
+
+# ============================================================
+# SUB-BATCH 12A: LANDING PUBLIK HELPERS (SIMDA-based)
+# ============================================================
+
+def _get_publik_stats():
+    """Query real-time stats untuk landing publik.
+    
+    Sources:
+    - Total prodi: SIAKRED.mapping_prodi_instrumen (prodi yang dikelola SIAKRED)
+    - Total fakultas: SIMDA.master.fakultas (source of truth)
+    - Total instrumen: SIAKRED
+    - Total dokumen publik + sesi aktif: SIAKRED
+    """
+    from master_akreditasi.models import Instrumen, MappingProdiInstrumen
+    from dokumen.models import Dokumen
+    from sesi.models import SesiAkreditasi
+    from django.db import connection
+    
+    # Total prodi: dari mapping SIAKRED
+    total_prodi = MappingProdiInstrumen.objects.filter(aktif=True).count()
+    
+    # Total fakultas: dari SIMDA (source of truth)
+    total_fakultas = 0
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM master.fakultas WHERE LOWER(status) = 'aktif'"
+            )
+            total_fakultas = cursor.fetchone()[0]
+    except Exception:
+        # Fallback: hitung dari prefix kode prodi
+        prodi_codes = list(
+            MappingProdiInstrumen.objects.filter(aktif=True)
+            .values_list('kode_prodi', flat=True)
+        )
+        total_fakultas = len(set(c[0].upper() for c in prodi_codes if c))
+    
+    # Instrumen & dokumen
+    total_instrumen = Instrumen.objects.filter(aktif=True).count()
+    total_dokumen_publik = 0
+    try:
+        total_dokumen_publik = Dokumen.objects.filter(
+            status='FINAL',
+            status_akses='TERBUKA',
+        ).count()
+    except Exception:
+        pass
+    
+    # Sesi aktif
+    total_sesi_aktif = SesiAkreditasi.objects.exclude(
+        status__in=['SELESAI', 'DIBATALKAN']
+    ).count()
+    
+    return {
+        'total_prodi': total_prodi,
+        'total_instrumen': total_instrumen,
+        'total_fakultas': total_fakultas,
+        'total_dokumen_publik': total_dokumen_publik,
+        'total_sesi_aktif': total_sesi_aktif,
     }
-    return render(request, "landing/index.html", context)
 
 
-# ============================================
-# LOGIN VIEW
-# ============================================
+def _get_fakultas_list():
+    """Get list fakultas dari SIMDA + prodi-nya dari SIAKRED mapping.
+    
+    SOURCE OF TRUTH:
+    - Fakultas list: SIMDA.master.fakultas
+    - Prodi per fakultas: SIMDA.master.program_studi JOIN SIAKRED.mapping_prodi_instrumen
+    
+    Returns: list of dict {kode, nama, nama_singkat, prodi_list: [...]}
+    """
+    from master_akreditasi.models import MappingProdiInstrumen
+    from django.db import connection
+    
+    # 1. Ambil semua fakultas dari SIMDA
+    fakultas_dict = {}
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT kode_fakultas, nama_fakultas, nama_singkat, urutan
+                FROM master.fakultas
+                WHERE LOWER(status) = 'aktif'
+                ORDER BY urutan NULLS LAST, kode_fakultas
+            """)
+            for row in cursor.fetchall():
+                kode = row[0]
+                fakultas_dict[kode] = {
+                    'kode': kode,
+                    'nama': row[1],
+                    'nama_singkat': row[2] or kode,
+                    'urutan': row[3] or 99,
+                    'prodi_list': [],
+                }
+    except Exception:
+        # Fallback kalau SIMDA tidak accessible
+        pass
+    
+    # 2. Ambil prodi dari SIMDA dengan kode_fakultas-nya
+    prodi_to_fakultas = {}
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT kode_prodi, kode_fakultas FROM master.program_studi"
+            )
+            for row in cursor.fetchall():
+                prodi_to_fakultas[row[0]] = row[1]
+    except Exception:
+        pass
+    
+    # 3. Loop mapping SIAKRED, assign prodi ke fakultas yang benar (dari SIMDA)
+    mapping_qs = MappingProdiInstrumen.objects.filter(
+        aktif=True
+    ).select_related('instrumen').order_by('kode_prodi')
+    
+    for m in mapping_qs:
+        if not m.kode_prodi:
+            continue
+        
+        # Cari kode_fakultas asli dari SIMDA
+        kode_fak = prodi_to_fakultas.get(m.kode_prodi)
+        
+        # Fallback: derivation dari huruf pertama
+        if not kode_fak:
+            prefix = m.kode_prodi[0].upper()
+            _FALLBACK_MAP = {
+                'T': 'FT', 'E': 'FE', 'H': 'FH',
+                'K': 'FK', 'P': 'FP', 'S': 'FS',
+            }
+            kode_fak = _FALLBACK_MAP.get(prefix)
+        
+        if not kode_fak or kode_fak not in fakultas_dict:
+            continue
+        
+        instrumen_nama = (
+            getattr(m.instrumen, 'nama_singkat', None)
+            or getattr(m.instrumen, 'nama_resmi', None)
+            or getattr(m.instrumen, 'nama', None)
+            or str(m.instrumen)
+        )
+        
+        fakultas_dict[kode_fak]['prodi_list'].append({
+            'kode': m.kode_prodi,
+            'nama': m.nama_prodi,
+            'instrumen': instrumen_nama,
+        })
+    
+    # 4. Enrich dengan theme warna dari FakultasTheme model
+    from core.models import FakultasTheme
+    theme_map = FakultasTheme.get_theme_map()
+    
+    DEFAULT_THEME = {"primary": "#2563EB", "light": "#DBEAFE", "icon": "graduation-cap"}
+    for kode, fak in fakultas_dict.items():
+        theme = theme_map.get(kode, DEFAULT_THEME)
+        fak["warna_primary"] = theme["primary"]
+        fak["warna_light"] = theme["light"]
+        fak["icon_nama"] = theme["icon"]
+    
+    # 5. Return sorted list (by urutan SIMDA)
+    result = sorted(fakultas_dict.values(), key=lambda x: x.get('urutan', 99))
+    return result
 
-@never_cache
-@require_http_methods(["GET", "POST"])
+
+def landing_page(request):
+    """Landing publik SIAKRED. Hybrid: single page scroll dengan section lengkap."""
+    from core.models import SiteProfile
+    
+    profile = SiteProfile.get_instance()
+    stats = _get_publik_stats()
+    fakultas_list = _get_fakultas_list()
+    
+    # Ambil preview dokumen publik terbaru (6 dokumen)
+    from dokumen.models import Dokumen
+    dokumen_terbaru = Dokumen.objects.filter(
+        status='FINAL',
+        status_akses='TERBUKA',
+    ).select_related('butir_dokumen').order_by('-tanggal_dibuat')[:6]
+    
+    try:
+        from master_akreditasi.simda import get_institusi_from_simda
+        institusi_simda = get_institusi_from_simda() or {}
+    except Exception:
+        institusi_simda = {}
+    
+    context = {
+        'profile': profile,
+        'institusi_simda': institusi_simda,
+        'stats': stats,
+        'fakultas_list': fakultas_list,
+        'dokumen_terbaru': dokumen_terbaru,
+    }
+    return render(request, 'landing/landing.html', context)
+
 def login_view(request):
     """Login dengan CAPTCHA, lockout, device tracking."""
 
@@ -469,4 +649,124 @@ def help_section(request, section):
         'section_title': section_titles.get(section),
     }
     return render(request, f'core/help_{section}.html', context)
+
+
+# ============================================================
+# SUB-BATCH 12A: LANDING PUBLIK DETAIL PAGES (placeholder)
+# ============================================================
+
+def fakultas_list(request):
+    """List semua fakultas (placeholder, implementasi di 12E)."""
+    fakultas_list = _get_fakultas_list()
+    context = {
+        'page_title': 'Daftar Fakultas',
+        'fakultas_list': fakultas_list,
+    }
+    return render(request, 'landing/fakultas_list.html', context)
+
+
+def fakultas_detail(request, kode):
+    """Detail 1 fakultas + list prodi (enriched dari SIMDA + profile)."""
+    from django.http import Http404
+    from django.db import connection
+    from core.models import FakultasProfile
+    
+    fakultas_list = _get_fakultas_list()
+    fakultas = next((f for f in fakultas_list if f['kode'].upper() == kode.upper()), None)
+    
+    if not fakultas:
+        raise Http404(f'Fakultas dengan kode {kode} tidak ditemukan')
+    
+    # Enrich prodi_list dengan data SIMDA
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT kode_prodi, jenjang, akreditasi, email_prodi
+                FROM master.program_studi
+                WHERE UPPER(kode_fakultas) = UPPER(%s)
+            """, [fakultas['kode']])
+            simda_data = {r[0]: {'jenjang': r[1], 'akreditasi': r[2], 'email_prodi': r[3]} for r in cursor.fetchall()}
+        
+        for p in fakultas['prodi_list']:
+            extra = simda_data.get(p['kode'], {})
+            p['jenjang'] = extra.get('jenjang', '-')
+            p['akreditasi'] = extra.get('akreditasi', '-')
+            p['email_prodi'] = extra.get('email_prodi', '')
+    except Exception:
+        pass
+    
+    # Ambil FakultasProfile (foto dekan, visi misi override)
+    fakultas_profile = FakultasProfile.objects.filter(
+        kode_fakultas=fakultas['kode'], aktif=True
+    ).first()
+    
+    context = {
+        'page_title': fakultas['nama'],
+        'fakultas': fakultas,
+        'fakultas_profile': fakultas_profile,
+    }
+    return render(request, 'landing/fakultas_detail.html', context)
+
+
+def prodi_detail(request, kode):
+    """Detail 1 prodi (enriched dari SIMDA + theme warna + profile)."""
+    from django.http import Http404
+    from master_akreditasi.models import MappingProdiInstrumen
+    from master_akreditasi.simda import get_institusi_from_simda, get_prodi_detail_from_simda
+    from core.models import FakultasTheme, FakultasProfile, ProdiProfile
+    
+    kode_upper = kode.upper()
+    
+    try:
+        mapping = MappingProdiInstrumen.objects.select_related('instrumen').get(
+            kode_prodi=kode_upper,
+            aktif=True,
+        )
+    except MappingProdiInstrumen.DoesNotExist:
+        raise Http404(f'Prodi dengan kode {kode} tidak ditemukan')
+    
+    # Ambil detail dari SIMDA
+    simda_data = get_prodi_detail_from_simda(kode_upper) or {}
+    
+    # Ambil theme warna fakultas
+    kode_fakultas = simda_data.get('kode_fakultas', '')
+    theme_obj = None
+    if kode_fakultas:
+        theme_obj = FakultasTheme.objects.filter(
+            kode_fakultas=kode_fakultas, aktif=True
+        ).first()
+    
+    theme_data = {
+        'primary': theme_obj.warna_primary if theme_obj else '#2563EB',
+        'light': theme_obj.warna_light if theme_obj else '#DBEAFE',
+        'icon': theme_obj.icon_nama if theme_obj else 'graduation-cap',
+    }
+    
+    # Ambil ProdiProfile (foto kaprodi, visi misi)
+    prodi_profile = ProdiProfile.objects.filter(kode_prodi=kode_upper, aktif=True).first()
+    
+    # Ambil FakultasProfile (untuk nama dekan, dll)
+    fakultas_profile = None
+    if kode_fakultas:
+        fakultas_profile = FakultasProfile.objects.filter(
+            kode_fakultas=kode_fakultas, aktif=True
+        ).first()
+    
+    # Sesi akreditasi terbaru
+    from sesi.models import SesiAkreditasi
+    sesi_terbaru = SesiAkreditasi.objects.filter(
+        kode_prodi=kode_upper
+    ).order_by('-tanggal_mulai').first()
+    
+    context = {
+        'page_title': mapping.nama_prodi,
+        'prodi': mapping,
+        'simda': simda_data,
+        'theme': theme_data,
+        'kode_fakultas': kode_fakultas,
+        'prodi_profile': prodi_profile,
+        'fakultas_profile': fakultas_profile,
+        'sesi_terbaru': sesi_terbaru,
+    }
+    return render(request, 'landing/prodi_detail.html', context)
 

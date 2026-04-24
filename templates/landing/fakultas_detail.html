@@ -1,0 +1,267 @@
+{% extends "layouts/publik.html" %}
+
+{% block title %}{{ fakultas.nama }} - SIAKRED UNISAN{% endblock %}
+
+{% block page %}
+<style>
+  :root {
+    --text-primary: #0F172A;
+    --text-muted: #64748B;
+    --border: #E5E7EB;
+    --fak-primary: {{ fakultas.warna_primary|default:"#2563EB" }};
+    --fak-light: {{ fakultas.warna_light|default:"#DBEAFE" }};
+  }
+  
+  .fd-wrap {
+    background:linear-gradient(180deg, var(--fak-light) 0%, #fff 25%);
+    padding:2rem 1rem 3rem; min-height:70vh;
+  }
+  .fd-container { max-width:900px; margin:0 auto; }
+  
+  .fd-back {
+    display:inline-flex; align-items:center; gap:.4rem;
+    color:var(--fak-primary) !important; text-decoration:none !important;
+    font-size:.88rem; font-weight:500; margin-bottom:1.5rem;
+  }
+  .fd-back:hover { text-decoration:underline !important; }
+  
+  /* HEADER CARD dengan Foto Dekan */
+  .fd-header-card {
+    background:#fff; border:1px solid var(--border); border-radius:18px;
+    border-top:5px solid var(--fak-primary);
+    padding:2rem; margin-bottom:1.5rem;
+    box-shadow:0 4px 20px rgba(0,0,0,.05);
+  }
+  .fd-header-flex {
+    display:grid; grid-template-columns:auto 1fr; gap:1.75rem;
+    align-items:center;
+  }
+  @media (max-width:600px) {
+    .fd-header-flex { grid-template-columns:1fr; text-align:center; }
+  }
+  .fd-foto-wrap {
+    width:140px; height:140px; border-radius:50%;
+    overflow:hidden; border:4px solid var(--fak-primary);
+    background:var(--fak-light);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .fd-foto-wrap img { width:100%; height:100%; object-fit:cover; }
+  .fd-foto-wrap .fd-foto-placeholder { font-size:3rem; color:var(--fak-primary); opacity:.6; }
+  @media (max-width:600px) {
+    .fd-foto-wrap { margin:0 auto; width:110px; height:110px; }
+  }
+  
+  .fd-header-top {
+    display:flex; gap:.5rem; align-items:center; margin-bottom:.5rem;
+    flex-wrap:wrap;
+  }
+  .fd-kode-big {
+    font-family:"JetBrains Mono", monospace;
+    font-weight:800; font-size:1.6rem; line-height:1;
+    background:var(--fak-light); color:var(--fak-primary);
+    padding:.55rem 1rem; border-radius:10px;
+    display:inline-block;
+  }
+  .fd-prodi-badge {
+    background:var(--fak-primary); color:#fff;
+    padding:.4rem .85rem; border-radius:999px;
+    font-size:.78rem; font-weight:700;
+  }
+  .fd-header h1 {
+    font-size:1.75rem; color:var(--text-primary);
+    margin:0 0 .25rem; font-weight:700; letter-spacing:-.01em;
+    line-height:1.15;
+  }
+  .fd-header-sub {
+    color:var(--fak-primary); font-weight:600; font-size:.9rem; margin:0 0 1rem;
+  }
+  .fd-header-pejabat {
+    padding-top:.75rem; border-top:1px dashed var(--border);
+  }
+  .fd-pejabat-nama {
+    font-size:1rem; color:var(--text-primary); font-weight:600; margin:0 0 .15rem;
+  }
+  .fd-pejabat-role {
+    font-size:.82rem; color:var(--text-muted); margin:0;
+  }
+  
+  /* SECTION TITLE */
+  .fd-section-title {
+    font-size:1rem; color:var(--text-primary); margin:1.75rem 0 .85rem;
+    font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .fd-section-title svg { color:var(--fak-primary); }
+  
+  /* VISI MISI */
+  .fd-vm-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:1rem;
+  }
+  @media (max-width:700px) { .fd-vm-grid { grid-template-columns:1fr; } }
+  .fd-vm-card {
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    padding:1.25rem 1.5rem; border-left:4px solid var(--fak-primary);
+  }
+  .fd-vm-label {
+    font-size:.72rem; color:var(--fak-primary); font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem;
+    display:flex; align-items:center; gap:.35rem;
+  }
+  .fd-vm-content { color:var(--text-primary); font-size:.92rem; line-height:1.65; }
+  .fd-vm-content p { margin:0 0 .5rem; }
+  .fd-vm-content ol { margin:0; padding-left:1.25rem; }
+  .fd-vm-content li { margin-bottom:.4rem; }
+  .fd-vm-empty { color:var(--text-muted); font-style:italic; font-size:.85rem; }
+  
+  /* PRODI GRID */
+  .fd-prodi-grid {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1rem;
+  }
+  .fd-prodi-card {
+    background:#fff; border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem; text-decoration:none !important;
+    transition:transform .15s, box-shadow .15s, border-color .15s;
+    display:flex; flex-direction:column; gap:.5rem; color:inherit !important;
+  }
+  .fd-prodi-card:hover {
+    transform:translateY(-3px); box-shadow:0 10px 25px rgba(0,0,0,.08);
+    border-color:var(--fak-primary);
+  }
+  .fd-prodi-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap; }
+  .fd-prodi-kode {
+    font-family:"JetBrains Mono", monospace; font-weight:700;
+    background:var(--fak-light); color:var(--fak-primary);
+    padding:.3rem .65rem; border-radius:6px; font-size:.82rem;
+  }
+  .fd-prodi-jenjang {
+    background:#F1F5F9; color:var(--text-muted);
+    padding:.2rem .55rem; border-radius:999px;
+    font-size:.7rem; font-weight:600;
+  }
+  .fd-prodi-nama {
+    font-size:1rem; color:var(--text-primary); font-weight:600;
+    margin:.3rem 0 .5rem; line-height:1.35;
+  }
+  .fd-prodi-meta {
+    display:flex; flex-direction:column; gap:.3rem;
+    padding-top:.75rem; border-top:1px solid #F1F5F9;
+    font-size:.8rem; color:var(--text-muted);
+  }
+  .fd-prodi-meta-row { display:flex; justify-content:space-between; align-items:center; }
+  .fd-prodi-akred {
+    display:inline-block; background:var(--fak-light); color:var(--fak-primary);
+    padding:.1rem .5rem; border-radius:4px; font-weight:700; font-size:.75rem;
+  }
+</style>
+
+<div class="fd-wrap">
+    <div class="fd-container">
+        <a href="{% url 'core:landing' %}" class="fd-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Kembali ke Beranda
+        </a>
+        
+        <!-- HEADER CARD DENGAN FOTO DEKAN -->
+        <div class="fd-header-card">
+            <div class="fd-header-flex">
+                <div class="fd-foto-wrap">
+                    {% if fakultas_profile.get_foto_dekan_url %}
+                        <img src="{{ fakultas_profile.get_foto_dekan_url }}" alt="Foto {{ fakultas_profile.nama_dekan }}">
+                    {% else %}
+                        <svg class="fd-foto-placeholder" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <div class="fd-header-top">
+                        <span class="fd-kode-big">{{ fakultas.kode }}</span>
+                        <span class="fd-prodi-badge">{{ fakultas.prodi_list|length }} Program Studi</span>
+                    </div>
+                    <h1>{{ fakultas.nama }}</h1>
+                    <p class="fd-header-sub">Universitas Ichsan Gorontalo</p>
+                    
+                    {% if fakultas_profile.nama_dekan %}
+                    <div class="fd-header-pejabat">
+                        <p class="fd-pejabat-nama">{{ fakultas_profile.nama_dekan }}</p>
+                        <p class="fd-pejabat-role">
+                            Dekan{% if fakultas_profile.periode_dekan %} &middot; Periode {{ fakultas_profile.periode_dekan }}{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- VISI MISI -->
+        <h2 class="fd-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Visi & Misi
+        </h2>
+        <div class="fd-vm-grid">
+            <div class="fd-vm-card">
+                <div class="fd-vm-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                    Visi
+                </div>
+                <div class="fd-vm-content">
+                    {% if fakultas_profile.visi %}
+                        <p>{{ fakultas_profile.visi|linebreaksbr }}</p>
+                    {% else %}
+                        <p class="fd-vm-empty">Visi belum diinput.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="fd-vm-card">
+                <div class="fd-vm-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                    Misi
+                </div>
+                <div class="fd-vm-content">
+                    {% if fakultas_profile.get_misi_list %}
+                        <ol>
+                        {% for poin in fakultas_profile.get_misi_list %}
+                            <li>{{ poin }}</li>
+                        {% endfor %}
+                        </ol>
+                    {% else %}
+                        <p class="fd-vm-empty">Misi belum diinput.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- PRODI GRID -->
+        <h2 class="fd-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            Program Studi ({{ fakultas.prodi_list|length }})
+        </h2>
+        <div class="fd-prodi-grid">
+            {% for p in fakultas.prodi_list %}
+            <a href="{% url 'core:prodi_detail' p.kode %}" class="fd-prodi-card">
+                <div class="fd-prodi-top">
+                    <span class="fd-prodi-kode">{{ p.kode }}</span>
+                    {% if p.jenjang %}<span class="fd-prodi-jenjang">{{ p.jenjang }}</span>{% endif %}
+                </div>
+                <div class="fd-prodi-nama">{{ p.nama }}</div>
+                <div class="fd-prodi-meta">
+                    <div class="fd-prodi-meta-row">
+                        <span>Instrumen</span>
+                        <span style="color:var(--text-primary); font-weight:600; font-size:.78rem;">{{ p.instrumen|truncatechars:18 }}</span>
+                    </div>
+                    {% if p.akreditasi and p.akreditasi != "-" %}
+                    <div class="fd-prodi-meta-row">
+                        <span>Akreditasi</span>
+                        <span class="fd-prodi-akred">{{ p.akreditasi }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

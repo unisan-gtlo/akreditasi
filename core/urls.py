@@ -6,6 +6,10 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.landing_page, name="landing"),
+    # Landing publik detail pages (Sub-Batch 12A)
+    path("fakultas/", views.fakultas_list, name="fakultas_list"),
+    path("fakultas/<str:kode>/", views.fakultas_detail, name="fakultas_detail"),
+    path("prodi/<str:kode>/", views.prodi_detail, name="prodi_detail"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("app/", views.dashboard_view, name="dashboard"),

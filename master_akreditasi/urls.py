@@ -15,6 +15,9 @@ urlpatterns = [
 
     # Mapping Prodi
     path("mapping-prodi/", views.mapping_list, name="mapping_list"),
+    path("mapping-prodi/create/", views.mapping_create, name="mapping_create"),
+    path("mapping-prodi/<int:pk>/edit/", views.mapping_edit, name="mapping_edit"),
+    path("mapping-prodi/<int:pk>/delete/", views.mapping_delete, name="mapping_delete"),
 
     # Import Excel
     path("import/", views.import_excel_home, name="import_home"),

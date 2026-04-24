@@ -1,0 +1,174 @@
+{% extends "layouts/publik.html" %}
+
+{% block title %}{{ prodi.nama_prodi }} - SIAKRED UNISAN{% endblock %}
+
+{% block page %}
+<style>
+  :root {
+    --text-primary: #0F172A;
+    --text-muted: #64748B;
+    --border: #E5E7EB;
+    --fak-primary: {{ theme.primary }};
+    --fak-light: {{ theme.light }};
+  }
+  .pd-wrap { background:linear-gradient(180deg, var(--fak-light) 0%, #fff 25%); padding:2rem 1rem 3rem; min-height:70vh; }
+  .pd-container { max-width:900px; margin:0 auto; }
+  .pd-back { display:inline-flex; align-items:center; gap:.4rem; color:var(--fak-primary) !important; text-decoration:none !important; font-size:.88rem; font-weight:500; margin-bottom:1.5rem; }
+  .pd-back:hover { text-decoration:underline !important; }
+  .pd-header-card { background:#fff; border:1px solid var(--border); border-radius:18px; border-top:5px solid var(--fak-primary); padding:2rem; margin-bottom:1.5rem; box-shadow:0 4px 20px rgba(0,0,0,.05); }
+  .pd-header-flex { display:grid; grid-template-columns:auto 1fr; gap:1.75rem; align-items:center; }
+  @media (max-width:600px) { .pd-header-flex { grid-template-columns:1fr; text-align:center; } }
+  .pd-foto-wrap { width:140px; height:140px; border-radius:50%; overflow:hidden; border:4px solid var(--fak-primary); background:var(--fak-light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .pd-foto-wrap img { width:100%; height:100%; object-fit:cover; }
+  .pd-foto-placeholder { font-size:3rem; color:var(--fak-primary); opacity:.6; }
+  @media (max-width:600px) { .pd-foto-wrap { margin:0 auto; width:110px; height:110px; } }
+  .pd-header-meta-top { display:flex; gap:.5rem; align-items:center; margin-bottom:.5rem; flex-wrap:wrap; }
+  .pd-kode-big { font-family:"JetBrains Mono", monospace; font-weight:800; font-size:1.6rem; line-height:1; background:var(--fak-light); color:var(--fak-primary); padding:.55rem 1rem; border-radius:10px; display:inline-block; }
+  .pd-jenjang-badge { background:var(--fak-primary); color:#fff; padding:.4rem .85rem; border-radius:999px; font-size:.78rem; font-weight:700; }
+  .pd-akred-badge-inline { background:var(--fak-light); color:var(--fak-primary); padding:.35rem .7rem; border-radius:999px; font-size:.75rem; font-weight:700; border:1px solid var(--fak-primary); }
+  .pd-header h1 { font-size:1.75rem; color:var(--text-primary); margin:0 0 .25rem; font-weight:700; letter-spacing:-.01em; line-height:1.15; }
+  .pd-header-sub { color:var(--fak-primary); font-weight:600; font-size:.9rem; margin:0 0 .25rem; }
+  .pd-header-dikti { color:var(--text-muted); font-size:.78rem; margin:0 0 1rem; }
+  .pd-header-pejabat { padding-top:.75rem; border-top:1px dashed var(--border); }
+  .pd-pejabat-nama { font-size:1rem; color:var(--text-primary); font-weight:600; margin:0 0 .15rem; }
+  .pd-pejabat-role { font-size:.82rem; color:var(--text-muted); margin:0; }
+  .pd-section-title { font-size:1rem; color:var(--text-primary); margin:1.75rem 0 .85rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:.5rem; }
+  .pd-section-title svg { color:var(--fak-primary); }
+  .pd-vm-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:.5rem; }
+  @media (max-width:700px) { .pd-vm-grid { grid-template-columns:1fr; } }
+  .pd-vm-card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.25rem 1.5rem; border-left:4px solid var(--fak-primary); }
+  .pd-vm-label { font-size:.72rem; color:var(--fak-primary); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem; display:flex; align-items:center; gap:.35rem; }
+  .pd-vm-content { color:var(--text-primary); font-size:.92rem; line-height:1.65; }
+  .pd-vm-content p { margin:0 0 .5rem; }
+  .pd-vm-content ol { margin:0; padding-left:1.25rem; }
+  .pd-vm-content li { margin-bottom:.4rem; }
+  .pd-vm-empty { color:var(--text-muted); font-style:italic; font-size:.85rem; }
+  .pd-attr-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.5rem; }
+  .pd-attr { text-align:center; padding:.5rem; border-right:1px solid var(--border); }
+  .pd-attr:last-child { border-right:0; }
+  @media (max-width:700px) { .pd-attr { border-right:0; border-bottom:1px solid var(--border); padding-bottom:1rem; } .pd-attr:last-child { border-bottom:0; } }
+  .pd-attr-value { font-size:1.5rem; font-weight:800; color:var(--fak-primary); line-height:1; margin-bottom:.25rem; }
+  .pd-attr-label { font-size:.72rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.02em; }
+  .pd-akred-card { background:linear-gradient(135deg, var(--fak-light) 0%, #fff 100%); border:1px solid var(--fak-primary); border-radius:14px; padding:1.5rem; }
+  .pd-akred-grid { display:grid; grid-template-columns:auto 1fr; gap:1.5rem; align-items:center; }
+  @media (max-width:500px) { .pd-akred-grid { grid-template-columns:1fr; text-align:center; } }
+  .pd-akred-peringkat { font-size:3.5rem; font-weight:800; color:var(--fak-primary); line-height:1; padding:0 1.5rem; border-right:2px solid var(--fak-primary); }
+  @media (max-width:500px) { .pd-akred-peringkat { border-right:0; border-bottom:2px solid var(--fak-primary); padding:0 0 1rem; } }
+  .pd-akred-detail h3 { font-size:1rem; color:var(--text-primary); margin:0 0 .25rem; font-weight:700; }
+  .pd-akred-detail p { color:var(--text-muted); font-size:.85rem; margin:0 0 .25rem; }
+  .pd-akred-detail strong { color:var(--text-primary); }
+  .pd-profil-box { background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.5rem; color:var(--text-primary); line-height:1.7; font-size:.92rem; }
+  .pd-kontak-box { background:#fff; border:1px solid var(--border); border-radius:14px; padding:1.25rem; display:flex; align-items:center; gap:1rem; }
+  .pd-kontak-icon { width:44px; height:44px; border-radius:10px; background:var(--fak-light); color:var(--fak-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .pd-kontak-label { font-size:.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:.2rem; }
+  .pd-kontak-value a { color:var(--fak-primary) !important; font-weight:600; font-size:.95rem; text-decoration:none !important; }
+  .pd-sesi-card { background:linear-gradient(135deg, var(--fak-light) 0%, #fff 100%); border:1px solid var(--fak-primary); border-radius:14px; padding:1.25rem 1.5rem; }
+  .pd-sesi-card h3 { margin:0 0 .4rem; color:var(--fak-primary); font-size:1rem; font-weight:700; }
+  .pd-sesi-card p { margin:0; color:var(--text-primary); font-size:.88rem; }
+  .pd-sesi-status { display:inline-block; background:var(--fak-primary); color:#fff; padding:.2rem .65rem; border-radius:4px; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-right:.5rem; }
+</style>
+
+<div class="pd-wrap">
+  <div class="pd-container">
+    {% if kode_fakultas %}
+    <a href="{% url 'core:fakultas_detail' kode_fakultas %}" class="pd-back">&larr; Kembali ke {{ simda.nama_fakultas|default:kode_fakultas }}</a>
+    {% else %}
+    <a href="{% url 'core:landing' %}" class="pd-back">&larr; Kembali ke Beranda</a>
+    {% endif %}
+    
+    <div class="pd-header-card">
+      <div class="pd-header-flex">
+        <div class="pd-foto-wrap">
+          {% if prodi_profile.get_foto_kaprodi_url %}
+            <img src="{{ prodi_profile.get_foto_kaprodi_url }}" alt="{{ prodi_profile.nama_kaprodi }}">
+          {% else %}
+            <svg class="pd-foto-placeholder" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {% endif %}
+        </div>
+        <div>
+          <div class="pd-header-meta-top">
+            <span class="pd-kode-big">{{ prodi.kode_prodi }}</span>
+            {% if simda.jenjang %}<span class="pd-jenjang-badge">{{ simda.jenjang }}</span>{% endif %}
+            {% if simda.akreditasi and simda.akreditasi != "-" %}<span class="pd-akred-badge-inline">Akreditasi {{ simda.akreditasi }}</span>{% endif %}
+          </div>
+          <h1>{{ prodi.nama_prodi }}</h1>
+          <p class="pd-header-sub">{{ simda.nama_fakultas|default:"Universitas Ichsan Gorontalo" }}</p>
+          {% if simda.kode_prodi_dikti %}<p class="pd-header-dikti">Kode DIKTI: {{ simda.kode_prodi_dikti }}</p>{% endif %}
+          {% if prodi_profile.nama_kaprodi %}
+          <div class="pd-header-pejabat">
+            <p class="pd-pejabat-nama">{{ prodi_profile.nama_kaprodi }}</p>
+            <p class="pd-pejabat-role">Ketua Program Studi{% if prodi_profile.periode_kaprodi %} &middot; Periode {{ prodi_profile.periode_kaprodi }}{% endif %}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Visi &amp; Misi</h2>
+    <div class="pd-vm-grid">
+      <div class="pd-vm-card">
+        <div class="pd-vm-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>Visi</div>
+        <div class="pd-vm-content">
+          {% if prodi_profile.visi %}<p>{{ prodi_profile.visi|linebreaksbr }}</p>
+          {% else %}<p class="pd-vm-empty">Visi belum diinput.</p>{% endif %}
+        </div>
+      </div>
+      <div class="pd-vm-card">
+        <div class="pd-vm-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>Misi</div>
+        <div class="pd-vm-content">
+          {% if prodi_profile.get_misi_list %}
+          <ol>{% for poin in prodi_profile.get_misi_list %}<li>{{ poin }}</li>{% endfor %}</ol>
+          {% else %}<p class="pd-vm-empty">Misi belum diinput.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+    
+    {% if prodi_profile.profil_lulusan %}
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>Profil Lulusan</h2>
+    <div class="pd-profil-box">{{ prodi_profile.profil_lulusan|linebreaksbr }}</div>
+    {% endif %}
+    
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/></svg>Informasi Akademik</h2>
+    <div class="pd-attr-grid">
+      {% if simda.jenjang %}<div class="pd-attr"><div class="pd-attr-value">{{ simda.jenjang }}</div><div class="pd-attr-label">Jenjang</div></div>{% endif %}
+      {% if simda.lama_studi_normal %}<div class="pd-attr"><div class="pd-attr-value">{{ simda.lama_studi_normal }}</div><div class="pd-attr-label">Lama Normal (Sem)</div></div>{% endif %}
+      {% if simda.lama_studi_maks %}<div class="pd-attr"><div class="pd-attr-value">{{ simda.lama_studi_maks }}</div><div class="pd-attr-label">Lama Maks (Sem)</div></div>{% endif %}
+      {% if simda.total_sks_lulus %}<div class="pd-attr"><div class="pd-attr-value">{{ simda.total_sks_lulus }}</div><div class="pd-attr-label">Total SKS</div></div>{% endif %}
+    </div>
+    
+    {% if simda.akreditasi and simda.akreditasi != "-" %}
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Akreditasi &amp; Instrumen</h2>
+    <div class="pd-akred-card">
+      <div class="pd-akred-grid">
+        <div class="pd-akred-peringkat">{{ simda.akreditasi }}</div>
+        <div class="pd-akred-detail">
+          <h3>{% firstof prodi.instrumen.nama_singkat prodi.instrumen.nama prodi.instrumen %}</h3>
+          {% if prodi.instrumen.nama_resmi %}<p>{{ prodi.instrumen.nama_resmi }}</p>{% endif %}
+          {% if simda.no_sk_akreditasi and simda.no_sk_akreditasi != "-" %}<p>No SK: <strong>{{ simda.no_sk_akreditasi }}</strong></p>{% endif %}
+          {% if simda.berlaku_sampai_akreditasi %}<p>Berlaku sampai: <strong>{{ simda.berlaku_sampai_akreditasi }}</strong></p>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if simda.email_prodi %}
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Kontak</h2>
+    <div class="pd-kontak-box">
+      <div class="pd-kontak-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+      <div>
+        <div class="pd-kontak-label">Email Program Studi</div>
+        <div class="pd-kontak-value"><a href="mailto:{{ simda.email_prodi }}">{{ simda.email_prodi }}</a></div>
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if sesi_terbaru %}
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Sesi Akreditasi Terbaru</h2>
+    <div class="pd-sesi-card">
+      <h3>{{ sesi_terbaru.judul|default:sesi_terbaru }}</h3>
+      <p><span class="pd-sesi-status">{{ sesi_terbaru.get_status_display|default:sesi_terbaru.status }}</span>{% if sesi_terbaru.tahun_ts %}Tahun TS: {{ sesi_terbaru.tahun_ts }}{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

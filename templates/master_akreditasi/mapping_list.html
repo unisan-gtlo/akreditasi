@@ -1,6 +1,6 @@
 {% extends "layouts/internal.html" %}
 
-{% block title %}Mapping Prodi — SIAKRED{% endblock %}
+{% block title %}Mapping Prodi - SIAKRED{% endblock %}
 {% block page_heading %}Mapping Prodi ↔ Instrumen{% endblock %}
 
 {% block breadcrumb %}
@@ -13,14 +13,142 @@
 
 {% block page %}
 
+<style>
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(15,23,42,.5); z-index:1000;
+    align-items:flex-start; justify-content:center;
+    padding:3rem 1rem; overflow-y:auto;
+    backdrop-filter:blur(2px);
+  }
+  .modal-overlay.show { display:flex; }
+  
+  .modal-box {
+    background:#fff; border-radius:14px; width:100%; max-width:520px;
+    box-shadow:0 25px 60px rgba(0,0,0,.25);
+    animation:modalSlideIn .25s ease-out;
+  }
+  @keyframes modalSlideIn {
+    from { transform:translateY(-30px); opacity:0; }
+    to { transform:translateY(0); opacity:1; }
+  }
+  
+  .modal-header {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:1.25rem 1.5rem; border-bottom:1px solid #E5E7EB;
+  }
+  .modal-header h3 { margin:0; font-size:1.1rem; color:#1E3A8A; font-weight:600; }
+  .modal-close {
+    background:none; border:0; font-size:1.5rem; color:#94A3B8;
+    cursor:pointer; padding:0; line-height:1; width:30px; height:30px;
+    border-radius:6px; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close:hover { background:#F1F5F9; color:#0F172A; }
+  
+  .modal-body { padding:1.5rem; }
+  .modal-footer {
+    padding:1rem 1.5rem; border-top:1px solid #E5E7EB;
+    display:flex; gap:.6rem; justify-content:flex-end;
+  }
+  
+  .form-group { margin-bottom:1rem; }
+  .form-group label {
+    display:block; font-size:.78rem; font-weight:600; color:#475569;
+    margin-bottom:.35rem; text-transform:uppercase; letter-spacing:.02em;
+  }
+  .form-group label .req { color:#DC2626; }
+  .form-group input[type="text"], .form-group select, .form-group textarea {
+    width:100%; padding:.55rem .75rem; border:1px solid #CBD5E1; border-radius:7px;
+    font-size:.9rem; background:#fff; transition:border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline:none; border-color:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,.15);
+  }
+  .form-group .checkbox-row {
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .form-group .checkbox-row input[type="checkbox"] {
+    width:18px; height:18px; cursor:pointer;
+  }
+  .form-group .checkbox-row label {
+    margin:0; text-transform:none; letter-spacing:0; font-size:.9rem;
+    color:#0F172A; cursor:pointer;
+  }
+  .form-error {
+    color:#DC2626; font-size:.78rem; margin-top:.3rem;
+    display:none;
+  }
+  .form-error.show { display:block; }
+  
+  .modal-btn {
+    padding:.55rem 1.1rem; border-radius:7px; font-size:.88rem; font-weight:500;
+    cursor:pointer; border:1px solid;
+    display:inline-flex; align-items:center; gap:.4rem;
+  }
+  .modal-btn-primary { background:#2563EB; color:#fff; border-color:#2563EB; }
+  .modal-btn-primary:hover { background:#1D4ED8; }
+  .modal-btn-secondary { background:#fff; color:#475569; border-color:#CBD5E1; }
+  .modal-btn-secondary:hover { background:#F8FAFC; }
+  .modal-btn-danger { background:#DC2626; color:#fff; border-color:#DC2626; }
+  .modal-btn-danger:hover { background:#B91C1C; }
+  
+  /* TABLE ACTION COLUMN */
+  .action-cell { display:flex; gap:.4rem; justify-content:center; }
+  .icon-btn {
+    background:transparent; border:1px solid #E5E7EB; cursor:pointer;
+    width:30px; height:30px; border-radius:6px;
+    display:inline-flex; align-items:center; justify-content:center;
+    color:#64748B; transition:all .12s;
+  }
+  .icon-btn:hover { background:#F1F5F9; color:#0F172A; border-color:#CBD5E1; }
+  .icon-btn.edit:hover { background:#DBEAFE; color:#1E40AF; border-color:#93C5FD; }
+  .icon-btn.delete:hover { background:#FEE2E2; color:#991B1B; border-color:#FCA5A5; }
+  
+  /* HEADER ADD BUTTON */
+  .add-btn {
+    background:#2563EB; color:#fff; padding:.6rem 1.1rem;
+    border-radius:8px; text-decoration:none; font-weight:500; font-size:.88rem;
+    display:inline-flex; align-items:center; gap:.45rem; border:0; cursor:pointer;
+    transition:background .12s;
+  }
+  .add-btn:hover { background:#1D4ED8; color:#fff; }
+  
+  /* TOAST */
+  .toast {
+    position:fixed; top:1.5rem; right:1.5rem; z-index:2000;
+    background:#fff; border-left:4px solid; border-radius:8px;
+    padding:.8rem 1.2rem; box-shadow:0 8px 24px rgba(0,0,0,.15);
+    font-size:.88rem; max-width:400px;
+    animation:toastSlide .3s ease-out;
+    display:none;
+  }
+  .toast.show { display:block; }
+  .toast.success { border-color:#059669; color:#065F46; }
+  .toast.error { border-color:#DC2626; color:#991B1B; }
+  @keyframes toastSlide {
+    from { transform:translateX(100%); opacity:0; }
+    to { transform:translateX(0); opacity:1; }
+  }
+</style>
+
 <div class="page-header">
-    <div class="page-header-flex">
+    <div class="page-header-flex" style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
         <div>
             <h1 class="page-title">Mapping Prodi ↔ Instrumen</h1>
             <p class="page-subtitle">
                 {{ total_mapping }} program studi UNISAN ter-mapping ke {{ grouped_mapping|length }} instrumen akreditasi.
             </p>
         </div>
+        {% if user.is_superuser or user.is_staff %}
+        <button type="button" class="add-btn" onclick="openModalCreate()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Tambah Mapping
+        </button>
+        {% endif %}
     </div>
 </div>
 
@@ -46,6 +174,9 @@
                     <th style="width:100px;">Kode Prodi</th>
                     <th>Program Studi</th>
                     <th style="width:120px; text-align:center;">Status</th>
+                    {% if user.is_superuser or user.is_staff %}
+                    <th style="width:120px; text-align:center;">Aksi</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -64,6 +195,20 @@
                             <span class="badge badge-gray">Nonaktif</span>
                         {% endif %}
                     </td>
+                    {% if user.is_superuser or user.is_staff %}
+                    <td>
+                        <div class="action-cell">
+                            <button type="button" class="icon-btn edit" title="Edit"
+                                    onclick="openModalEdit({{ m.id }})">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button type="button" class="icon-btn delete" title="Hapus"
+                                    onclick="confirmDelete({{ m.id }}, '{{ m.kode_prodi }}', '{{ m.nama_prodi|escapejs }}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
@@ -77,5 +222,260 @@
         </div>
     </div>
 {% endfor %}
+
+{% if user.is_superuser or user.is_staff %}
+<!-- ===== MODAL FORM (Tambah/Edit) ===== -->
+<div class="modal-overlay" id="formModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modalTitle">Tambah Mapping Prodi</h3>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form id="mappingForm" onsubmit="submitForm(event)">
+            {% csrf_token %}
+            <input type="hidden" id="mappingId" name="mapping_id" value="">
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="instrumenId">Instrumen <span class="req">*</span></label>
+                    <select id="instrumenId" name="instrumen_id" required>
+                        <option value="">-- Pilih Instrumen --</option>
+                        {% for inst in all_instrumen %}
+                        <option value="{{ inst.pk }}">{{ inst.nama_singkat }} ({{ inst.nama_resmi|truncatechars:40 }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-error" id="error-instrumen_id"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="kodeProdi">Kode Prodi <span class="req">*</span></label>
+                    <input type="text" id="kodeProdi" name="kode_prodi" required maxlength="10"
+                           placeholder="Contoh: T11, E21, H11" style="text-transform:uppercase;">
+                    <div class="form-error" id="error-kode_prodi"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="namaProdi">Nama Prodi <span class="req">*</span></label>
+                    <input type="text" id="namaProdi" name="nama_prodi" required maxlength="200"
+                           placeholder="Contoh: Teknik Elektro">
+                    <div class="form-error" id="error-nama_prodi"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="catatan">Catatan (opsional)</label>
+                    <textarea id="catatan" name="catatan" rows="2" placeholder="Catatan internal..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="aktif" name="aktif" checked>
+                        <label for="aktif">Aktif</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">Batal</button>
+                <button type="submit" class="modal-btn modal-btn-primary" id="submitBtn">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MODAL KONFIRMASI HAPUS ===== -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <h3 style="color:#DC2626;">Konfirmasi Hapus</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin:0; color:#475569; line-height:1.5;">
+                Hapus mapping <strong id="deleteInfo"></strong>?<br>
+                Tindakan ini tidak bisa dibatalkan.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeDeleteModal()">Batal</button>
+            <button type="button" class="modal-btn modal-btn-danger" onclick="executeDelete()" id="deleteBtn">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const URLS = {
+    create: "{% url 'master_akreditasi:mapping_create' %}",
+    editTpl: "{% url 'master_akreditasi:mapping_edit' 0 %}",
+    deleteTpl: "{% url 'master_akreditasi:mapping_delete' 0 %}",
+};
+
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast show ' + type;
+    toast.textContent = message;
+    setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+function clearErrors() {
+    document.querySelectorAll('.form-error').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('show');
+    });
+}
+
+function showErrors(errors) {
+    Object.keys(errors).forEach(field => {
+        const el = document.getElementById('error-' + field);
+        if (el) {
+            el.textContent = errors[field];
+            el.classList.add('show');
+        }
+    });
+}
+
+// CREATE
+function openModalCreate() {
+    document.getElementById('modalTitle').textContent = 'Tambah Mapping Prodi';
+    document.getElementById('mappingId').value = '';
+    document.getElementById('mappingForm').reset();
+    document.getElementById('aktif').checked = true;
+    clearErrors();
+    document.getElementById('formModal').classList.add('show');
+}
+
+// EDIT - load data via AJAX, prefill form
+function openModalEdit(id) {
+    const url = URLS.editTpl.replace(/\/0\//, '/' + id + '/');
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+        .then(r => r.json())
+        .then(json => {
+            if (!json.success) {
+                showToast(json.error || 'Gagal load data', 'error');
+                return;
+            }
+            const d = json.data;
+            document.getElementById('modalTitle').textContent = 'Edit Mapping Prodi';
+            document.getElementById('mappingId').value = d.id;
+            document.getElementById('instrumenId').value = d.instrumen_id;
+            document.getElementById('kodeProdi').value = d.kode_prodi;
+            document.getElementById('namaProdi').value = d.nama_prodi;
+            document.getElementById('catatan').value = d.catatan;
+            document.getElementById('aktif').checked = d.aktif;
+            clearErrors();
+            document.getElementById('formModal').classList.add('show');
+        })
+        .catch(err => showToast('Network error: ' + err.message, 'error'));
+}
+
+function closeModal() {
+    document.getElementById('formModal').classList.remove('show');
+}
+
+function submitForm(e) {
+    e.preventDefault();
+    clearErrors();
+    
+    const id = document.getElementById('mappingId').value;
+    const url = id ? URLS.editTpl.replace(/\/0\//, '/' + id + '/') : URLS.create;
+    
+    const formData = new FormData(document.getElementById('mappingForm'));
+    
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan...';
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': getCsrfToken() },
+    })
+    .then(r => r.json().then(json => ({status: r.status, json})))
+    .then(({status, json}) => {
+        if (json.success) {
+            showToast(json.message, 'success');
+            closeModal();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            if (json.errors) showErrors(json.errors);
+            else showToast(json.error || 'Terjadi kesalahan', 'error');
+        }
+    })
+    .catch(err => showToast('Network error: ' + err.message, 'error'))
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Simpan';
+    });
+}
+
+// DELETE
+let deleteId = null;
+
+function confirmDelete(id, kode, nama) {
+    deleteId = id;
+    document.getElementById('deleteInfo').textContent = kode + ' (' + nama + ')';
+    document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('show');
+    deleteId = null;
+}
+
+function executeDelete() {
+    if (!deleteId) return;
+    const url = URLS.deleteTpl.replace(/\/0\//, '/' + deleteId + '/');
+    
+    const deleteBtn = document.getElementById('deleteBtn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Menghapus...';
+    
+    const formData = new FormData();
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': getCsrfToken() },
+    })
+    .then(r => r.json())
+    .then(json => {
+        if (json.success) {
+            showToast(json.message, 'success');
+            closeDeleteModal();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            showToast(json.error || 'Gagal hapus', 'error');
+        }
+    })
+    .catch(err => showToast('Network error: ' + err.message, 'error'))
+    .finally(() => {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Hapus';
+    });
+}
+
+// Close modal kalau klik backdrop
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('show');
+        }
+    });
+});
+
+// Escape key untuk close modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.show').forEach(o => o.classList.remove('show'));
+    }
+});
+</script>
+{% endif %}
 
 {% endblock %}

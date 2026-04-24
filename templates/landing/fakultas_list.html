@@ -1,0 +1,48 @@
+{% extends "layouts/publik.html" %}
+
+{% block title %}Daftar Fakultas - SIAKRED UNISAN{% endblock %}
+
+{% block page %}
+<style>
+  .fl-container { max-width:1100px; margin:0 auto; padding:2rem 1rem; }
+  .fl-header { margin-bottom:2rem; }
+  .fl-header h1 { font-size:2rem; color:#1E3A8A; margin:0 0 .5rem; }
+  .fl-header p { color:#64748B; margin:0; }
+  .fl-back-link { color:#2563EB; text-decoration:none; font-size:.9rem; margin-bottom:1rem; display:inline-block; }
+  .fl-back-link:hover { text-decoration:underline; }
+  .fl-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.25rem; }
+  .fl-card {
+    background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:1.5rem;
+    text-decoration:none; transition:transform .15s, box-shadow .15s, border-color .15s;
+  }
+  .fl-card:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(0,0,0,.08); border-color:#2563EB; }
+  .fl-card-kode {
+    display:inline-block; font-family:'JetBrains Mono', monospace; font-weight:700;
+    background:#EFF6FF; color:#1E40AF; padding:.35rem .7rem; border-radius:6px;
+    font-size:.85rem; margin-bottom:.75rem;
+  }
+  .fl-card-nama { font-size:1.15rem; font-weight:600; color:#111827; margin:0 0 .5rem; }
+  .fl-card-prodi-count { font-size:.85rem; color:#64748B; margin:0 0 1rem; }
+  .fl-card-link { font-size:.85rem; color:#2563EB; font-weight:600; }
+</style>
+
+<div class="fl-container">
+    <a href="{% url 'core:landing' %}" class="fl-back-link">&larr; Kembali ke Beranda</a>
+    
+    <div class="fl-header">
+        <h1>Daftar Fakultas</h1>
+        <p>{{ fakultas_list|length }} fakultas di Universitas Ichsan Gorontalo</p>
+    </div>
+    
+    <div class="fl-grid">
+        {% for f in fakultas_list %}
+        <a href="{% url 'core:fakultas_detail' f.kode %}" class="fl-card">
+            <span class="fl-card-kode">{{ f.kode }}</span>
+            <h3 class="fl-card-nama">{{ f.nama }}</h3>
+            <p class="fl-card-prodi-count">{{ f.prodi_list|length }} program studi</p>
+            <span class="fl-card-link">Lihat Detail &rarr;</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

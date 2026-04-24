@@ -107,11 +107,15 @@ def mapping_list(request):
             }
         grouped[key]["prodi_list"].append(m)
 
+    # Untuk dropdown modal CRUD (semua instrumen, ga cuma yang aktif)
+    all_instrumen = Instrumen.objects.all().order_by("urutan", "nama_singkat")
+    
     context = {
         "page_title": "Mapping Prodi ↔ Instrumen",
         "active_menu": "mapping",
         "grouped_mapping": list(grouped.values()),
         "total_mapping": mappings.count(),
+        "all_instrumen": all_instrumen,
     }
     return render(request, "master_akreditasi/mapping_list.html", context)
 
@@ -539,3 +543,188 @@ def download_template_picker(request):
         "instrumen_list": instrumen_list,
     }
     return render(request, "master_akreditasi/download_template.html", context)
+
+
+# ============================================================
+# CRUD MAPPING PRODI (Modal Popup)
+# ============================================================
+
+def _is_admin(user):
+    """Helper cek apakah user superuser atau staff."""
+    return user.is_authenticated and (user.is_superuser or user.is_staff)
+
+
+@login_required(login_url='/login/')
+def mapping_create(request):
+    """Tambah mapping prodi baru via AJAX POST."""
+    from django.http import JsonResponse
+    from django.views.decorators.http import require_POST
+    from .models import MappingProdiInstrumen, Instrumen
+    
+    if not _is_admin(request.user):
+        return JsonResponse({'success': False, 'error': 'Akses ditolak. Hanya admin yang bisa kelola mapping.'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method tidak diizinkan'}, status=405)
+    
+    instrumen_id = request.POST.get('instrumen_id', '').strip()
+    kode_prodi = request.POST.get('kode_prodi', '').strip().upper()
+    nama_prodi = request.POST.get('nama_prodi', '').strip()
+    catatan = request.POST.get('catatan', '').strip()
+    aktif = request.POST.get('aktif') == 'on'
+    
+    # Validasi
+    errors = {}
+    if not instrumen_id:
+        errors['instrumen_id'] = 'Pilih instrumen'
+    if not kode_prodi:
+        errors['kode_prodi'] = 'Kode prodi wajib diisi'
+    elif len(kode_prodi) < 2:
+        errors['kode_prodi'] = 'Kode prodi minimal 2 karakter'
+    if not nama_prodi:
+        errors['nama_prodi'] = 'Nama prodi wajib diisi'
+    elif len(nama_prodi) < 3:
+        errors['nama_prodi'] = 'Nama prodi minimal 3 karakter'
+    
+    if errors:
+        return JsonResponse({'success': False, 'errors': errors}, status=400)
+    
+    # Validasi instrumen exists
+    try:
+        instrumen = Instrumen.objects.get(pk=int(instrumen_id))
+    except (Instrumen.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'errors': {'instrumen_id': 'Instrumen tidak valid'}}, status=400)
+    
+    # Cek duplikat kode_prodi + instrumen
+    if MappingProdiInstrumen.objects.filter(kode_prodi=kode_prodi, instrumen=instrumen).exists():
+        return JsonResponse({
+            'success': False,
+            'errors': {'kode_prodi': f'Mapping {kode_prodi} ke instrumen ini sudah ada'},
+        }, status=400)
+    
+    # Create
+    mapping = MappingProdiInstrumen.objects.create(
+        instrumen=instrumen,
+        kode_prodi=kode_prodi,
+        nama_prodi=nama_prodi,
+        catatan=catatan,
+        aktif=aktif,
+    )
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'Mapping {kode_prodi} - {nama_prodi} berhasil ditambahkan',
+        'data': {
+            'id': mapping.id,
+            'kode_prodi': mapping.kode_prodi,
+            'nama_prodi': mapping.nama_prodi,
+            'aktif': mapping.aktif,
+        },
+    })
+
+
+@login_required(login_url='/login/')
+def mapping_edit(request, pk):
+    """Edit mapping prodi via AJAX. GET return data, POST submit."""
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from .models import MappingProdiInstrumen, Instrumen
+    
+    if not _is_admin(request.user):
+        return JsonResponse({'success': False, 'error': 'Akses ditolak'}, status=403)
+    
+    mapping = get_object_or_404(MappingProdiInstrumen, pk=pk)
+    
+    if request.method == 'GET':
+        # Return data untuk prefill form
+        return JsonResponse({
+            'success': True,
+            'data': {
+                'id': mapping.id,
+                'instrumen_id': mapping.instrumen_id,
+                'kode_prodi': mapping.kode_prodi,
+                'nama_prodi': mapping.nama_prodi,
+                'catatan': mapping.catatan or '',
+                'aktif': mapping.aktif,
+            },
+        })
+    
+    if request.method == 'POST':
+        instrumen_id = request.POST.get('instrumen_id', '').strip()
+        kode_prodi = request.POST.get('kode_prodi', '').strip().upper()
+        nama_prodi = request.POST.get('nama_prodi', '').strip()
+        catatan = request.POST.get('catatan', '').strip()
+        aktif = request.POST.get('aktif') == 'on'
+        
+        errors = {}
+        if not instrumen_id:
+            errors['instrumen_id'] = 'Pilih instrumen'
+        if not kode_prodi:
+            errors['kode_prodi'] = 'Kode prodi wajib diisi'
+        if not nama_prodi:
+            errors['nama_prodi'] = 'Nama prodi wajib diisi'
+        
+        if errors:
+            return JsonResponse({'success': False, 'errors': errors}, status=400)
+        
+        try:
+            instrumen = Instrumen.objects.get(pk=int(instrumen_id))
+        except (Instrumen.DoesNotExist, ValueError):
+            return JsonResponse({'success': False, 'errors': {'instrumen_id': 'Instrumen tidak valid'}}, status=400)
+        
+        # Cek duplikat (exclude diri sendiri)
+        if MappingProdiInstrumen.objects.filter(
+            kode_prodi=kode_prodi,
+            instrumen=instrumen,
+        ).exclude(pk=pk).exists():
+            return JsonResponse({
+                'success': False,
+                'errors': {'kode_prodi': f'Mapping {kode_prodi} ke instrumen ini sudah ada'},
+            }, status=400)
+        
+        mapping.instrumen = instrumen
+        mapping.kode_prodi = kode_prodi
+        mapping.nama_prodi = nama_prodi
+        mapping.catatan = catatan
+        mapping.aktif = aktif
+        mapping.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Mapping {kode_prodi} - {nama_prodi} berhasil diupdate',
+        })
+    
+    return JsonResponse({'success': False, 'error': 'Method tidak diizinkan'}, status=405)
+
+
+@login_required(login_url='/login/')
+def mapping_delete(request, pk):
+    """Hapus mapping prodi via AJAX POST."""
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from django.views.decorators.http import require_POST
+    from .models import MappingProdiInstrumen
+    
+    if not _is_admin(request.user):
+        return JsonResponse({'success': False, 'error': 'Akses ditolak'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method tidak diizinkan'}, status=405)
+    
+    mapping = get_object_or_404(MappingProdiInstrumen, pk=pk)
+    
+    # Cek apakah ada dokumen yang refer ke prodi ini (warning, but still allow delete)
+    from dokumen.models import Dokumen
+    dokumen_count = Dokumen.objects.filter(scope_kode_prodi=mapping.kode_prodi).count()
+    
+    info = f'Mapping {mapping.kode_prodi} - {mapping.nama_prodi} berhasil dihapus'
+    if dokumen_count > 0:
+        info += f' (Catatan: ada {dokumen_count} dokumen masih refer ke prodi ini)'
+    
+    mapping.delete()
+    
+    return JsonResponse({
+        'success': True,
+        'message': info,
+    })
+
