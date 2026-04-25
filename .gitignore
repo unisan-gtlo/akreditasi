@@ -47,3 +47,13 @@ dist/
 
 # Database dumps (not for git)
 dump_*.json
+
+# Backup files (local only)
+*.bak_*
+*.bak_safe
+
+# Local exports
+*_export.json
+
+# Local debug scripts
+check_*.py

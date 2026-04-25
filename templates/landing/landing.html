@@ -500,7 +500,24 @@
     .lb-rektor-foto-wrap { margin:0 auto; width:180px; height:260px; border-width:4px; }
   }
   
-  .lb-rektor-info h3 {
+  .lb-rektor-foto-col {
+    display:flex; flex-direction:column; align-items:center;
+    flex-shrink:0; gap:1rem;
+  }
+  .lb-rektor-pejabat {
+    text-align:center; max-width:240px;
+  }
+  .lb-rektor-pejabat h3 {
+    font-size:1rem; color:var(--text-primary); margin:0 0 .35rem;
+    font-weight:700; line-height:1.3;
+  }
+  .lb-rektor-role-small {
+    font-size:.82rem; color:var(--text-muted); margin:0; line-height:1.6;
+  }
+  .lb-rektor-periode {
+    color:var(--primary-700); font-weight:600; font-size:.78rem;
+  }
+    .lb-rektor-info h3 {
     font-size:1.25rem; color:var(--text-primary); margin:0 0 .25rem;
     font-weight:700;
   }
@@ -508,6 +525,29 @@
     color:var(--primary-700); font-size:.9rem; font-weight:600;
     margin:0 0 1rem;
   }
+  .lb-rektor-foto-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+.lb-rektor-pejabat {
+    text-align: center;
+    width: 100%;
+}
+.lb-rektor-pejabat h3 {
+    margin: 0 0 .25rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+.lb-rektor-pejabat .lb-rektor-role {
+    margin: 0;
+    font-size: .85rem;
+    color: var(--primary-600);
+    font-weight: 500;
+}
   .lb-rektor-sambutan {
     color:var(--text-primary); line-height:1.75; font-size:.95rem;
     font-style:italic; position:relative;
@@ -684,7 +724,7 @@
         <!-- HERO SECTION -->
         <div class="lb-hero">
             <div class="lb-hero-logo">
-                <img src="{% static 'img/unisan-logo.png' %}" alt="UNISAN" onerror="this.style.display='none'">
+                <img src="{% static 'img/logo_unisan.png' %}" alt="UNISAN" onerror="this.style.display='none'">
             </div>
             
             <h1>{{ profile.nama_singkat }}</h1>
@@ -715,25 +755,29 @@
             </div>
             
             <div class="lb-rektor-content">
-                <div class="lb-rektor-foto-wrap">
-                    {% if profile.foto_rektor %}
-                        <img src="{{ profile.foto_rektor.url }}" alt="{{ profile.nama_rektor }}">
-                    {% else %}
-                        <svg class="lb-rektor-placeholder" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
+                <div class="lb-rektor-foto-col">
+                    <div class="lb-rektor-foto-wrap">
+                        {% if profile.foto_rektor %}
+                            <img src="{{ profile.foto_rektor.url }}" alt="{{ profile.nama_rektor }}">
+                        {% else %}
+                            <svg class="lb-rektor-placeholder" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    
+                    {% if profile.nama_rektor %}
+                    <div class="lb-rektor-pejabat">
+                        <h3>{{ profile.nama_rektor }}</h3>
+                        <p class="lb-rektor-role">
+                            Rektor{% if profile.periode_rektor %} &middot; Periode {{ profile.periode_rektor }}{% endif %}
+                        </p>
+                    </div>
                     {% endif %}
                 </div>
                 
                 <div class="lb-rektor-info">
-                    {% if profile.nama_rektor %}
-                    <h3>{{ profile.nama_rektor }}</h3>
-                    <p class="lb-rektor-role">
-                        Rektor{% if profile.periode_rektor %} &middot; Periode {{ profile.periode_rektor }}{% endif %}
-                    </p>
-                    {% endif %}
-                    
                     {% if profile.kata_sambutan %}
                     <div class="lb-rektor-sambutan">
                         {{ profile.kata_sambutan|linebreaks }}
