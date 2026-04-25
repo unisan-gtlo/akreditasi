@@ -984,10 +984,10 @@
                                 Berdiri {{ profile.tahun_berdiri }}
                             </span>
                             {% endif %}
-                            {% if institusi_simda.npsn %}
+                            {% if institusi_simda and institusi_simda.npsn %}
                             <span class="lb-profil-meta-item">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/></svg>
-                                NPSN {{ institusi_simda.npsn }}
+                                NPSN {{ institusi_simda.npsn|default_if_none:"" }}
                             </span>
                             {% endif %}
                             {% if profile.alamat %}
@@ -1002,7 +1002,7 @@
                         {% endif %}
                     </div>
                     
-                    {% with peringkat=profile.akreditasi_peringkat|default:institusi_simda.akreditasi %}
+                    {% with peringkat=profile.akreditasi_peringkat|default:institusi_simda.akreditasi|default_if_none:"" %}
                     {% if peringkat %}
                     <div class="lb-profil-akred-card">
                         <div class="lb-profil-akred-label">Akreditasi Institusi</div>
@@ -1013,9 +1013,9 @@
                             No SK: {{ profile.akreditasi_no_sk }}
                             {% if profile.akreditasi_berlaku_sampai %}<br>Berlaku s/d {{ profile.akreditasi_berlaku_sampai|date:"d M Y" }}{% endif %}
                         </div>
-                        {% elif institusi_simda.no_sk_akreditasi and institusi_simda.no_sk_akreditasi != "-" %}
+                        {% elif institusi_simda and institusi_simda.no_sk_akreditasi and institusi_simda.no_sk_akreditasi != "-" %}
                         <div class="lb-profil-akred-sk">
-                            No SK: {{ institusi_simda.no_sk_akreditasi }}
+                            No SK: {{ institusi_simda.no_sk_akreditasi|default_if_none:"" }}
                         </div>
                         {% endif %}
                     </div>

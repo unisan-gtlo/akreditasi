@@ -68,6 +68,7 @@ def get_prodi_detail_from_simda(kode_prodi):
     """Ambil detail lengkap 1 prodi dari SIMDA, join dengan fakultas.
     
     Returns dict atau None kalau tidak ditemukan.
+    Visi/Misi/Tujuan di-skip karena mungkin tidak exist di SIMDA production.
     """
     sql = """
         SELECT 
@@ -87,11 +88,7 @@ def get_prodi_detail_from_simda(kode_prodi):
             p.status,
             p.kode_fakultas,
             COALESCE(f.nama_fakultas, p.kode_fakultas) AS nama_fakultas,
-            COALESCE(f.nama_singkat, p.kode_fakultas) AS nama_singkat_fakultas,
-            p.visi,
-            p.misi,
-            p.tujuan,
-            p.profil_lulusan
+            COALESCE(f.nama_singkat, p.kode_fakultas) AS nama_singkat_fakultas
         FROM master.program_studi p
         LEFT JOIN master.fakultas f ON f.kode_fakultas = p.kode_fakultas
         WHERE UPPER(p.kode_prodi) = UPPER(%s)

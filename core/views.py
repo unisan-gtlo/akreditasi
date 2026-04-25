@@ -374,6 +374,13 @@ def landing_page(request):
     except Exception:
         institusi_simda = {}
     
+    # Ensure all expected keys exist (prevent template crash)
+    default_keys = ['akreditasi', 'no_sk_akreditasi', 'npsn', 'nama_resmi', 'nama_singkat', 
+                    'alamat', 'telepon', 'email', 'website', 'tgl_sk_akreditasi', 
+                    'berlaku_sampai', 'tgl_berdiri', 'visi', 'misi', 'tujuan']
+    for k in default_keys:
+        institusi_simda.setdefault(k, "")
+    
     context = {
         'profile': profile,
         'institusi_simda': institusi_simda,
