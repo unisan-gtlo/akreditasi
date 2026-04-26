@@ -57,6 +57,15 @@ def _get_global_stats(scope_info):
         verifikasi_qs = verifikasi_qs.filter(
             revisi__dokumen__scope_kode_fakultas__in=fakultas_ids
         )
+
+    # Apply prodi filter untuk Kaprodi (hanya lihat prodi sendiri)
+    if not scope_info.get('is_admin') and scope_info.get('is_kaprodi_only') and scope_info.get('prodi_ids'):
+        prodi_ids = scope_info['prodi_ids']
+        sesi_qs = sesi_qs.filter(kode_prodi__in=prodi_ids)
+        dokumen_qs = dokumen_qs.filter(scope_kode_prodi__in=prodi_ids)
+        verifikasi_qs = verifikasi_qs.filter(
+            revisi__dokumen__scope_kode_prodi__in=prodi_ids
+        )
     
     # Hitung stats
     sesi_aktif_count = sesi_qs.count()
@@ -280,6 +289,11 @@ def laporan_sesi_detail(request, sesi_id):
     if not scope_info['is_admin'] and scope_info['fakultas_ids']:
         if sesi.kode_fakultas and str(sesi.kode_fakultas) not in scope_info['fakultas_ids']:
             return HttpResponseForbidden('<h2>Akses Ditolak</h2><p>Sesi ini di luar fakultas Anda.</p>')
+
+    # Permission prodi-level check (Kaprodi hanya lihat sesi prodi sendiri)
+    if not scope_info['is_admin'] and scope_info.get('is_kaprodi_only') and scope_info.get('prodi_ids'):
+        if sesi.kode_prodi and str(sesi.kode_prodi) not in scope_info['prodi_ids']:
+            return HttpResponseForbidden('<h2>Akses Ditolak</h2><p>Sesi ini di luar prodi Anda.</p>')
     
     data = _get_sesi_progress_data(sesi)
     
@@ -377,6 +391,10 @@ def _get_prodi_completeness_data(scope_info, fakultas_filter=None):
         # Apply filter fakultas di sini (Python-side)
         if not scope_info.get('is_admin') and scope_info.get('fakultas_ids'):
             if kode_fakultas not in scope_info['fakultas_ids']:
+                continue
+        # Apply filter prodi untuk Kaprodi (hanya lihat prodi sendiri)
+        if not scope_info.get('is_admin') and scope_info.get('is_kaprodi_only') and scope_info.get('prodi_ids'):
+            if mapping.kode_prodi not in scope_info['prodi_ids']:
                 continue
         if fakultas_filter and kode_fakultas != fakultas_filter:
             continue
@@ -521,6 +539,10 @@ def _get_heatmap_data(instrumen, scope_info, fakultas_filter=None):
         # Filter scope
         if not scope_info.get('is_admin') and scope_info.get('fakultas_ids'):
             if kode_fakultas not in scope_info['fakultas_ids']:
+                continue
+        # Filter prodi untuk Kaprodi (hanya lihat prodi sendiri)
+        if not scope_info.get('is_admin') and scope_info.get('is_kaprodi_only') and scope_info.get('prodi_ids'):
+            if m.kode_prodi not in scope_info['prodi_ids']:
                 continue
         if fakultas_filter and kode_fakultas != fakultas_filter:
             continue
@@ -727,6 +749,12 @@ def _get_audit_trail_data(scope_info, filters):
     if not scope_info.get('is_admin') and scope_info.get('fakultas_ids'):
         qs = qs.filter(
             verifikasi__revisi__dokumen__scope_kode_fakultas__in=scope_info['fakultas_ids']
+        )
+
+    # Filter scope prodi (Kaprodi hanya lihat audit trail prodi sendiri)
+    if not scope_info.get('is_admin') and scope_info.get('is_kaprodi_only') and scope_info.get('prodi_ids'):
+        qs = qs.filter(
+            verifikasi__revisi__dokumen__scope_kode_prodi__in=scope_info['prodi_ids']
         )
     
     # Filter date range
