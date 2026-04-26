@@ -189,6 +189,26 @@ class Dokumen(models.Model):
     def needs_revision(self):
         return self.status_verifikasi == 'NEED_REVISION'
 
+    # =========================================================
+    # PUBLIC LINK (untuk hyperlink di LED — akses tanpa login)
+    # =========================================================
+    public_token = models.UUIDField(
+        _("Token Public Link"),
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+        help_text=_("Token UUID untuk akses public via hyperlink LED"),
+    )
+    public_enabled = models.BooleanField(
+        _("Public Link Aktif"),
+        default=True,
+        help_text=_(
+            "Centang agar dokumen ini dapat diakses via link public. "
+            "Link tetap hanya aktif jika status=FINAL."
+        ),
+    )
+
     class Meta:
         verbose_name = _("Dokumen Akreditasi")
         verbose_name_plural = _("Dokumen Akreditasi")
@@ -414,6 +434,8 @@ class DokumenAccessLog(models.Model):
         REVISI = "REVISI", _("Upload Revisi")
         DELETE = "DELETE", _("Hapus")
         EDIT_META = "EDIT_META", _("Edit Metadata")
+        PUBLIC_VIEW = "PUBLIC_VIEW", _("Public View (via link LED)")
+        PUBLIC_DOWNLOAD = "PUBLIC_DOWNLOAD", _("Public Download (via link LED)")
 
     dokumen = models.ForeignKey(
         Dokumen,

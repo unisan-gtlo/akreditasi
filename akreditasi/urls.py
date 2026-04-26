@@ -16,6 +16,10 @@ urlpatterns = [
     path("publik/<int:pk>/preview/", dokumen_views.dokumen_publik_preview_serve, name="dokumen_publik_preview"),
     path("publik/<int:pk>/download/", dokumen_views.dokumen_publik_download, name="dokumen_publik_download"),
 
+    # PUBLIC DOC LINK (untuk hyperlink di LED — UUID token, no login)
+    path("d/<uuid:token>/", dokumen_views.public_dokumen, name="public_dokumen"),
+    path("d/<uuid:token>/download/", dokumen_views.public_download, name="public_download"),
+
     # Internal apps
     path("master/", include("master_akreditasi.urls")),
     path("dokumen/", include("dokumen.urls")),

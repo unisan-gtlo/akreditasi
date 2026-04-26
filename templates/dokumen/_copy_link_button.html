@@ -1,0 +1,67 @@
+{% comment %}
+Partial: tombol "Copy Link Public" untuk hyperlink di LED.
+
+Usage:
+    {% include "dokumen/_copy_link_button.html" with dokumen=dok %}
+
+Context wajib:
+    - dokumen: instance Dokumen
+
+Tombol hanya ditampilkan kalau dokumen.public_enabled=True dan status=FINAL.
+Untuk dokumen DRAFT/ARSIP, ditampilkan info kecil.
+{% endcomment %}
+
+{% if dokumen.public_enabled and dokumen.status == 'FINAL' %}
+    <button type="button"
+            class="btn-copy-link"
+            data-link="{{ request.scheme }}://{{ request.get_host }}/d/{{ dokumen.public_token }}/"
+            data-name="{{ dokumen.judul|escapejs }}"
+            title="Salin link public untuk hyperlink di LED — asesor klik tanpa login">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 15l6-6"/>
+            <path d="M11 6l.463-.536a5 5 0 0 1 7.071 7.072l-.534.464"/>
+            <path d="M13 18l-.397.534a5.068 5.068 0 0 1-7.127 0a4.972 4.972 0 0 1 0-7.071l.524-.463"/>
+        </svg>
+        <span class="btn-copy-link-text">Copy Link</span>
+    </button>
+{% else %}
+    <span class="copy-link-disabled" title="Link public hanya tersedia saat dokumen status FINAL">
+        <em>Link public belum aktif</em>
+    </span>
+{% endif %}
+
+<style>
+.btn-copy-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .75rem;
+    background: white;
+    color: var(--primary-600, #1E40AF);
+    border: 1px solid var(--primary-200, #BFDBFE);
+    border-radius: 6px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+}
+.btn-copy-link:hover {
+    background: var(--primary-50, #EFF6FF);
+    border-color: var(--primary-600, #1E40AF);
+}
+.btn-copy-link.copied {
+    background: #10B981;
+    color: white;
+    border-color: #10B981;
+}
+.btn-copy-link.copied .btn-copy-link-text::before {
+    content: "✓ ";
+}
+.copy-link-disabled {
+    font-size: .75rem;
+    color: var(--text-muted, #9CA3AF);
+}
+</style>
