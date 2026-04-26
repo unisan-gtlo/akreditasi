@@ -76,6 +76,21 @@ def build_preview_url(file_id):
     return f"https://drive.google.com/file/d/{file_id}/preview"
 
 
+def build_drive_view_url(file_id):
+    """
+    Return URL untuk dibuka di browser tab baru (bukan iframe).
+    Dipakai saat redirect dari public link SIAKRED — asesor klik
+    hyperlink di LED, lalu di-redirect ke Drive viewer dengan
+    tombol download bawaan Drive.
+
+    File HARUS sudah di-share 'Anyone with the link' di Google Drive,
+    kalau tidak Google akan minta sign-in.
+    """
+    if not file_id:
+        raise ValueError("file_id kosong")
+    return f"https://drive.google.com/file/d/{file_id}/view"
+
+
 def build_download_url(file_id):
     """Return URL untuk download langsung."""
     return f"https://drive.google.com/uc?export=download&id={file_id}"

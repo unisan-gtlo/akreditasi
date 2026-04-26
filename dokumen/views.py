@@ -1571,3 +1571,114 @@ def verifikasi_bulk_action(request):
     next_tab = tab_map.get(aksi, 'pending')
     return redirect(f'/dokumen/verifikasi/?tab={next_tab}')
 
+# =========================================================
+# PUBLIC LINK (akses tanpa login untuk hyperlink di LED)
+# =========================================================
+from django.http import Http404, HttpResponse
+from django.views.decorators.http import require_GET
+from django.views.decorators.cache import cache_control
+from .gdrive_helper import build_drive_view_url
+
+
+@require_GET
+@cache_control(no_cache=True, no_store=True, must_revalidate=True)
+def public_dokumen(request, token):
+    """
+    Public-accessible view untuk dokumen via UUID token.
+    Tidak butuh login. Akses dibatasi:
+      - public_enabled = True
+      - status = 'FINAL'
+
+    Behavior:
+      - GDRIVE → redirect ke Google Drive viewer (browser tab baru)
+      - LOCAL  → render preview page (PDF iframe / image / download fallback)
+    """
+    dokumen = get_object_or_404(
+        Dokumen,
+        public_token=token,
+        public_enabled=True,
+        status=Dokumen.Status.FINAL,
+    )
+
+    # Ambil revisi aktif
+    revisi = dokumen.revisi_aktif
+    if not revisi:
+        raise Http404("Dokumen belum punya file aktif")
+
+    # Log akses anonymous (user=None)
+    referer = (request.META.get("HTTP_REFERER", "") or "")[:200]
+    DokumenAccessLog.objects.create(
+        dokumen=dokumen,
+        revisi=revisi,
+        aksi=DokumenAccessLog.AksiType.PUBLIC_VIEW,
+        user=None,
+        ip_address=_get_client_ip(request),
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        catatan=f"PUBLIC ref={referer}"[:200] if referer else "PUBLIC",
+    )
+
+    # Routing berdasarkan storage mode
+    if revisi.storage_type == "GDRIVE" and revisi.gdrive_file_id:
+        return redirect(build_drive_view_url(revisi.gdrive_file_id))
+
+    # Mode LOCAL → render preview page
+    if not revisi.file:
+        raise Http404("File tidak ditemukan")
+
+    file_name = revisi.file.name.lower()
+    is_pdf = file_name.endswith(".pdf")
+    is_image = file_name.endswith((".png", ".jpg", ".jpeg", ".gif", ".webp"))
+
+    return render(request, "dokumen/public_dokumen.html", {
+        "dokumen": dokumen,
+        "revisi": revisi,
+        "is_pdf": is_pdf,
+        "is_image": is_image,
+        "download_url": f"/d/{dokumen.public_token}/download/",
+    })
+
+
+@require_GET
+def public_download(request, token):
+    """
+    Force-download untuk dokumen via public token.
+    Untuk GDRIVE: redirect ke Drive viewer (Drive sudah punya tombol download).
+    Untuk LOCAL: stream file dengan Content-Disposition: attachment.
+    """
+    from django.http import FileResponse
+
+    dokumen = get_object_or_404(
+        Dokumen,
+        public_token=token,
+        public_enabled=True,
+        status=Dokumen.Status.FINAL,
+    )
+
+    revisi = dokumen.revisi_aktif
+    if not revisi:
+        raise Http404("Dokumen belum punya file aktif")
+
+    if revisi.storage_type == "GDRIVE" and revisi.gdrive_file_id:
+        return redirect(build_drive_view_url(revisi.gdrive_file_id))
+
+    if not revisi.file:
+        raise Http404("File tidak ditemukan")
+
+    # Log download
+    referer = (request.META.get("HTTP_REFERER", "") or "")[:200]
+    DokumenAccessLog.objects.create(
+        dokumen=dokumen,
+        revisi=revisi,
+        aksi=DokumenAccessLog.AksiType.PUBLIC_DOWNLOAD,
+        user=None,
+        ip_address=_get_client_ip(request),
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        catatan=f"PUBLIC ref={referer}"[:200] if referer else "PUBLIC",
+    )
+
+    # Stream file as attachment
+    return FileResponse(
+        revisi.file.open("rb"),
+        as_attachment=True,
+        filename=revisi.original_filename or revisi.file.name.split("/")[-1],
+    )
