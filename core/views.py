@@ -13,6 +13,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.cache import never_cache
 
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.db.models import Avg, Count
+from .models import SurveiVMTS
+
+
 from .forms import LoginForm, MathCaptcha
 from .models import LoginAttempt, DeviceSession
 
@@ -777,3 +783,377 @@ def prodi_detail(request, kode):
     }
     return render(request, 'landing/prodi_detail.html', context)
 
+
+from master_akreditasi.models import MappingProdiInstrumen
+
+def _get_survei_context(error=None):
+    """Helper untuk build context survei dengan daftar prodi."""
+    from core.models import SiteProfile
+    from django.db import connections
+    site = SiteProfile.get_instance()
+    cursor = connections['default'].cursor()
+    cursor.execute("""
+        SELECT m.kode_prodi, m.nama_prodi, p.jenjang
+        FROM mapping_prodi_instrumen m
+        LEFT JOIN master.program_studi p ON p.kode_prodi = m.kode_prodi
+        WHERE m.aktif = true
+        ORDER BY m.nama_prodi, p.jenjang
+    """)
+    rows = cursor.fetchall()
+    daftar_prodi = [
+        {
+            'kode_prodi': row[0],
+            'nama_prodi': row[1],
+            'jenjang': row[2] or '',
+            'label': f"{row[1]} ({row[2]})" if row[2] else row[1],
+        }
+        for row in rows
+    ]
+    return {
+        'stats': SurveiVMTS.objects.aggregate(
+            total=Count('id'),
+            avg_v=Avg('skor_v'),
+            avg_m=Avg('skor_m'),
+            avg_t=Avg('skor_t'),
+            avg_s=Avg('skor_s'),
+            avg_total=Avg('skor_total'),
+        ),
+        'target_responden': site.survei_vmts_target,
+        'tahun_akademik': site.survei_vmts_tahun_akademik,
+        'daftar_prodi': daftar_prodi,
+        'site': site,
+        'error': error,
+    }
+
+
+def survei_vmts(request):
+    from core.models import SiteProfile
+    site = SiteProfile.get_instance()
+    
+    # Cek apakah survei sedang aktif
+    if not site.survei_vmts_aktif:
+        return render(request, 'survei/vmts_tutup.html', {
+            'tahun_akademik': site.survei_vmts_tahun_akademik,
+        })
+    
+    return render(request, 'survei/vmts_form.html', _get_survei_context())
+
+
+def kirim_vmts(request):
+    if request.method != 'POST':
+        return redirect('core:survei_vmts')
+
+    try:
+        nama     = request.POST.get('nama', '').strip()
+        status   = request.POST.get('status', '')
+        prodi    = request.POST.get('prodi', '').strip()
+        angkatan = request.POST.get('angkatan', '').strip()
+
+        if not status or not prodi:
+            return render(request, 'survei/vmts_form.html',
+                _get_survei_context(error='Status dan Program Studi wajib diisi.'))
+
+        def hitung_skor(keys):
+            nilai = []
+            for k in keys:
+                v = request.POST.get(k)
+                if v and v.isdigit():
+                    nilai.append(int(v))
+            return round(sum(nilai) / len(nilai), 2) if nilai else 0
+
+        skor_v = hitung_skor(['V1', 'V2', 'V3', 'V4'])
+        skor_m = hitung_skor(['M1', 'M2', 'M3', 'M4'])
+        skor_t = hitung_skor(['T1', 'T2', 'T3', 'T4'])
+        skor_s = hitung_skor(['S1', 'S2', 'S3', 'S4'])
+
+        semua_skor = [skor_v, skor_m, skor_t, skor_s]
+        if sum(1 for s in semua_skor if s > 0) < 2:
+            return render(request, 'survei/vmts_form.html',
+                _get_survei_context(error='Mohon isi minimal 2 bagian pertanyaan VMTS.'))
+
+        skor_total = round(
+            sum(s for s in semua_skor if s > 0) /
+            sum(1 for s in semua_skor if s > 0), 2
+        )
+
+        media_str = ','.join(request.POST.getlist('media'))
+
+        x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR')
+
+        SurveiVMTS.objects.create(
+            nama=nama or None,
+            status=status,
+            prodi=prodi,
+            angkatan=angkatan or None,
+            skor_v=skor_v,
+            skor_m=skor_m,
+            skor_t=skor_t,
+            skor_s=skor_s,
+            skor_total=skor_total,
+            media_sosialisasi=media_str or None,
+            masukan=request.POST.get('masukan', '').strip() or None,
+            saran=request.POST.get('saran', '').strip() or None,
+            ip_address=ip,
+        )
+
+        return redirect('core:survei_vmts_sukses')
+
+    except Exception as e:
+        return render(request, 'survei/vmts_form.html',
+            _get_survei_context(error=f'Terjadi kesalahan: {str(e)}'))
+
+
+def survei_vmts_sukses(request):
+    """Halaman konfirmasi setelah berhasil mengisi survei"""
+    return render(request, 'survei/vmts_sukses.html')
+
+
+def dashboard_vmts(request):
+    if not request.user.is_authenticated:
+        return redirect('core:login')
+
+    from core.models import SiteProfile, ProdiProfile
+    site = SiteProfile.get_instance()
+    prodi_filter = request.GET.get('prodi', '')
+
+    data = SurveiVMTS.objects.all()
+    if prodi_filter:
+        data = data.filter(prodi=prodi_filter)
+
+    stats = data.aggregate(
+        total=Count('id'),
+        avg_v=Avg('skor_v'),
+        avg_m=Avg('skor_m'),
+        avg_t=Avg('skor_t'),
+        avg_s=Avg('skor_s'),
+        avg_total=Avg('skor_total'),
+    )
+
+    per_status = data.values('status').annotate(
+        jumlah=Count('id'),
+        rata=Avg('skor_total')
+    ).order_by('status')
+
+    per_prodi = SurveiVMTS.objects.values('prodi').annotate(
+        jumlah=Count('id'),
+        rata=Avg('skor_total'),
+        avg_v=Avg('skor_v'),
+        avg_m=Avg('skor_m'),
+        avg_t=Avg('skor_t'),
+        avg_s=Avg('skor_s'),
+    ).order_by('-rata')
+
+    # Ambil target per prodi dari ProdiProfile
+    prodi_profiles = {
+        p.kode_prodi: p for p in ProdiProfile.objects.filter(aktif=True)
+    }
+
+    # Gabungkan target ke per_prodi
+    from django.db import connections
+    cursor = connections['default'].cursor()
+    per_prodi_list = []
+    for p in per_prodi:
+        nama_prodi = p['prodi']
+        # Cari ProdiProfile berdasarkan nama_prodi dari SIMDA
+        cursor.execute("""
+            SELECT m.kode_prodi 
+            FROM master.program_studi ps
+            JOIN mapping_prodi_instrumen m ON m.kode_prodi = ps.kode_prodi
+            WHERE CONCAT(ps.nama_prodi, ' (', ps.jenjang, ')') = %s
+            LIMIT 1
+        """, [nama_prodi])
+        row = cursor.fetchone()
+        kode = row[0] if row else None
+        profile = prodi_profiles.get(kode) if kode else None
+        target = profile.target_survei_total if profile else site.survei_vmts_target
+        pct = round((p['jumlah'] / target) * 100) if target else 0
+        per_prodi_list.append({
+            **p,
+            'target': target,
+            'pct_target': min(pct, 100),
+            'target_mhs': profile.target_survei_mahasiswa if profile else '-',
+            'target_dsn': profile.target_survei_dosen if profile else '-',
+            'target_tdk': profile.target_survei_tendik if profile else '-',
+            'target_alm': profile.target_survei_alumni if profile else '-',
+        })
+
+    daftar_prodi_filter = SurveiVMTS.objects.values_list(
+        'prodi', flat=True
+    ).distinct().order_by('prodi')
+
+    pct_pemahaman = 0
+    if stats['avg_total']:
+        pct_pemahaman = round((stats['avg_total'] / 5) * 100, 1)
+
+    # Data distribusi jawaban untuk grafik PIE (per pilar)
+    # Ambil dari data mentah per butir — kita simpan skor bulat
+    from collections import Counter
+
+    def distribusi_skor(field):
+        """Hitung distribusi skor 1-5 untuk satu pilar."""
+        counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        for val in data.values_list(field, flat=True):
+            if val is not None:
+                rounded = round(val)
+                if 1 <= rounded <= 5:
+                    counts[rounded] += 1
+        total = sum(counts.values())
+        return {
+            'labels': ['1 - Sangat Tidak Setuju', '2 - Tidak Setuju', '3 - Netral', '4 - Setuju', '5 - Sangat Setuju'],
+            'data': [counts[i] for i in range(1, 6)],
+            'pct': [round((counts[i]/total)*100, 1) if total else 0 for i in range(1, 6)],
+        }
+
+    pie_v = distribusi_skor('skor_v')
+    pie_m = distribusi_skor('skor_m')
+    pie_t = distribusi_skor('skor_t')
+    pie_s = distribusi_skor('skor_s')
+
+    import json
+    context = {
+        'stats': stats,
+        'per_status': per_status,
+        'per_prodi': per_prodi_list,
+        'data': data.order_by('-created_at')[:50],
+        'jumlah_prodi': per_prodi.count(),
+        'target_responden': site.survei_vmts_target,
+        'tahun_akademik': site.survei_vmts_tahun_akademik,
+        'daftar_prodi_filter': daftar_prodi_filter,
+        'prodi_filter': prodi_filter,
+        'pct_pemahaman': pct_pemahaman,
+        'pie_v': json.dumps(pie_v),
+        'pie_m': json.dumps(pie_m),
+        'pie_t': json.dumps(pie_t),
+        'pie_s': json.dumps(pie_s),
+    }
+    return render(request, 'survei/vmts_dashboard.html', context)
+
+def dashboard_vmts_export(request):
+    """Export data survei VMTS ke Excel"""
+    if not request.user.is_authenticated:
+        return redirect('core:login')
+
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+    except ImportError:
+        from django.http import HttpResponse
+        return HttpResponse("openpyxl belum terinstall. Jalankan: pip install openpyxl", status=500)
+
+    from django.http import HttpResponse
+    from core.models import SiteProfile
+    site = SiteProfile.get_instance()
+
+    wb = openpyxl.Workbook()
+
+    # Sheet 1: Data Responden
+    ws1 = wb.active
+    ws1.title = "Data Responden"
+    header_fill = PatternFill("solid", fgColor="1a3a8f")
+    header_font = Font(color="FFFFFF", bold=True, size=11)
+
+    headers = [
+        'No', 'Tanggal', 'Nama', 'Status', 'Program Studi',
+        'Angkatan', 'Skor Visi', 'Skor Misi', 'Skor Tujuan',
+        'Skor Sasaran', 'Skor Total', 'Media Sosialisasi',
+        'Masukan', 'Saran'
+    ]
+    for col, h in enumerate(headers, 1):
+        cell = ws1.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    data = SurveiVMTS.objects.all().order_by('-created_at')
+    for i, r in enumerate(data, 1):
+        ws1.append([
+            i,
+            r.created_at.strftime('%d/%m/%Y %H:%M'),
+            r.nama or '-',
+            r.get_status_display(),
+            r.prodi,
+            r.angkatan or '-',
+            r.skor_v,
+            r.skor_m,
+            r.skor_t,
+            r.skor_s,
+            r.skor_total,
+            r.media_sosialisasi or '-',
+            r.masukan or '-',
+            r.saran or '-',
+        ])
+
+    for col in ws1.columns:
+        max_len = max((len(str(c.value)) if c.value else 0) for c in col)
+        ws1.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+
+    # Sheet 2: Rekap per Prodi
+    ws2 = wb.create_sheet("Rekap per Prodi")
+    headers2 = ['Program Studi', 'Jumlah', 'Rata-rata', 'Visi', 'Misi', 'Tujuan', 'Sasaran']
+    for col, h in enumerate(headers2, 1):
+        cell = ws2.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    per_prodi = SurveiVMTS.objects.values('prodi').annotate(
+        jumlah=Count('id'),
+        rata=Avg('skor_total'),
+        avg_v=Avg('skor_v'),
+        avg_m=Avg('skor_m'),
+        avg_t=Avg('skor_t'),
+        avg_s=Avg('skor_s'),
+    ).order_by('-rata')
+
+    for p in per_prodi:
+        ws2.append([
+            p['prodi'],
+            p['jumlah'],
+            round(p['rata'], 2) if p['rata'] else 0,
+            round(p['avg_v'], 2) if p['avg_v'] else 0,
+            round(p['avg_m'], 2) if p['avg_m'] else 0,
+            round(p['avg_t'], 2) if p['avg_t'] else 0,
+            round(p['avg_s'], 2) if p['avg_s'] else 0,
+        ])
+
+    for col in ws2.columns:
+        max_len = max((len(str(c.value)) if c.value else 0) for c in col)
+        ws2.column_dimensions[col[0].column_letter].width = min(max_len + 4, 40)
+
+    # Sheet 3: Rekap per Status
+    ws3 = wb.create_sheet("Rekap per Status")
+    headers3 = ['Status', 'Jumlah', 'Rata-rata VMTS']
+    for col, h in enumerate(headers3, 1):
+        cell = ws3.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    per_status = SurveiVMTS.objects.values('status').annotate(
+        jumlah=Count('id'),
+        rata=Avg('skor_total')
+    ).order_by('status')
+
+    STATUS_LABEL = {
+        'mahasiswa': 'Mahasiswa',
+        'dosen': 'Dosen',
+        'tendik': 'Tenaga Kependidikan',
+        'alumni': 'Alumni',
+    }
+    for s in per_status:
+        ws3.append([
+            STATUS_LABEL.get(s['status'], s['status']),
+            s['jumlah'],
+            round(s['rata'], 2) if s['rata'] else 0,
+        ])
+
+    # Kirim response
+    filename = f"Survei_VMTS_{site.survei_vmts_tahun_akademik.replace('/', '-')}.xlsx"
+    from django.http import HttpResponse
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response

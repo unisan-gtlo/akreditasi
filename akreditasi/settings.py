@@ -78,6 +78,7 @@ TEMPLATES = [
                 "dokumen.context_processors.verifikasi_context",
                 "core.context_processors.notifikasi_context",
                 "core.context_processors.sidebar_stats",
+                
             ],
         },
     },
@@ -306,3 +307,26 @@ LOGGING = {
         },
     },
 }
+
+import os
+
+# ============================================
+# PRODUCTION SECURITY SETTINGS
+# ============================================
+if not DEBUG:
+    # HTTPS
+    SECURE_SSL_REDIRECT          = True
+    SECURE_HSTS_SECONDS          = 31536000  # 1 tahun
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD          = True
+
+    # Cookie security
+    SESSION_COOKIE_SECURE        = True
+    CSRF_COOKIE_SECURE           = True
+
+    # Clickjacking protection
+    X_FRAME_OPTIONS              = 'DENY'
+
+else:
+    # Development — aman untuk local
+    X_FRAME_OPTIONS              = 'SAMEORIGIN'

@@ -45,3 +45,15 @@ def notifikasi_context(request):
         }
     except Exception:
         return {'notifikasi_recent': [], 'notifikasi_unread_count': 0}
+        
+def vmts_stats(request):
+    """Inject statistik survei VMTS ke semua template."""
+    if not request.user.is_authenticated:
+        return {}
+    try:
+        from core.models import SurveiVMTS
+        from django.db.models import Count
+        total = SurveiVMTS.objects.count()
+        return {'stats_vmts_total': total}
+    except Exception:
+        return {}

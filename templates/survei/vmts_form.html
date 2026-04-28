@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Survei Pemahaman VMTS — SIAKRED UNISAN{% endblock %}
+{% block meta_robots %}index, follow{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --brand: #1a3a8f;
+    --brand-light: #e8f0fe;
+    --accent: #e8a020;
+    --accent-light: #fff8ed;
+    --radius: 10px;
+  }
+  body { background: #f0f4f8; font-family: 'Inter', sans-serif; }
+
+  .sv-navbar {
+    background: var(--brand);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sv-navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .sv-navbar-logo {
+    width: 34px; height: 34px;
+    background: #fff;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: var(--brand);
+    text-align: center; line-height: 1.2;
+  }
+  .sv-navbar-title { color: #fff; font-size: 13px; font-weight: 600; }
+  .sv-navbar-title span { display: block; font-size: 10px; font-weight: 400; opacity: 0.8; }
+  .sv-navbar-back {
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 5px 14px;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+.sv-navbar-back:hover {
+    color: #ffffff;
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.6);
+    text-decoration: none;
+}
+.sv-navbar-back:visited {
+    color: rgba(255,255,255,0.8);
+}
+
+  .sv-hero {
+    background: var(--brand);
+    padding: 2rem;
+    text-align: center;
+    color: #fff;
+  }
+  .sv-hero h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .sv-hero p { font-size: 13px; opacity: 0.8; }
+  .sv-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+
+  .sv-wrap { max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  .sv-alert-error {
+    background: #fce8e6;
+    border-left: 4px solid #c5221f;
+    color: #7b1f1c;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 1rem;
+  }
+
+  .sv-card {
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px solid #dde3f0;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .sv-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sv-card-badge {
+    background: var(--brand-light);
+    color: var(--brand);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .sv-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .sv-grid-2 { grid-template-columns: 1fr; } }
+
+  .sv-field { margin-bottom: 0.875rem; }
+  .sv-field label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
+  .sv-field input, .sv-field select, .sv-field textarea {
+    width: 100%;
+    border: 1px solid #c9d2e8;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+  }
+  .sv-field textarea { resize: vertical; line-height: 1.6; }
+
+  .sv-info {
+    background: var(--accent-light);
+    border: 1px solid #f0d080;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #5a3a00;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .sv-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin: 1rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sv-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e8e8e8;
+  }
+
+  .sv-q { margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f0f0f0; }
+  .sv-q:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .sv-q-num { font-size: 11px; font-weight: 600; color: var(--brand); margin-bottom: 4px; }
+  .sv-q-text { font-size: 13px; color: #222; margin-bottom: 10px; line-height: 1.5; }
+
+  .sv-likert { display: flex; gap: 6px; }
+  .sv-likert-opt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .sv-likert-opt input[type=radio] { display: none; }
+  .sv-likert-btn {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #c9d2e8;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #888;
+    background: #f8f9fd;
+    transition: all 0.15s;
+  }
+  .sv-likert-opt input:checked + .sv-likert-btn {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+  }
+  .sv-likert-lbl { font-size: 10px; color: #aaa; text-align: center; line-height: 1.2; }
+
+  .sv-tab-row { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .sv-tab {
+    padding: 6px 14px;
+    border: 1px solid #c9d2e8;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #555;
+    background: #fff;
+    font-family: 'Inter', sans-serif;
+  }
+  .sv-tab.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .sv-pillar { display: none; }
+  .sv-pillar.active { display: block; }
+
+  .sv-checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .sv-checkbox-grid label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: #333; }
+  @media (max-width: 500px) { .sv-checkbox-grid { grid-template-columns: 1fr; } }
+
+  .sv-progress { height: 4px; background: #e0e0e0; border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+  .sv-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.3s; }
+
+  .sv-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  .sv-stat { background: var(--brand-light); border-radius: 8px; padding: 12px; text-align: center; }
+  .sv-stat-num { font-size: 20px; font-weight: 700; color: var(--brand); }
+  .sv-stat-lbl { font-size: 11px; color: #555; margin-top: 2px; }
+
+  .sv-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
+  .sv-btn-reset {
+    padding: 9px 20px;
+    border: 1px solid #c9d2e8;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #fff;
+    color: #555;
+    font-family: 'Inter', sans-serif;
+  }
+  .sv-btn-submit {
+    padding: 9px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--brand);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+  }
+  .sv-btn-submit:hover { background: #122d72; }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Navbar -->
+<nav class="sv-navbar">
+  <a href="/" class="sv-navbar-brand">
+    <div class="sv-navbar-logo">SIA<br>KRED</div>
+    <div class="sv-navbar-title">
+      SIAKRED
+      <span>Universitas Ichsan Gorontalo</span>
+    </div>
+  </a>
+  <a href="/" class="sv-navbar-back">← Beranda</a>
+</nav>
+
+<!-- Hero -->
+<div class="sv-hero">
+  <div class="sv-badge">Survei Mutu Internal</div>
+  <h1>Survei Pemahaman VMTS</h1>
+  <p>Visi · Misi · Tujuan · Sasaran Program Studi — Tahun Akademik {{ tahun_akademik }}</p>
+</div>
+
+<div class="sv-wrap">
+
+  <!-- Error -->
+  {% if error %}
+  <div class="sv-alert-error">{{ error }}</div>
+  {% endif %}
+
+  <!-- Statistik -->
+  {% if stats.total %}
+  <div class="sv-stats">
+    <div class="sv-stat">
+      <div class="sv-stat-num">{{ stats.total }}</div>
+      <div class="sv-stat-lbl">Total responden</div>
+    </div>
+    <div class="sv-stat">
+      <div class="sv-stat-num">
+        {% if stats.avg_total %}{{ stats.avg_total|floatformat:1 }}{% else %}—{% endif %}
+      </div>
+      <div class="sv-stat-lbl">Rata-rata skor</div>
+    </div>
+    <div class="sv-stat">
+      <div class="sv-stat-num">{{ target_responden }}</div>
+      <div class="sv-stat-lbl">Target responden</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Progress bar -->
+  <div class="sv-progress"><div class="sv-progress-fill" id="progBar"></div></div>
+
+  <form method="post" action="{% url 'core:kirim_vmts' %}">
+    {% csrf_token %}
+
+    <!-- A. Identitas -->
+    <div class="sv-card">
+      <div class="sv-card-title"><span class="sv-card-badge">A</span> Identitas responden</div>
+      <div class="sv-grid-2">
+        <div class="sv-field">
+          <label>Nama (opsional)</label>
+          <input type="text" name="nama" placeholder="Nama lengkap">
+        </div>
+        <div class="sv-field">
+          <label>Status / peran <span style="color:red">*</span></label>
+          <select name="status" required>
+            <option value="">— Pilih —</option>
+            <option value="mahasiswa">Mahasiswa</option>
+            <option value="dosen">Dosen</option>
+            <option value="tendik">Tenaga Kependidikan</option>
+            <option value="alumni">Alumni</option>
+          </select>
+        </div>
+        <div class="sv-field">
+        <label>Program studi <span style="color:red">*</span></label>
+        <select name="prodi" required>
+            <option value="">— Pilih Program Studi —</option>
+            {% for prodi in daftar_prodi %}
+            <option value="{{ prodi.nama_prodi }} ({{ prodi.jenjang }})">
+            {{ prodi.nama_prodi }} {% if prodi.jenjang %}({{ prodi.jenjang }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+        </div>
+        <div class="sv-field">
+          <label>Angkatan / tahun masuk</label>
+          <input type="text" name="angkatan" placeholder="Contoh: 2021">
+        </div>
+      </div>
+    </div>
+
+    <!-- B. Pertanyaan VMTS -->
+    <div class="sv-card">
+      <div class="sv-card-title"><span class="sv-card-badge">B</span> Pemahaman VMTS Program Studi</div>
+      <div class="sv-info">
+        Skala penilaian: <strong>1</strong> = Sangat tidak setuju &nbsp;·&nbsp;
+        <strong>2</strong> = Tidak setuju &nbsp;·&nbsp;
+        <strong>3</strong> = Netral &nbsp;·&nbsp;
+        <strong>4</strong> = Setuju &nbsp;·&nbsp;
+        <strong>5</strong> = Sangat setuju
+      </div>
+
+      <!-- Tab navigasi -->
+      <div class="sv-tab-row">
+        <button type="button" class="sv-tab active" onclick="showPillar('V',this)">Visi</button>
+        <button type="button" class="sv-tab" onclick="showPillar('M',this)">Misi</button>
+        <button type="button" class="sv-tab" onclick="showPillar('T',this)">Tujuan</button>
+        <button type="button" class="sv-tab" onclick="showPillar('S',this)">Sasaran</button>
+      </div>
+
+      <!-- VISI -->
+      <div class="sv-pillar active" id="pillar-V">
+        <div class="sv-section-label">V — Visi</div>
+        {% for item in "1234" %}
+        {% with forloop.counter as n %}
+        <div class="sv-q">
+          <div class="sv-q-num">V.{{ n }}</div>
+          <div class="sv-q-text">
+            {% if n == 1 %}Saya mengetahui visi Program Studi tempat saya belajar/bekerja.
+            {% elif n == 2 %}Saya dapat menjelaskan isi visi Program Studi dengan kata-kata sendiri.
+            {% elif n == 3 %}Visi Program Studi relevan dengan kebutuhan dan perkembangan keilmuan saat ini.
+            {% else %}Prodi telah melakukan sosialisasi visi kepada seluruh sivitas akademika secara memadai.
+            {% endif %}
+          </div>
+          <div class="sv-likert">
+            {% for val in "12345" %}
+            <label class="sv-likert-opt">
+              <input type="radio" name="V{{ n }}" value="{{ val }}">
+              <span class="sv-likert-btn">{{ val }}</span>
+              <span class="sv-likert-lbl">
+                {% if val == "1" %}Sangat<br>tidak setuju
+                {% elif val == "2" %}Tidak<br>setuju
+                {% elif val == "3" %}Netral
+                {% elif val == "4" %}Setuju
+                {% else %}Sangat<br>setuju{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+
+      <!-- MISI -->
+      <div class="sv-pillar" id="pillar-M">
+        <div class="sv-section-label">M — Misi</div>
+        {% for item in "1234" %}
+        {% with forloop.counter as n %}
+        <div class="sv-q">
+          <div class="sv-q-num">M.{{ n }}</div>
+          <div class="sv-q-text">
+            {% if n == 1 %}Saya memahami misi Program Studi yang meliputi bidang pendidikan, penelitian, dan pengabdian kepada masyarakat.
+            {% elif n == 2 %}Kegiatan perkuliahan dan akademik di prodi mencerminkan pelaksanaan misi yang telah ditetapkan.
+            {% elif n == 3 %}Misi Program Studi mendorong saya untuk aktif berkontribusi dalam pengembangan ilmu dan masyarakat.
+            {% else %}Misi Program Studi telah diinformasikan secara terbuka melalui berbagai media (website, brosur, orientasi, dll.).
+            {% endif %}
+          </div>
+          <div class="sv-likert">
+            {% for val in "12345" %}
+            <label class="sv-likert-opt">
+              <input type="radio" name="M{{ n }}" value="{{ val }}">
+              <span class="sv-likert-btn">{{ val }}</span>
+              <span class="sv-likert-lbl">
+                {% if val == "1" %}Sangat<br>tidak setuju
+                {% elif val == "2" %}Tidak<br>setuju
+                {% elif val == "3" %}Netral
+                {% elif val == "4" %}Setuju
+                {% else %}Sangat<br>setuju{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+
+      <!-- TUJUAN -->
+      <div class="sv-pillar" id="pillar-T">
+        <div class="sv-section-label">T — Tujuan</div>
+        {% for item in "1234" %}
+        {% with forloop.counter as n %}
+        <div class="sv-q">
+          <div class="sv-q-num">T.{{ n }}</div>
+          <div class="sv-q-text">
+            {% if n == 1 %}Saya memahami tujuan pendidikan yang ingin dicapai oleh Program Studi ini.
+            {% elif n == 2 %}Tujuan Program Studi selaras dengan kompetensi lulusan yang diharapkan dunia kerja/profesi.
+            {% elif n == 3 %}Kurikulum dan mata kuliah yang ada mencerminkan upaya pencapaian tujuan Program Studi.
+            {% else %}Saya merasa Program Studi berhasil mewujudkan tujuannya dalam kegiatan nyata.
+            {% endif %}
+          </div>
+          <div class="sv-likert">
+            {% for val in "12345" %}
+            <label class="sv-likert-opt">
+              <input type="radio" name="T{{ n }}" value="{{ val }}">
+              <span class="sv-likert-btn">{{ val }}</span>
+              <span class="sv-likert-lbl">
+                {% if val == "1" %}Sangat<br>tidak setuju
+                {% elif val == "2" %}Tidak<br>setuju
+                {% elif val == "3" %}Netral
+                {% elif val == "4" %}Setuju
+                {% else %}Sangat<br>setuju{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+
+      <!-- SASARAN -->
+      <div class="sv-pillar" id="pillar-S">
+        <div class="sv-section-label">S — Sasaran</div>
+        {% for item in "1234" %}
+        {% with forloop.counter as n %}
+        <div class="sv-q">
+          <div class="sv-q-num">S.{{ n }}</div>
+          <div class="sv-q-text">
+            {% if n == 1 %}Saya mengetahui sasaran dan target capaian Program Studi dalam jangka menengah/panjang.
+            {% elif n == 2 %}Sasaran Program Studi mencakup peningkatan mutu lulusan, penelitian, dan layanan kepada masyarakat.
+            {% elif n == 3 %}Saya memahami peran saya dalam mendukung pencapaian sasaran Program Studi.
+            {% else %}Evaluasi dan monitoring terhadap pencapaian sasaran dilakukan secara berkala dan hasilnya dikomunikasikan.
+            {% endif %}
+          </div>
+          <div class="sv-likert">
+            {% for val in "12345" %}
+            <label class="sv-likert-opt">
+              <input type="radio" name="S{{ n }}" value="{{ val }}">
+              <span class="sv-likert-btn">{{ val }}</span>
+              <span class="sv-likert-lbl">
+                {% if val == "1" %}Sangat<br>tidak setuju
+                {% elif val == "2" %}Tidak<br>setuju
+                {% elif val == "3" %}Netral
+                {% elif val == "4" %}Setuju
+                {% else %}Sangat<br>setuju{% endif %}
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- C. Sosialisasi -->
+    <div class="sv-card">
+      <div class="sv-card-title"><span class="sv-card-badge">C</span> Sosialisasi & aksesibilitas VMTS</div>
+      <div class="sv-q">
+        <div class="sv-q-num">C.1 — Melalui media apa Anda mengetahui VMTS? (boleh pilih lebih dari satu)</div>
+        <div class="sv-checkbox-grid">
+          <label><input type="checkbox" name="media" value="orientasi"> Orientasi mahasiswa/pegawai</label>
+          <label><input type="checkbox" name="media" value="website"> Website prodi/universitas</label>
+          <label><input type="checkbox" name="media" value="brosur"> Brosur / spanduk / banner</label>
+          <label><input type="checkbox" name="media" value="medsos"> Media sosial prodi</label>
+          <label><input type="checkbox" name="media" value="rapat"> Rapat / pertemuan resmi</label>
+          <label><input type="checkbox" name="media" value="dosen"> Disampaikan dosen di kelas</label>
+          <label><input type="checkbox" name="media" value="belum"> Belum pernah mendapat informasi</label>
+        </div>
+      </div>
+      <div class="sv-q" style="margin-top:1rem">
+        <div class="sv-q-num">C.2</div>
+        <div class="sv-q-text">Informasi mengenai VMTS mudah diakses kapan saja dan di mana saja.</div>
+        <div class="sv-likert">
+          {% for val in "12345" %}
+          <label class="sv-likert-opt">
+            <input type="radio" name="C2" value="{{ val }}">
+            <span class="sv-likert-btn">{{ val }}</span>
+            <span class="sv-likert-lbl">
+              {% if val == "1" %}Sangat<br>tidak setuju
+              {% elif val == "2" %}Tidak<br>setuju
+              {% elif val == "3" %}Netral
+              {% elif val == "4" %}Setuju
+              {% else %}Sangat<br>setuju{% endif %}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- D. Masukan -->
+    <div class="sv-card">
+      <div class="sv-card-title"><span class="sv-card-badge">D</span> Masukan terbuka</div>
+      <div class="sv-field">
+        <label>Apa yang perlu ditingkatkan dalam sosialisasi VMTS Program Studi?</label>
+        <textarea name="masukan" rows="3" placeholder="Tulis masukan Anda..."></textarea>
+      </div>
+      <div class="sv-field" style="margin-bottom:0">
+        <label>Saran untuk memperkuat implementasi VMTS dalam kegiatan akademik?</label>
+        <textarea name="saran" rows="3" placeholder="Tulis saran Anda..."></textarea>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="sv-footer">
+      <button type="reset" class="sv-btn-reset">Reset</button>
+      <button type="submit" class="sv-btn-submit">Kirim Respons →</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const allQs = ['V1','V2','V3','V4','M1','M2','M3','M4','T1','T2','T3','T4','S1','S2','S3','S4'];
+function showPillar(id, btn) {
+  document.querySelectorAll('.sv-pillar').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sv-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('pillar-' + id).classList.add('active');
+  btn.classList.add('active');
+  updateProgress();
+}
+function updateProgress() {
+  const answered = allQs.filter(q => document.querySelector('input[name="' + q + '"]:checked')).length;
+  document.getElementById('progBar').style.width = Math.round((answered / allQs.length) * 100) + '%';
+}
+document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', updateProgress));
+</script>
+{% endblock %}

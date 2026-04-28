@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Survei VMTS Ditutup — SIAKRED UNISAN{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f0f4f8; font-family: 'Inter', sans-serif; }
+  .sv-navbar { background: #1a3a8f; padding: 0 2rem; height: 56px; display: flex; align-items: center; }
+  .sv-navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .sv-navbar-logo { width: 34px; height: 34px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #1a3a8f; text-align: center; line-height: 1.2; }
+  .sv-navbar-title { color: #fff; font-size: 13px; font-weight: 600; }
+  .sv-navbar-title span { display: block; font-size: 10px; font-weight: 400; opacity: 0.8; }
+  .tutup-wrap { max-width: 480px; margin: 5rem auto; padding: 0 1rem; text-align: center; }
+  .tutup-icon { width: 72px; height: 72px; background: #fce8e6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+  .tutup-icon svg { width: 36px; height: 36px; stroke: #c5221f; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tutup-title { font-size: 20px; font-weight: 700; color: #1a3a8f; margin-bottom: 8px; }
+  .tutup-desc { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 2rem; }
+  .tutup-btn { display: inline-block; background: #1a3a8f; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="sv-navbar">
+  <a href="/" class="sv-navbar-brand">
+    <div class="sv-navbar-logo">SIA<br>KRED</div>
+    <div class="sv-navbar-title">SIAKRED <span>Universitas Ichsan Gorontalo</span></div>
+  </a>
+</nav>
+<div class="tutup-wrap">
+  <div class="tutup-icon">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  </div>
+  <div class="tutup-title">Survei Sedang Ditutup</div>
+  <div class="tutup-desc">
+    Survei Pemahaman VMTS Tahun Akademik <strong>{{ tahun_akademik }}</strong> 
+    saat ini tidak tersedia. Silakan hubungi admin atau kunjungi kembali 
+    pada periode survei berikutnya.
+  </div>
+  <a href="/" class="tutup-btn">Kembali ke Beranda</a>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terima Kasih — Survei VMTS SIAKRED{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f0f4f8; font-family: 'Inter', sans-serif; }
+  .sv-navbar { background: #1a3a8f; padding: 0 2rem; height: 56px; display: flex; align-items: center; }
+  .sv-navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .sv-navbar-logo { width: 34px; height: 34px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #1a3a8f; text-align: center; line-height: 1.2; }
+  .sv-navbar-title { color: #fff; font-size: 13px; font-weight: 600; }
+  .sv-navbar-title span { display: block; font-size: 10px; font-weight: 400; opacity: 0.8; }
+  .sukses-wrap { max-width: 480px; margin: 4rem auto; padding: 0 1rem; text-align: center; }
+  .sukses-icon { width: 72px; height: 72px; background: #e6f4ea; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; }
+  .sukses-icon svg { width: 36px; height: 36px; stroke: #137333; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .sukses-title { font-size: 20px; font-weight: 700; color: #1a3a8f; margin-bottom: 8px; }
+  .sukses-desc { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 2rem; }
+  .sukses-btn { display: inline-block; background: #1a3a8f; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; margin: 0 6px; }
+  .sukses-btn-outline { display: inline-block; border: 1px solid #1a3a8f; color: #1a3a8f; padding: 10px 28px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; margin: 0 6px; }
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="sv-navbar">
+  <a href="/" class="sv-navbar-brand">
+    <div class="sv-navbar-logo">SIA<br>KRED</div>
+    <div class="sv-navbar-title">SIAKRED <span>Universitas Ichsan Gorontalo</span></div>
+  </a>
+</nav>
+<div class="sukses-wrap">
+  <div class="sukses-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="sukses-title">Terima kasih atas partisipasi Anda!</div>
+  <div class="sukses-desc">
+    Respons Anda telah berhasil disimpan dan akan digunakan sebagai bahan evaluasi mutu Program Studi untuk keperluan AMI siklus 2024/2025.
+  </div>
+  <a href="{% url 'core:survei_vmts' %}" class="sukses-btn-outline">Isi Lagi</a>
+  <a href="/" class="sukses-btn">Kembali ke Beranda</a>
+</div>
+{% endblock %}

@@ -20,4 +20,13 @@ urlpatterns = [
     # Help Center (User Manual)
     path("bantuan/", views.help_index, name="help_index"),
     path("bantuan/<str:section>/", views.help_section, name="help_section"),
+    # Survei VMTS - publik (tanpa login)
+    path('survei/vmts/', views.survei_vmts, name='survei_vmts'),
+    path('survei/vmts/kirim/', views.kirim_vmts, name='kirim_vmts'),
+    path('survei/vmts/sukses/', views.survei_vmts_sukses, name='survei_vmts_sukses'),
+
+    # Dashboard rekap - khusus admin
+    path('survei/vmts/dashboard/', views.dashboard_vmts, name='dashboard_vmts'),
+    path('survei/vmts/export/', views.dashboard_vmts_export, name='dashboard_vmts_export'),
+ 
 ]

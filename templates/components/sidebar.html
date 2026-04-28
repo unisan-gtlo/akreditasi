@@ -105,18 +105,29 @@
         </div>
 
         <div class="sidebar-group">
-            <div class="sidebar-group-title">Laporan</div>
-            <ul class="sidebar-menu">
-                <li>
-                    <a href="{% url 'laporan:laporan_index' %}" class="sidebar-menu-item {% if active_menu == 'laporan' %}active{% endif %}">
-                        <span class="sidebar-menu-icon">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
-                        </span>
-                        Dashboard Laporan
-                    </a>
-                </li>
-            </ul>
-        </div>
+        <div class="sidebar-group-title">Laporan</div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{% url 'laporan:laporan_index' %}" class="sidebar-menu-item {% if active_menu == 'laporan' %}active{% endif %}">
+                    <span class="sidebar-menu-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+                    </span>
+                    Dashboard Laporan
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'core:dashboard_vmts' %}" class="sidebar-menu-item {% if active_menu == 'survei_vmts' %}active{% endif %}">
+                    <span class="sidebar-menu-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M7 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3h6v4H9V3z"/></svg>
+                    </span>
+                    Survei VMTS
+                    {% if stats_vmts_total %}
+                    <span class="sidebar-menu-badge" style="background:#1a3a8f; color:#fff;">{{ stats_vmts_total }}</span>
+                    {% endif %}
+                </a>
+            </li>
+        </ul>
+    </div>     
 
         <div class="sidebar-group">
             <div class="sidebar-group-title">Bantuan</div>

@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Survei VMTS — SIAKRED{% endblock %}
+
+{% block extra_css %}
+<style>
+  body { background: #f0f4f8; font-family: 'Inter', sans-serif; }
+  .sv-navbar { background: #1a3a8f; padding: 0 2rem; height: 56px; display: flex; align-items: center; justify-content: space-between; }
+  .sv-navbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .sv-navbar-logo { width: 34px; height: 34px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #1a3a8f; text-align: center; line-height: 1.2; }
+  .sv-navbar-title { color: #fff; font-size: 13px; font-weight: 600; }
+  .sv-navbar-title span { display: block; font-size: 10px; font-weight: 400; opacity: 0.8; }
+  .sv-navbar-right { display: flex; gap: 10px; align-items: center; }
+  .sv-navbar-link { color: rgba(255,255,255,0.8); font-size: 12px; text-decoration: none; padding: 5px 14px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; transition: all 0.15s; }
+  .sv-navbar-link:hover { color: #fff; background: rgba(255,255,255,0.15); }
+
+  .db-hero { background: #1a3a8f; padding: 1.5rem 2rem; }
+  .db-hero h1 { color: #fff; font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .db-hero p { color: rgba(255,255,255,0.7); font-size: 13px; }
+
+  .db-wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  .db-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  @media (max-width: 700px) { .db-stats { grid-template-columns: repeat(2, 1fr); } }
+  .db-stat { background: #fff; border-radius: 10px; padding: 1rem 1.25rem; border: 1px solid #dde3f0; }
+  .db-stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .db-stat-val { font-size: 24px; font-weight: 700; color: #1a3a8f; }
+  .db-stat-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  .db-card { background: #fff; border-radius: 10px; border: 1px solid #dde3f0; padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+  .db-card-title { font-size: 13px; font-weight: 600; color: #1a3a8f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+
+  .db-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 700px) { .db-grid-2 { grid-template-columns: 1fr; } }
+
+  .db-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .db-bar-label { font-size: 13px; color: #333; min-width: 120px; }
+  .db-bar-wrap { flex: 1; background: #f0f4f8; border-radius: 4px; height: 22px; overflow: hidden; }
+  .db-bar-fill { height: 100%; background: #1a3a8f; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px; color: #fff; font-weight: 500; min-width: 30px; transition: width 0.5s; }
+  .db-bar-count { font-size: 12px; color: #888; min-width: 40px; text-align: right; }
+
+  .db-pilar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .db-pilar-name { font-size: 13px; font-weight: 500; color: #333; min-width: 80px; }
+  .db-pilar-bar-wrap { flex: 1; background: #f0f4f8; border-radius: 4px; height: 26px; overflow: hidden; }
+  .db-pilar-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; color: #fff; font-weight: 600; }
+  .db-pilar-score { font-size: 14px; font-weight: 700; color: #1a3a8f; min-width: 40px; text-align: right; }
+
+  .db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .db-table th { background: #f8f9fd; color: #555; font-weight: 600; padding: 8px 12px; text-align: left; border-bottom: 1px solid #e8e8e8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .db-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; color: #333; vertical-align: middle; }
+  .db-table tr:last-child td { border-bottom: none; }
+  .db-table tr:hover td { background: #f8f9fd; }
+
+  .db-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .db-badge-mhs { background: #e8f0fe; color: #1a56db; }
+  .db-badge-dsn { background: #e6f4ea; color: #137333; }
+  .db-badge-tdk { background: #fef7e0; color: #854f0b; }
+  .db-badge-alm { background: #fce8e6; color: #c5221f; }
+
+  .db-export-btn { display: inline-flex; align-items: center; gap: 6px; background: #1a3a8f; color: #fff; padding: 7px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; }
+  .db-export-btn:hover { background: #122d72; color: #fff; }
+
+  .db-score-chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .score-high { background: #e6f4ea; color: #137333; }
+  .score-mid { background: #fef7e0; color: #854f0b; }
+  .score-low { background: #fce8e6; color: #c5221f; }
+
+  .db-filter-bar {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #dde3f0;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    }
+    .db-filter-label { font-size: 13px; color: #555; font-weight: 500; }
+    .db-filter-select {
+        border: 1px solid #c9d2e8;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #333;
+        font-family: 'Inter', sans-serif;
+        background: #f8f9fd;
+        min-width: 220px;
+    }
+    .db-filter-badge {
+        background: #e8f0fe;
+        color: #1a3a8f;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 20px;
+    }
+    .db-filter-reset {
+        font-size: 12px;
+        color: #c5221f;
+        text-decoration: none;
+        padding: 5px 12px;
+        border: 1px solid #f5c6c6;
+        border-radius: 6px;
+    }
+    .db-filter-reset:hover { background: #fce8e6; }
+
+    .pie-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width:700px) { .pie-grid { grid-template-columns: 1fr; } }
+    .pie-card { background: #fff; border-radius: 10px; border: 1px solid #dde3f0; padding: 1.25rem; }
+    .pie-title { font-size: 13px; font-weight: 600; color: #1a3a8f; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .pie-wrap { display: flex; align-items: center; gap: 1rem; }
+    .pie-legend { flex: 1; }
+    .pie-legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: #333; }
+    .pie-legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .pie-legend-pct { margin-left: auto; font-weight: 600; color: #1a3a8f; }
+
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="sv-navbar">
+  <a href="/" class="sv-navbar-brand">
+    <div class="sv-navbar-logo">SIA<br>KRED</div>
+    <div class="sv-navbar-title">SIAKRED <span>Universitas Ichsan Gorontalo</span></div>
+  </a>
+  <div class="sv-navbar-right">
+    <a href="{% url 'core:dashboard' %}" class="sv-navbar-link">⬛ Dashboard</a>
+    <a href="{% url 'core:survei_vmts' %}" class="sv-navbar-link">← Form Survei</a>
+    <a href="{% url 'core:dashboard_vmts_export' %}" class="db-export-btn">↓ Export Excel</a>
+</div>
+</nav>
+
+<div class="db-hero">
+  <h1>Dashboard Survei VMTS</h1>
+  <p>Rekap hasil survei pemahaman Visi, Misi, Tujuan, dan Sasaran Program Studi</p>
+</div>
+
+<div class="db-wrap">
+
+    <!-- Filter bar -->
+    <div class="db-filter-bar">
+    <span class="db-filter-label">Filter Program Studi:</span>
+    <form method="get" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <select name="prodi" class="db-filter-select" onchange="this.form.submit()">
+        <option value="">— Semua Program Studi —</option>
+        {% for prodi in daftar_prodi_filter %}
+        <option value="{{ prodi }}" {% if prodi == prodi_filter %}selected{% endif %}>
+            {{ prodi }}
+        </option>
+        {% endfor %}
+        </select>
+        {% if prodi_filter %}
+        <span class="db-filter-badge">{{ prodi_filter }}</span>
+        <a href="{% url 'core:dashboard_vmts' %}" class="db-filter-reset">× Reset</a>
+        {% endif %}
+    </form>
+    {% if prodi_filter %}
+    <span style="font-size:12px; color:#888; margin-left:auto;">
+        Menampilkan data untuk: <strong>{{ prodi_filter }}</strong>
+    </span>
+    {% endif %}
+    </div>
+
+  <!-- Statistik ringkas -->
+   <div class="db-stats">
+      <div class="db-stat">
+          <div class="db-stat-label">Total Responden</div>
+          <div class="db-stat-val">{{ stats.total|default:0 }}</div>
+          <div class="db-stat-sub">
+          {% if prodi_filter %}filter: {{ prodi_filter }}
+          {% else %}dari {{ target_responden }} target{% endif %}
+          </div>
+      </div>
+      <div class="db-stat">
+          <div class="db-stat-label">Rata-rata VMTS</div>
+          <div class="db-stat-val">{{ stats.avg_total|floatformat:2|default:"—" }}</div>
+          <div class="db-stat-sub">skala 1 – 5</div>
+      </div>
+      <div class="db-stat">
+          <div class="db-stat-label">Tingkat Pemahaman</div>
+          <div class="db-stat-val">{{ pct_pemahaman }}%</div>
+          <div class="db-stat-sub">persentase rata-rata</div>
+      </div>
+      <div class="db-stat">
+          <div class="db-stat-label">Prodi Terwakili</div>
+          <div class="db-stat-val">{{ jumlah_prodi|default:0 }}</div>
+          <div cl
+          ass="db-stat-sub">program studi</div>
+      </div>
+    </div>
+
+  <div class="db-grid-2">
+
+    <!-- Skor per pilar -->
+    <div class="db-card">
+      <div class="db-card-title">Skor per Pilar VMTS</div>
+      {% if stats.avg_v %}
+      <div class="db-pilar-row">
+        <div class="db-pilar-name">Visi</div>
+        <div class="db-pilar-bar-wrap">
+          <div class="db-pilar-bar" style="width:{{ stats.avg_v|floatformat:0 }}0%; background:#1a3a8f;">
+            {{ stats.avg_v|floatformat:2 }}
+          </div>
+        </div>
+        <div class="db-pilar-score">{{ stats.avg_v|floatformat:2 }}</div>
+      </div>
+      <div class="db-pilar-row">
+        <div class="db-pilar-name">Misi</div>
+        <div class="db-pilar-bar-wrap">
+          <div class="db-pilar-bar" style="width:{{ stats.avg_m|floatformat:0 }}0%; background:#2855c4;">
+            {{ stats.avg_m|floatformat:2 }}
+          </div>
+        </div>
+        <div class="db-pilar-score">{{ stats.avg_m|floatformat:2 }}</div>
+      </div>
+      <div class="db-pilar-row">
+        <div class="db-pilar-name">Tujuan</div>
+        <div class="db-pilar-bar-wrap">
+          <div class="db-pilar-bar" style="width:{{ stats.avg_t|floatformat:0 }}0%; background:#3d6fe0;">
+            {{ stats.avg_t|floatformat:2 }}
+          </div>
+        </div>
+        <div class="db-pilar-score">{{ stats.avg_t|floatformat:2 }}</div>
+      </div>
+      <div class="db-pilar-row">
+        <div class="db-pilar-name">Sasaran</div>
+        <div class="db-pilar-bar-wrap">
+          <div class="db-pilar-bar" style="width:{{ stats.avg_s|floatformat:0 }}0%; background:#e8a020;">
+            {{ stats.avg_s|floatformat:2 }}
+          </div>
+        </div>
+        <div class="db-pilar-score">{{ stats.avg_s|floatformat:2 }}</div>
+      </div>
+      {% else %}
+      <p style="color:#aaa; font-size:13px;">Belum ada data responden.</p>
+      {% endif %}
+    </div>
+
+    <!-- Grafik PIE distribusi jawaban -->
+    <div class="pie-grid">
+      <div class="pie-card">
+        <div class="pie-title">Distribusi Jawaban — Visi</div>
+        <div class="pie-wrap">
+          <canvas id="pieV" width="120" height="120"></canvas>
+          <div class="pie-legend" id="legendV"></div>
+        </div>
+      </div>
+      <div class="pie-card">
+        <div class="pie-title">Distribusi Jawaban — Misi</div>
+        <div class="pie-wrap">
+          <canvas id="pieM" width="120" height="120"></canvas>
+          <div class="pie-legend" id="legendM"></div>
+        </div>
+      </div>
+      <div class="pie-card">
+        <div class="pie-title">Distribusi Jawaban — Tujuan</div>
+        <div class="pie-wrap">
+          <canvas id="pieT" width="120" height="120"></canvas>
+          <div class="pie-legend" id="legendT"></div>
+        </div>
+      </div>
+      <div class="pie-card">
+        <div class="pie-title">Distribusi Jawaban — Sasaran</div>
+        <div class="pie-wrap">
+          <canvas id="pieS" width="120" height="120"></canvas>
+          <div class="pie-legend" id="legendS"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Responden per status -->
+    <div class="db-card">
+      <div class="db-card-title">Responden per Status</div>
+      {% for item in per_status %}
+      <div class="db-bar-row">
+        <div class="db-bar-label">
+          {% if item.status == 'mahasiswa' %}Mahasiswa
+          {% elif item.status == 'dosen' %}Dosen
+          {% elif item.status == 'tendik' %}Tendik
+          {% else %}Alumni{% endif %}
+        </div>
+        <div class="db-bar-wrap">
+          {% if stats.total %}
+          <div class="db-bar-fill" style="width:{% widthratio item.jumlah stats.total 100 %}%;">
+            {% widthratio item.jumlah stats.total 100 %}%
+          </div>
+          {% endif %}
+        </div>
+        <div class="db-bar-count">{{ item.jumlah }}</div>
+      </div>
+      {% empty %}
+      <p style="color:#aaa; font-size:13px;">Belum ada data.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Rekap per prodi -->
+  <div class="db-card">
+    <div class="db-card-title">
+      Rekap per Program Studi
+      <span style="font-size:11px; color:#aaa; font-weight:400;">{{ per_prodi|length }} prodi</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th>Program Studi</th>
+            <th>Responden</th>
+            <th>Rata-rata</th>
+            <th>Visi</th>
+            <th>Misi</th>
+            <th>Tujuan</th>
+            <th>Sasaran</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in per_prodi %}
+          <tr>
+            <td style="font-weight:500;">{{ p.prodi }}</td>
+            <td>{{ p.jumlah }}</td>
+            <td>
+              {% if p.rata >= 4 %}
+                <span class="db-score-chip score-high">{{ p.rata|floatformat:2 }}</span>
+              {% elif p.rata >= 3 %}
+                <span class="db-score-chip score-mid">{{ p.rata|floatformat:2 }}</span>
+              {% else %}
+                <span class="db-score-chip score-low">{{ p.rata|floatformat:2 }}</span>
+              {% endif %}
+            </td>
+            <td>{{ p.avg_v|floatformat:2|default:"—" }}</td>
+            <td>{{ p.avg_m|floatformat:2|default:"—" }}</td>
+            <td>{{ p.avg_t|floatformat:2|default:"—" }}</td>
+            <td>{{ p.avg_s|floatformat:2|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="text-align:center; color:#aaa; padding:2rem;">Belum ada data responden.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 50 respons terbaru -->
+  <div class="db-card">
+    <div class="db-card-title">Respons Terbaru</div>
+    <div style="overflow-x:auto;">
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Status</th>
+            <th>Prodi</th>
+            <th>Skor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in data %}
+          <tr>
+            <td style="color:#888;">{{ r.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+              <span class="db-badge db-badge-{{ r.status }}">{{ r.get_status_display }}</span>
+            </td>
+            <td>{{ r.prodi }}</td>
+            <td>
+              {% if r.skor_total >= 4 %}
+                <span class="db-score-chip score-high">{{ r.skor_total }}</span>
+              {% elif r.skor_total >= 3 %}
+                <span class="db-score-chip score-mid">{{ r.skor_total }}</span>
+              {% else %}
+                <span class="db-score-chip score-low">{{ r.skor_total }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center; color:#aaa; padding:2rem;">Belum ada respons.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const COLORS = ['#c5221f','#e8a020','#888','#2855c4','#137333'];
+
+function buildPie(canvasId, legendId, rawJson) {
+  const d = JSON.parse(rawJson);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: d.labels,
+      datasets: [{ data: d.data, backgroundColor: COLORS, borderWidth: 1 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      responsive: false,
+    }
+  });
+  // Build legend
+  const lg = document.getElementById(legendId);
+  d.labels.forEach((lbl, i) => {
+    if (d.data[i] === 0) return;
+    lg.innerHTML += `
+      <div class="pie-legend-item">
+        <span class="pie-legend-dot" style="background:${COLORS[i]}"></span>
+        <span>${lbl.split(' - ')[0]}</span>
+        <span class="pie-legend-pct">${d.pct[i]}%</span>
+      </div>`;
+  });
+}
+
+buildPie('pieV', 'legendV', '{{ pie_v|escapejs }}');
+buildPie('pieM', 'legendM', '{{ pie_m|escapejs }}');
+buildPie('pieT', 'legendT', '{{ pie_t|escapejs }}');
+buildPie('pieS', 'legendS', '{{ pie_s|escapejs }}');
+</script>
+
+{% endblock %}

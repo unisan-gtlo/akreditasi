@@ -544,6 +544,20 @@ class SiteProfile(models.Model):
     akreditasi_lembaga = models.CharField(max_length=50, blank=True, default="BAN-PT", help_text="Lembaga pemberi akreditasi")
     
     aktif = models.BooleanField(default=True)
+    survei_vmts_aktif = models.BooleanField(
+    default=True,
+    verbose_name="Survei VMTS Aktif",
+    )
+    survei_vmts_tahun_akademik = models.CharField(
+        max_length=20,
+        default="2024/2025",
+        verbose_name="Tahun Akademik Survei VMTS",
+        help_text="Contoh: 2024/2025",
+    )
+    survei_vmts_target = models.PositiveIntegerField(
+        default=300,
+        verbose_name="Target Responden Survei VMTS",
+    )
     tanggal_dibuat = models.DateTimeField(auto_now_add=True)
     tanggal_diubah = models.DateTimeField(auto_now=True)
     
@@ -754,6 +768,28 @@ class ProdiProfile(models.Model):
         help_text="Profil lulusan / kompetensi utama (opsional)",
     )
     
+    # Target Survei VMTS
+    target_survei_total     = models.PositiveIntegerField(
+        default=30, 
+        verbose_name="Target Total Responden Survei",
+        help_text="Total target responden survei VMTS untuk prodi ini"
+    )
+    target_survei_mahasiswa = models.PositiveIntegerField(
+        default=20,
+        verbose_name="Target Mahasiswa",
+    )
+    target_survei_dosen     = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Target Dosen",
+    )
+    target_survei_tendik    = models.PositiveIntegerField(
+        default=3,
+        verbose_name="Target Tendik",
+    )
+    target_survei_alumni    = models.PositiveIntegerField(
+        default=2,
+        verbose_name="Target Alumni",
+)
     # Meta
     aktif = models.BooleanField(default=True)
     tanggal_dibuat = models.DateTimeField(auto_now_add=True)
@@ -780,3 +816,44 @@ class ProdiProfile(models.Model):
                 return None
         return None
 
+
+
+class SurveiVMTS(models.Model):
+    STATUS_CHOICES = [
+        ('mahasiswa', 'Mahasiswa'),
+        ('dosen', 'Dosen'),
+        ('tendik', 'Tenaga Kependidikan'),
+        ('alumni', 'Alumni'),
+    ]
+
+    # Identitas responden
+    nama        = models.CharField(max_length=150, blank=True, null=True)
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    prodi       = models.CharField(max_length=150)
+    angkatan    = models.CharField(max_length=10, blank=True, null=True)
+
+    # Skor per pilar (rata-rata dari 4 butir, skala 1-5)
+    skor_v      = models.FloatField(verbose_name="Skor Visi")
+    skor_m      = models.FloatField(verbose_name="Skor Misi")
+    skor_t      = models.FloatField(verbose_name="Skor Tujuan")
+    skor_s      = models.FloatField(verbose_name="Skor Sasaran")
+    skor_total  = models.FloatField(verbose_name="Skor Rata-rata VMTS")
+
+    # Media sosialisasi (disimpan sebagai teks, dipisah koma)
+    media_sosialisasi = models.CharField(max_length=300, blank=True, null=True)
+
+    # Masukan terbuka
+    masukan     = models.TextField(blank=True, null=True)
+    saran       = models.TextField(blank=True, null=True)
+
+    # Metadata
+    created_at  = models.DateTimeField(auto_now_add=True)
+    ip_address  = models.GenericIPAddressField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Respons Survei VMTS"
+        verbose_name_plural = "Respons Survei VMTS"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.status} - {self.prodi} ({self.created_at.strftime('%d/%m/%Y')})"

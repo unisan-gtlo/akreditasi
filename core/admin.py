@@ -5,6 +5,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
+from .models import SurveiVMTS, SiteProfile
+
 from .models import User, ScopeUser, LoginAttempt, DeviceSession
 
 
@@ -166,6 +168,21 @@ class SiteProfileAdmin(admin.ModelAdmin):
             "description": "URL lengkap (https://...). Kosongkan platform yang tidak digunakan.",
             "classes": ("collapse",),
         }),
+
+        # ← TAMBAHKAN SECTION INI
+        ("Konfigurasi Survei VMTS", {
+            "fields": (
+                "survei_vmts_aktif",
+                "survei_vmts_tahun_akademik",
+                "survei_vmts_target",
+            ),
+            "description": (
+                "Pengaturan survei pemahaman VMTS (butir K1-D3-I2). "
+                "Ubah tahun akademik setiap awal siklus AMI. "
+                "Nonaktifkan jika periode survei sudah tutup."
+            ),
+        }),
+        
         ("Meta", {
             "fields": ("aktif", "tanggal_dibuat", "tanggal_diubah"),
             "classes": ("collapse",),
@@ -349,6 +366,18 @@ class ProdiProfileAdmin(admin.ModelAdmin):
             "fields": ("visi", "misi", "tujuan", "profil_lulusan"),
             "description": "Untuk misi, tulis satu poin per baris.",
         }),
+
+        ("Target Survei VMTS", {
+            "fields": (
+                "target_survei_total",
+                "target_survei_mahasiswa",
+                "target_survei_dosen",
+                "target_survei_tendik",
+                "target_survei_alumni",
+            ),
+            "description": "Target jumlah responden survei VMTS per kelompok untuk prodi ini.",
+        }),
+
         ("Meta", {
             "fields": ("aktif", "tanggal_dibuat", "tanggal_diubah"),
             "classes": ("collapse",),
@@ -395,3 +424,23 @@ class ProdiProfileAdmin(admin.ModelAdmin):
             return mark_safe('<span style="color:#F59E0B;">&#9888; Sebagian</span>')
         return mark_safe('<span style="color:#DC2626;">&times; Kosong</span>')
 
+
+
+@admin.register(SurveiVMTS)
+class SurveiVMTSAdmin(admin.ModelAdmin):
+    list_display  = ['created_at', 'status', 'prodi', 'skor_v', 'skor_m', 'skor_t', 'skor_s', 'skor_total']
+    list_filter   = ['status', 'prodi']
+    search_fields = ['nama', 'prodi']
+    readonly_fields = [
+        'nama', 'status', 'prodi', 'angkatan',
+        'skor_v', 'skor_m', 'skor_t', 'skor_s', 'skor_total',
+        'media_sosialisasi', 'masukan', 'saran',
+        'created_at', 'ip_address',
+    ]
+    ordering = ['-created_at']
+
+    def has_add_permission(self, request):
+        return False  # data hanya dari form publik
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
