@@ -53,6 +53,26 @@
             </a>
         </div>
 
+        <!-- Banner Survei VMTS -->
+        {% if site.survei_vmts_aktif %}
+        <div style="margin-top: 1.5rem; background: linear-gradient(135deg, #1a3a8f, #2855c4); border-radius: 12px; padding: 1.25rem 1.5rem; text-align: left; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+                <div style="font-size: 11px; font-weight: 700; color: #e8c87a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">
+                    Survei Mutu Internal · {{ site.survei_vmts_tahun_akademik }}
+                </div>
+                <div style="font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;">
+                    Survei Pemahaman VMTS
+                </div>
+                <div style="font-size: 12px; color: rgba(255,255,255,0.75);">
+                    Untuk mahasiswa, dosen, tendik & alumni. Tidak perlu login.
+                </div>
+            </div>
+            <a href="{% url 'core:survei_vmts' %}" style="display: inline-flex; align-items: center; gap: 6px; background: #e8a020; color: #fff; padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; flex-shrink: 0;">
+                Isi Survei →
+            </a>
+        </div>
+        {% endif %}
+        
         <p style="margin-top: 2rem; color: #94A3B8; font-size: 0.8rem;">
             © 2026 Pustikom — Universitas Ichsan Gorontalo
         </p>

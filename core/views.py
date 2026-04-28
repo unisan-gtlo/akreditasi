@@ -362,7 +362,7 @@ def _get_fakultas_list():
 def landing_page(request):
     """Landing publik SIAKRED. Hybrid: single page scroll dengan section lengkap."""
     from core.models import SiteProfile
-    
+    site = SiteProfile.get_instance()
     profile = SiteProfile.get_instance()
     stats = _get_publik_stats()
     fakultas_list = _get_fakultas_list()
@@ -393,6 +393,7 @@ def landing_page(request):
         'stats': stats,
         'fakultas_list': fakultas_list,
         'dokumen_terbaru': dokumen_terbaru,
+        'site': site,
     }
     return render(request, 'landing/landing.html', context)
 
