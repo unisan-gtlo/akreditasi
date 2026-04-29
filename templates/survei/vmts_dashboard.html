@@ -342,7 +342,7 @@
     </div>
   </div>
 
-  <!-- 50 respons terbaru -->
+  <!-- Respons Terbaru -->
   <div class="db-card">
     <div class="db-card-title">Respons Terbaru</div>
     <div style="overflow-x:auto;">
@@ -378,22 +378,17 @@
           {% endfor %}
         </tbody>
       </table>
-      {% empty %}
-          <tr><td colspan="4" style="text-align:center; color:#aaa; padding:2rem;">Belum ada respons.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
 
       <!-- Navigasi Paging -->
       {% if paginator.num_pages > 1 %}
       <div style="display:flex; align-items:center; justify-content:space-between; margin-top:1rem; flex-wrap:wrap; gap:10px; padding-top:1rem; border-top:1px solid #f0f0f0;">
         <div style="font-size:12px; color:#888;">
-          Menampilkan {{ page_obj.start_index }}–{{ page_obj.end_index }} 
+          Menampilkan {{ page_obj.start_index }}–{{ page_obj.end_index }}
           dari {{ paginator.count }} respons
         </div>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           {% if page_obj.has_previous %}
-          <a href="?{% if prodi_filter %}prodi={{ prodi_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" 
+          <a href="?{% if prodi_filter %}prodi={{ prodi_filter }}&{% endif %}page={{ page_obj.previous_page_number }}"
              style="padding:5px 12px; border:1px solid #c9d2e8; border-radius:6px; font-size:12px; color:#1a3a8f; text-decoration:none;">
             ← Sebelumnya
           </a>
@@ -420,9 +415,6 @@
       </div>
       {% endif %}
 
-    </div>
-  </div>
-  
     </div>
   </div>
 
