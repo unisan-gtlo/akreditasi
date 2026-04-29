@@ -180,7 +180,7 @@ class SubStandarAdmin(admin.ModelAdmin):
 class ButirDokumenAdmin(admin.ModelAdmin):
     list_display = (
         "kode", "nama_dokumen", "sub_standar",
-        "kategori_display", "wajib", "format_diterima",
+        "kategori_kepemilikan", "wajib", "format_diterima",
         "status_akses_default", "aktif",
     )
     list_filter = (
@@ -193,7 +193,7 @@ class ButirDokumenAdmin(admin.ModelAdmin):
     )
     search_fields = ("kode", "nama_dokumen", "deskripsi")
     ordering = ("sub_standar", "urutan", "kode")
-    list_editable = ("wajib", "aktif")
+    list_editable = ("kategori_kepemilikan", "wajib", "aktif")
     autocomplete_fields = ["sub_standar"]
 
     fieldsets = (
@@ -237,9 +237,7 @@ class ButirDokumenAdmin(admin.ModelAdmin):
 
 @admin.register(MappingProdiInstrumen)
 class MappingProdiInstrumenAdmin(admin.ModelAdmin):
-    list_display = (
-        "kode_prodi", "nama_prodi", "instrumen", "aktif",
-    )
+    list_display = ("kode_prodi", "nama_prodi", "instrumen", "aktif")
     list_filter = ("instrumen", "aktif")
     search_fields = ("kode_prodi", "nama_prodi")
     ordering = ("kode_prodi",)
