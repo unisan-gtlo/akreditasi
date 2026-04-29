@@ -12,6 +12,7 @@ from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.cache import never_cache
+from django.core.paginator import Paginator
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -1023,12 +1024,36 @@ def dashboard_vmts(request):
     pie_t = distribusi_skor('skor_t')
     pie_s = distribusi_skor('skor_s')
 
+    from django.core.paginator import Paginator
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(data.order_by('-created_at'), 20)
+    page_obj = paginator.get_page(page_number)
+
     import json
     context = {
         'stats': stats,
         'per_status': per_status,
         'per_prodi': per_prodi_list,
-        'data': data.order_by('-created_at')[:50],
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'jumlah_prodi': per_prodi.count(),
+        'target_responden': site.survei_vmts_target,
+        'tahun_akademik': site.survei_vmts_tahun_akademik,
+        'daftar_prodi_filter': daftar_prodi_filter,
+        'prodi_filter': prodi_filter,
+        'pct_pemahaman': pct_pemahaman,
+        'pie_v': json.dumps(pie_v),
+        'pie_m': json.dumps(pie_m),
+        'pie_t': json.dumps(pie_t),
+        'pie_s': json.dumps(pie_s),
+    }
+    return render(request, 'survei/vmts_dashboard.html', context)
+    context = {
+        'stats': stats,
+        'per_status': per_status,
+        'per_prodi': per_prodi_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
         'jumlah_prodi': per_prodi.count(),
         'target_responden': site.survei_vmts_target,
         'tahun_akademik': site.survei_vmts_tahun_akademik,
