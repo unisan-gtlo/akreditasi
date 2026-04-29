@@ -851,8 +851,9 @@ def kirim_vmts(request):
         angkatan = request.POST.get('angkatan', '').strip()
 
         if not status or not prodi:
-            return render(request, 'survei/vmts_form.html',
-                _get_survei_context(error='Status dan Program Studi wajib diisi.'))
+            ctx = _get_survei_context(error='Status dan Program Studi wajib diisi.')
+            ctx['old'] = request.POST  # ← tambahkan ini
+            return render(request, 'survei/vmts_form.html', ctx)
 
         def hitung_skor(keys):
             nilai = []
@@ -867,18 +868,26 @@ def kirim_vmts(request):
         skor_t = hitung_skor(['T1', 'T2', 'T3', 'T4'])
         skor_s = hitung_skor(['S1', 'S2', 'S3', 'S4'])
 
-        semua_skor = [skor_v, skor_m, skor_t, skor_s]
-        if sum(1 for s in semua_skor if s > 0) < 2:
-            return render(request, 'survei/vmts_form.html',
-                _get_survei_context(error='Mohon isi minimal 2 bagian pertanyaan VMTS.'))
+        # Validasi semua pilar harus diisi
+        errors = []
+        if skor_v == 0: errors.append('Visi')
+        if skor_m == 0: errors.append('Misi')
+        if skor_t == 0: errors.append('Tujuan')
+        if skor_s == 0: errors.append('Sasaran')
 
+        if errors:
+            ctx = _get_survei_context(
+                error=f'Mohon lengkapi semua bagian. Belum diisi: {", ".join(errors)}.'
+            )
+            ctx['old'] = request.POST
+            return render(request, 'survei/vmts_form.html', ctx)
+
+        # Hitung skor total
         skor_total = round(
-            sum(s for s in semua_skor if s > 0) /
-            sum(1 for s in semua_skor if s > 0), 2
+            (skor_v + skor_m + skor_t + skor_s) / 4, 2
         )
 
         media_str = ','.join(request.POST.getlist('media'))
-
         x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_forwarded.split(',')[0] if x_forwarded else request.META.get('REMOTE_ADDR')
 
@@ -901,8 +910,9 @@ def kirim_vmts(request):
         return redirect('core:survei_vmts_sukses')
 
     except Exception as e:
-        return render(request, 'survei/vmts_form.html',
-            _get_survei_context(error=f'Terjadi kesalahan: {str(e)}'))
+        ctx = _get_survei_context(error=f'Terjadi kesalahan: {str(e)}')
+        ctx['old'] = request.POST  # ← tambahkan ini
+        return render(request, 'survei/vmts_form.html', ctx)
 
 
 def survei_vmts_sukses(request):

@@ -300,16 +300,16 @@
       <div class="sv-grid-2">
         <div class="sv-field">
           <label>Nama (opsional)</label>
-          <input type="text" name="nama" placeholder="Nama lengkap">
+          <input type="text" name="nama" placeholder="Nama lengkap" value="{{ old.nama|default:'' }}">
         </div>
         <div class="sv-field">
           <label>Status / peran <span style="color:red">*</span></label>
           <select name="status" required>
             <option value="">— Pilih —</option>
-            <option value="mahasiswa">Mahasiswa</option>
-            <option value="dosen">Dosen</option>
-            <option value="tendik">Tenaga Kependidikan</option>
-            <option value="alumni">Alumni</option>
+            <option value="mahasiswa" {% if old.status == 'mahasiswa' %}selected{% endif %}>Mahasiswa</option>
+            <option value="dosen" {% if old.status == 'dosen' %}selected{% endif %}>Dosen</option>
+            <option value="tendik" {% if old.status == 'tendik' %}selected{% endif %}>Tenaga Kependidikan</option>
+            <option value="alumni" {% if old.status == 'alumni' %}selected{% endif %}>Alumni</option>
           </select>
         </div>
         <div class="sv-field">
@@ -317,15 +317,16 @@
         <select name="prodi" required>
             <option value="">— Pilih Program Studi —</option>
             {% for prodi in daftar_prodi %}
-            <option value="{{ prodi.nama_prodi }} ({{ prodi.jenjang }})">
-            {{ prodi.nama_prodi }} {% if prodi.jenjang %}({{ prodi.jenjang }}){% endif %}
+            <option value="{{ prodi.nama_prodi }} ({{ prodi.jenjang }})" 
+              {% if old.prodi == prodi.nama_prodi|add:" ("|add:prodi.jenjang|add:")" %}selected{% endif %}>
+              {{ prodi.nama_prodi }} {% if prodi.jenjang %}({{ prodi.jenjang }}){% endif %}
             </option>
             {% endfor %}
-        </select>
+          </select>
         </div>
         <div class="sv-field">
           <label>Angkatan / tahun masuk</label>
-          <input type="text" name="angkatan" placeholder="Contoh: 2021">
+             <input type="text" name="angkatan" placeholder="Contoh: 2021" value="{{ old.angkatan|default:'' }}">
         </div>
       </div>
     </div>
@@ -538,7 +539,7 @@
     <!-- Submit -->
     <div class="sv-footer">
       <button type="reset" class="sv-btn-reset">Reset</button>
-      <button type="submit" class="sv-btn-submit">Kirim Respons →</button>
+      <button type="button" class="sv-btn-submit" onclick="validateAndSubmit()">Kirim Respons →</button>
     </div>
   </form>
 </div>
@@ -557,5 +558,64 @@ function updateProgress() {
   document.getElementById('progBar').style.width = Math.round((answered / allQs.length) * 100) + '%';
 }
 document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', updateProgress));
+</script>
+<script>
+// Restore jawaban setelah error
+const oldData = {
+  {% for key, val in old.items %}
+  "{{ key }}": "{{ val }}",
+  {% endfor %}
+};
+Object.keys(oldData).forEach(name => {
+  const inputs = document.querySelectorAll(`input[name="${name}"]`);
+  inputs.forEach(input => {
+    if (input.type === 'radio' && input.value === oldData[name]) {
+      input.checked = true;
+    } else if (input.type === 'checkbox' && oldData[name].includes(input.value)) {
+      input.checked = true;
+    }
+  });
+});
+
+function validateAndSubmit() {
+  const pilar = {
+    'Visi':    ['V1','V2','V3','V4'],
+    'Misi':    ['M1','M2','M3','M4'],
+    'Tujuan':  ['T1','T2','T3','T4'],
+    'Sasaran': ['S1','S2','S3','S4'],
+  };
+
+  let belumDiisi = [];
+
+  Object.keys(pilar).forEach(nama => {
+    const sudahIsi = pilar[nama].some(q =>
+      document.querySelector(`input[name="${q}"]:checked`)
+    );
+    if (!sudahIsi) belumDiisi.push(nama);
+  });
+
+  // Cek identitas
+  const status = document.querySelector('select[name="status"]').value;
+  const prodi  = document.querySelector('select[name="prodi"]').value;
+
+  if (!status || !prodi) {
+    alert('Mohon lengkapi Status dan Program Studi terlebih dahulu.');
+    return;
+  }
+
+  if (belumDiisi.length > 0) {
+    // Tampilkan tab yang belum diisi
+    const tabMap = {'Visi':'V','Misi':'M','Tujuan':'T','Sasaran':'S'};
+    const firstTab = document.querySelector(`.sv-tab[onclick*="'${tabMap[belumDiisi[0]]}'"]`);
+    if (firstTab) showPillar(tabMap[belumDiisi[0]], firstTab);
+
+    alert(`Mohon lengkapi semua bagian pertanyaan.\n\nBagian yang belum diisi:\n• ${belumDiisi.join('\n• ')}`);
+    return;
+  }
+
+  // Semua valid — submit form
+  document.querySelector('form').submit();
+}
+
 </script>
 {% endblock %}
