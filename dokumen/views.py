@@ -154,11 +154,17 @@ def butir_saya(request):
         # Hitung dokumen yang sudah diupload untuk butir ini
         # Untuk admin/universitas: count semua
         # Untuk scope lain: count dokumen di scope mereka
-        dokumen_qs = butir.dokumen_terunggah.all()
+        dokumen_qs = butir.dokumen_terunggah.filter(
+            status='FINAL'
+        ).select_related('revisi')
+
         if butir.kategori_kepemilikan == "PRODI" and user_kode_prodi:
             dokumen_qs = dokumen_qs.filter(scope_kode_prodi__in=user_kode_prodi)
         elif butir.kategori_kepemilikan == "FAKULTAS" and user_kode_fakultas:
             dokumen_qs = dokumen_qs.filter(scope_kode_fakultas__in=user_kode_fakultas)
+        elif butir.kategori_kepemilikan == "UNIVERSITAS":
+            # Dokumen universitas tampil ke semua role tanpa filter scope
+            pass
 
         butir_list.append({
             "butir": butir,
