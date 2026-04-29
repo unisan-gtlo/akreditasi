@@ -317,10 +317,7 @@
         <select name="prodi" required>
             <option value="">— Pilih Program Studi —</option>
             {% for prodi in daftar_prodi %}
-            <option value="{{ prodi.nama_prodi }} ({{ prodi.jenjang }})" 
-              {% if old.prodi == prodi.nama_prodi|add:" ("|add:prodi.jenjang|add:")" %}selected{% endif %}>
-              {{ prodi.nama_prodi }} {% if prodi.jenjang %}({{ prodi.jenjang }}){% endif %}
-            </option>
+            <option value="{{ prodi.label }}">{{ prodi.label }}</option>
             {% endfor %}
           </select>
         </div>

@@ -802,13 +802,14 @@ def _get_survei_context(error=None):
     """)
     rows = cursor.fetchall()
     daftar_prodi = [
-        {
-            'kode_prodi': row[0],
-            'nama_prodi': row[1],
-            'jenjang': row[2] or '',
-            'label': f"{row[1]} ({row[2]})" if row[2] else row[1],
-        }
-        for row in rows
+    {
+        'kode_prodi': row[0],
+        'nama_prodi': row[1],
+        'jenjang': row[2] or '',
+        # Cegah duplikasi jenjang jika nama_prodi sudah mengandung jenjang
+        'label': row[1] if (row[2] and f"({row[2]})" in row[1]) else (f"{row[1]} ({row[2]})" if row[2] else row[1]),
+    }
+    for row in rows
     ]
     return {
         'stats': SurveiVMTS.objects.aggregate(
