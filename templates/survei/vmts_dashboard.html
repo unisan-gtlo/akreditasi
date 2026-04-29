@@ -378,6 +378,51 @@
           {% endfor %}
         </tbody>
       </table>
+      {% empty %}
+          <tr><td colspan="4" style="text-align:center; color:#aaa; padding:2rem;">Belum ada respons.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Navigasi Paging -->
+      {% if paginator.num_pages > 1 %}
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-top:1rem; flex-wrap:wrap; gap:10px; padding-top:1rem; border-top:1px solid #f0f0f0;">
+        <div style="font-size:12px; color:#888;">
+          Menampilkan {{ page_obj.start_index }}–{{ page_obj.end_index }} 
+          dari {{ paginator.count }} respons
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          {% if page_obj.has_previous %}
+          <a href="?{% if prodi_filter %}prodi={{ prodi_filter }}&{% endif %}page={{ page_obj.previous_page_number }}" 
+             style="padding:5px 12px; border:1px solid #c9d2e8; border-radius:6px; font-size:12px; color:#1a3a8f; text-decoration:none;">
+            ← Sebelumnya
+          </a>
+          {% endif %}
+          {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <span style="padding:5px 12px; border:1px solid #1a3a8f; border-radius:6px; font-size:12px; background:#1a3a8f; color:#fff;">
+              {{ num }}
+            </span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?{% if prodi_filter %}prodi={{ prodi_filter }}&{% endif %}page={{ num }}"
+               style="padding:5px 12px; border:1px solid #c9d2e8; border-radius:6px; font-size:12px; color:#1a3a8f; text-decoration:none;">
+              {{ num }}
+            </a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <a href="?{% if prodi_filter %}prodi={{ prodi_filter }}&{% endif %}page={{ page_obj.next_page_number }}"
+             style="padding:5px 12px; border:1px solid #c9d2e8; border-radius:6px; font-size:12px; color:#1a3a8f; text-decoration:none;">
+            Berikutnya →
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+  
     </div>
   </div>
 
