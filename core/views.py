@@ -916,8 +916,9 @@ def kirim_vmts(request):
 
 
 def survei_vmts_sukses(request):
-    """Halaman konfirmasi setelah berhasil mengisi survei"""
-    return render(request, 'survei/vmts_sukses.html')
+    from core.models import SiteProfile
+    site = SiteProfile.get_instance()
+    return render(request, 'survei/vmts_sukses.html', {'site': site})
 
 
 def dashboard_vmts(request):
