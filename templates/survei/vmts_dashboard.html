@@ -356,7 +356,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for r in data %}
+          {% for r in page_obj %}
           <tr>
             <td style="color:#888;">{{ r.created_at|date:"d/m/Y H:i" }}</td>
             <td>
