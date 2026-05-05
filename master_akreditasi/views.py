@@ -787,6 +787,7 @@ def butir_quick_manage(request):
 
     context = {
         'page_title': 'Mode Cepat — Butir Dokumen',
+        'active_menu': 'butir_quick',
         'instrumen_list': instrumen_list,
         'standar_list': standar_qs,
         'sub_standar_list': sub_standar_qs,
