@@ -1,0 +1,356 @@
+{% extends "layouts/internal.html" %}
+{% load static %}
+
+{% block title %}Mode Cepat — Butir Dokumen — SIAKRED{% endblock %}
+{% block page_heading %}Mode Cepat — Butir Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Mode Cepat — Butir Dokumen</span>
+</div>
+{% endblock %}
+
+{% block page %}
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Mode Cepat — Butir Dokumen</h1>
+            <p class="page-subtitle">
+                Tambah, edit, atau nonaktifkan Butir Dokumen tanpa perlu Excel. Cocok untuk koreksi dan tambahan harian.
+            </p>
+        </div>
+    </div>
+</div>
+
+{# ====== Filter bertingkat: Instrumen → Standar → SubStandar ====== #}
+<div class="panel">
+    <div class="panel-body" style="padding: 1rem 1.5rem;">
+        <form method="get" id="filter-form" style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:.75rem; align-items:end;">
+
+            <div>
+                <label style="font-size:.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:4px;">
+                    1. Instrumen
+                </label>
+                <select name="instrumen" class="form-input" onchange="this.form.submit()">
+                    <option value="">— Pilih Instrumen —</option>
+                    {% for ins in instrumen_list %}
+                        <option value="{{ ins.id }}" {% if selected_instrumen.id == ins.id %}selected{% endif %}>
+                            {{ ins.nama_singkat }} — {{ ins.nama_resmi|truncatechars:40 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label style="font-size:.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:4px;">
+                    2. Standar / Kriteria
+                </label>
+                <select name="standar" class="form-input"
+                        {% if not selected_instrumen %}disabled{% endif %}
+                        onchange="this.form.submit()">
+                    <option value="">— Pilih Standar —</option>
+                    {% for std in standar_list %}
+                        <option value="{{ std.id }}" {% if selected_standar.id == std.id %}selected{% endif %}>
+                            {{ std.nomor }} — {{ std.nama|truncatechars:40 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label style="font-size:.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:4px;">
+                    3. Sub-Standar / Dimensi
+                </label>
+                <select name="sub_standar" class="form-input"
+                        {% if not selected_standar %}disabled{% endif %}
+                        onchange="this.form.submit()">
+                    <option value="">— Pilih Sub-Standar —</option>
+                    {% for sub in sub_standar_list %}
+                        <option value="{{ sub.id }}" {% if selected_sub_standar.id == sub.id %}selected{% endif %}>
+                            {{ sub.nomor }} — {{ sub.nama|truncatechars:40 }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                {% if selected_instrumen %}
+                <a href="{% url 'master_akreditasi:butir_quick_manage' %}"
+                   class="btn btn-secondary"
+                   style="font-size:.85rem; padding:.6rem 1rem;">Reset</a>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{# ====== Daftar Butir + tombol Tambah ====== #}
+{% if selected_sub_standar %}
+<div class="panel" style="margin-top:1rem;">
+    <div class="panel-body" style="padding: 1rem 1.5rem; display:flex; align-items:center; justify-content:space-between; border-bottom: 1px solid var(--border-light);">
+        <div>
+            <h2 style="font-size:1rem; font-weight:600; margin:0;">
+                Butir di {{ selected_sub_standar.nomor }} — {{ selected_sub_standar.nama }}
+            </h2>
+            <p style="font-size:.8rem; color:var(--text-muted); margin:4px 0 0 0;">
+                {{ butir_list.count }} butir total
+            </p>
+        </div>
+        <button type="button" class="btn btn-primary"
+                onclick="openButirModal()"
+                style="font-size:.85rem; padding:.55rem 1rem;">
+            + Tambah Butir Baru
+        </button>
+    </div>
+
+    <div class="panel-body panel-body-flush">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">#</th>
+                    <th style="width:140px;">Kode</th>
+                    <th>Nama Dokumen</th>
+                    <th style="width:110px;">Kepemilikan</th>
+                    <th style="width:80px; text-align:center;">Format</th>
+                    <th style="width:60px; text-align:center;">Wajib</th>
+                    <th style="width:60px; text-align:center;">Aktif</th>
+                    <th style="width:130px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for butir in butir_list %}
+                <tr>
+                    <td>{{ butir.urutan }}</td>
+                    <td><code style="font-size:.8rem;">{{ butir.kode }}</code></td>
+                    <td>
+                        <div style="font-weight:500;">{{ butir.nama_dokumen }}</div>
+                        {% if butir.deskripsi %}
+                        <div style="font-size:.78rem; color:var(--text-muted); margin-top:2px;">
+                            {{ butir.deskripsi|truncatechars:90 }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-blue">{{ butir.get_kategori_kepemilikan_display }}</span>
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="badge badge-purple">{{ butir.format_diterima }}</span>
+                    </td>
+                    <td style="text-align:center;">
+                        {% if butir.wajib %}<span style="color:var(--success); font-weight:700;">✓</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if butir.aktif %}<span style="color:var(--success); font-weight:700;">✓</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+                    </td>
+                    <td>
+                        <button type="button"
+                                class="btn-link"
+                                style="font-size:.8rem; font-weight:600; color:var(--primary-700); margin-right:.5rem; cursor:pointer; background:none; border:none;"
+                                onclick='openButirModal({{ butir.id }})'>Edit</button>
+                        <form method="post" action="{% url 'master_akreditasi:butir_quick_delete' butir.id %}" style="display:inline;" onsubmit="return confirm('Yakin hapus butir {{ butir.kode|escapejs }}?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn-link"
+                                    style="font-size:.8rem; font-weight:600; color:var(--danger); cursor:pointer; background:none; border:none;">Hapus</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
+                        Belum ada butir di sub-standar ini. Klik <strong>+ Tambah Butir Baru</strong> untuk menambah.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<div class="panel" style="margin-top:1rem;">
+    <div class="panel-body" style="padding:3rem 1.5rem; text-align:center; color:var(--text-muted);">
+        <p style="font-size:1rem; margin-bottom:.5rem;">Pilih Instrumen → Standar → Sub-Standar terlebih dulu</p>
+        <p style="font-size:.85rem;">Filter di atas untuk mulai mengelola butir dokumen.</p>
+    </div>
+</div>
+{% endif %}
+
+{# ====== Modal Form Butir ====== #}
+<div id="butir-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:white; border-radius:12px; max-width:880px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+
+        <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--border-light); display:flex; align-items:center; justify-content:space-between;">
+            <h3 id="modal-title" style="font-size:1.05rem; font-weight:700; margin:0;">Tambah Butir Baru</h3>
+            <button type="button" onclick="closeButirModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); line-height:1;">×</button>
+        </div>
+
+        <form method="post" action="{% url 'master_akreditasi:butir_quick_save' %}" style="padding:1.25rem 1.5rem;">
+            {% csrf_token %}
+            <input type="hidden" name="butir_id" id="f-butir-id" value="">
+            <input type="hidden" name="sub_standar_id" value="{{ selected_sub_standar.id|default:'' }}">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
+                <div>
+                    <label class="form-label">Kode Butir <span style="color:var(--danger);">*</span></label>
+                    <input type="text" name="kode" id="f-kode" class="form-input" required
+                           placeholder="Contoh: K1-D1-DOC-1">
+                </div>
+                <div>
+                    <label class="form-label">Urutan</label>
+                    <input type="number" name="urutan" id="f-urutan" class="form-input" value="0" min="0">
+                </div>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <label class="form-label">Nama Dokumen <span style="color:var(--danger);">*</span></label>
+                <input type="text" name="nama_dokumen" id="f-nama-dokumen" class="form-input" required
+                       placeholder="Contoh: SK Senat tentang Tata Pamong">
+            </div>
+
+            <div style="margin-top:1rem;">
+                <label class="form-label">Deskripsi</label>
+                <textarea name="deskripsi" id="f-deskripsi" class="form-input" rows="3"
+                          style="width:100%; resize:vertical; min-height:80px;"
+                          placeholder="Ringkas tujuan/cakupan dokumen"></textarea>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <label class="form-label">Panduan Isi Dokumen</label>
+                <textarea name="panduan_dokumen" id="f-panduan" class="form-input" rows="4"
+                          style="width:100%; resize:vertical; min-height:100px;"
+                          placeholder="Hal-hal yang wajib ada di dalam dokumen"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
+                <div>
+                    <label class="form-label">Kategori Kepemilikan</label>
+                    <select name="kategori_kepemilikan" id="f-kepemilikan" class="form-input">
+                        {% for val, label in kategori_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Format File</label>
+                    <select name="format_diterima" id="f-format" class="form-input">
+                        {% for val, label in format_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Status Akses Default</label>
+                    <select name="status_akses_default" id="f-akses" class="form-input">
+                        {% for val, label in akses_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
+                <div>
+                    <label class="form-label">Ukuran Maks (MB)</label>
+                    <input type="number" name="ukuran_max_mb" id="f-ukuran" class="form-input" value="50" min="1" max="500">
+                </div>
+                <div style="display:flex; align-items:center; padding-top:1.6rem;">
+                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.9rem; cursor:pointer;">
+                        <input type="checkbox" name="wajib" id="f-wajib" checked>
+                        <span>Wajib</span>
+                    </label>
+                </div>
+                <div style="display:flex; align-items:center; padding-top:1.6rem;">
+                    <label style="display:flex; align-items:center; gap:.5rem; font-size:.9rem; cursor:pointer;">
+                        <input type="checkbox" name="aktif" id="f-aktif" checked>
+                        <span>Aktif</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border-light); display:flex; justify-content:flex-end; gap:.75rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeButirModal()">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_page_js %}
+<script>
+const butirData = {
+    {% for butir in butir_list %}
+    {{ butir.id }}: {
+        kode: "{{ butir.kode|escapejs }}",
+        nama_dokumen: "{{ butir.nama_dokumen|escapejs }}",
+        deskripsi: "{{ butir.deskripsi|escapejs }}",
+        panduan_dokumen: "{{ butir.panduan_dokumen|escapejs }}",
+        kategori_kepemilikan: "{{ butir.kategori_kepemilikan }}",
+        format_diterima: "{{ butir.format_diterima }}",
+        status_akses_default: "{{ butir.status_akses_default }}",
+        ukuran_max_mb: {{ butir.ukuran_max_mb }},
+        urutan: {{ butir.urutan }},
+        wajib: {{ butir.wajib|yesno:"true,false" }},
+        aktif: {{ butir.aktif|yesno:"true,false" }},
+    },
+    {% endfor %}
+};
+
+function openButirModal(butirId) {
+    const modal = document.getElementById('butir-modal');
+    const title = document.getElementById('modal-title');
+
+    document.getElementById('f-butir-id').value = '';
+    document.getElementById('f-kode').value = '';
+    document.getElementById('f-nama-dokumen').value = '';
+    document.getElementById('f-deskripsi').value = '';
+    document.getElementById('f-panduan').value = '';
+    document.getElementById('f-kepemilikan').value = 'FAKULTAS';
+    document.getElementById('f-format').value = 'PDF';
+    document.getElementById('f-akses').value = 'INTERNAL';
+    document.getElementById('f-ukuran').value = 50;
+    document.getElementById('f-urutan').value = 0;
+    document.getElementById('f-wajib').checked = true;
+    document.getElementById('f-aktif').checked = true;
+
+    if (butirId && butirData[butirId]) {
+        const d = butirData[butirId];
+        title.textContent = 'Edit Butir: ' + d.kode;
+        document.getElementById('f-butir-id').value = butirId;
+        document.getElementById('f-kode').value = d.kode;
+        document.getElementById('f-nama-dokumen').value = d.nama_dokumen;
+        document.getElementById('f-deskripsi').value = d.deskripsi;
+        document.getElementById('f-panduan').value = d.panduan_dokumen;
+        document.getElementById('f-kepemilikan').value = d.kategori_kepemilikan;
+        document.getElementById('f-format').value = d.format_diterima;
+        document.getElementById('f-akses').value = d.status_akses_default;
+        document.getElementById('f-ukuran').value = d.ukuran_max_mb;
+        document.getElementById('f-urutan').value = d.urutan;
+        document.getElementById('f-wajib').checked = d.wajib;
+        document.getElementById('f-aktif').checked = d.aktif;
+    } else {
+        title.textContent = 'Tambah Butir Baru';
+    }
+
+    modal.style.display = 'flex';
+}
+
+function closeButirModal() {
+    document.getElementById('butir-modal').style.display = 'none';
+}
+
+document.getElementById('butir-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeButirModal();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeButirModal();
+});
+</script>
+{% endblock %}
