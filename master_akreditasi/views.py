@@ -1,9 +1,13 @@
+
 """
 Views untuk master_akreditasi — list & detail Instrumen, Standar, Mapping.
 """
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count, Q
+from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from .models import (
     Instrumen,
@@ -730,3 +734,169 @@ def mapping_delete(request, pk):
         'message': info,
     })
 
+# =================================================================
+# MODE CEPAT — Manage Butir Dokumen
+# =================================================================
+
+@login_required
+def butir_quick_manage(request):
+    """
+    Halaman Mode Cepat untuk manage Butir Dokumen.
+    Filter: Instrumen → Standar → SubStandar (chained via page reload).
+    """
+    instrumen_id = request.GET.get('instrumen')
+    standar_id = request.GET.get('standar')
+    sub_standar_id = request.GET.get('sub_standar')
+
+    instrumen_list = Instrumen.objects.filter(aktif=True).order_by('urutan', 'kode')
+
+    standar_qs = Standar.objects.none()
+    sub_standar_qs = SubStandar.objects.none()
+    butir_qs = ButirDokumen.objects.none()
+
+    selected_instrumen = None
+    selected_standar = None
+    selected_sub_standar = None
+
+    if instrumen_id:
+        try:
+            selected_instrumen = instrumen_list.get(pk=instrumen_id)
+            standar_qs = Standar.objects.filter(
+                instrumen=selected_instrumen, aktif=True
+            ).order_by('urutan', 'nomor')
+        except Instrumen.DoesNotExist:
+            pass
+
+    if standar_id and standar_qs.exists():
+        try:
+            selected_standar = standar_qs.get(pk=standar_id)
+            sub_standar_qs = SubStandar.objects.filter(
+                standar=selected_standar
+            ).order_by('urutan', 'nomor')
+        except Standar.DoesNotExist:
+            pass
+
+    if sub_standar_id and sub_standar_qs.exists():
+        try:
+            selected_sub_standar = sub_standar_qs.get(pk=sub_standar_id)
+            butir_qs = ButirDokumen.objects.filter(
+                sub_standar=selected_sub_standar
+            ).order_by('urutan', 'kode')
+        except SubStandar.DoesNotExist:
+            pass
+
+    context = {
+        'page_title': 'Mode Cepat — Butir Dokumen',
+        'instrumen_list': instrumen_list,
+        'standar_list': standar_qs,
+        'sub_standar_list': sub_standar_qs,
+        'butir_list': butir_qs,
+        'selected_instrumen': selected_instrumen,
+        'selected_standar': selected_standar,
+        'selected_sub_standar': selected_sub_standar,
+        'kategori_choices': [
+            ('UNIVERSITAS', 'Universitas'),
+            ('BIRO', 'Biro / Lembaga'),
+            ('FAKULTAS', 'Fakultas'),
+            ('PRODI', 'Program Studi'),
+        ],
+        'format_choices': [
+            ('PDF', 'PDF'),
+            ('DOCX', 'Word (DOCX)'),
+            ('XLSX', 'Excel (XLSX)'),
+            ('PPTX', 'PowerPoint (PPTX)'),
+            ('GAMBAR', 'Gambar (JPG/PNG)'),
+            ('APAPUN', 'Format Apapun'),
+        ],
+        'akses_choices': [
+            ('INTERNAL', 'Internal'),
+            ('TERBUKA', 'Terbuka'),
+        ],
+    }
+    return render(request, 'master_akreditasi/butir_quick_manage.html', context)
+
+
+def _redirect_back_quick(sub_standar):
+    """Helper: redirect kembali ke quick manage dengan filter context."""
+    url = (
+        f"{reverse('master_akreditasi:butir_quick_manage')}"
+        f"?instrumen={sub_standar.standar.instrumen.pk}"
+        f"&standar={sub_standar.standar.pk}"
+        f"&sub_standar={sub_standar.pk}"
+    )
+    return redirect(url)
+
+
+@login_required
+@require_POST
+def butir_quick_save(request):
+    """Save (create atau update) Butir Dokumen via POST form."""
+    butir_id = request.POST.get('butir_id', '').strip()
+    sub_standar_id = request.POST.get('sub_standar_id', '').strip()
+
+    if not sub_standar_id:
+        messages.error(request, "Sub-Standar tidak dipilih.")
+        return redirect('master_akreditasi:butir_quick_manage')
+
+    sub_standar = get_object_or_404(SubStandar, pk=sub_standar_id)
+
+    defaults = {
+        'sub_standar': sub_standar,
+        'kode': request.POST.get('kode', '').strip(),
+        'nama_dokumen': request.POST.get('nama_dokumen', '').strip(),
+        'deskripsi': request.POST.get('deskripsi', '').strip(),
+        'panduan_dokumen': request.POST.get('panduan_dokumen', '').strip(),
+        'kategori_kepemilikan': request.POST.get('kategori_kepemilikan', 'FAKULTAS'),
+        'wajib': request.POST.get('wajib') == 'on',
+        'format_diterima': request.POST.get('format_diterima', 'PDF'),
+        'ukuran_max_mb': int(request.POST.get('ukuran_max_mb', '50') or '50'),
+        'status_akses_default': request.POST.get('status_akses_default', 'INTERNAL'),
+        'urutan': int(request.POST.get('urutan', '0') or '0'),
+        'aktif': request.POST.get('aktif') == 'on',
+    }
+
+    if not defaults['kode']:
+        messages.error(request, "Kode butir wajib diisi.")
+        return _redirect_back_quick(sub_standar)
+    if not defaults['nama_dokumen']:
+        messages.error(request, "Nama dokumen wajib diisi.")
+        return _redirect_back_quick(sub_standar)
+
+    try:
+        if butir_id:
+            butir = get_object_or_404(ButirDokumen, pk=butir_id)
+            for k, v in defaults.items():
+                setattr(butir, k, v)
+            butir.save()
+            messages.success(request, f"Butir '{defaults['kode']}' berhasil di-update.")
+        else:
+            ButirDokumen.objects.create(**defaults)
+            messages.success(request, f"Butir '{defaults['kode']}' berhasil ditambahkan.")
+    except Exception as e:
+        messages.error(request, f"Gagal save: {type(e).__name__}: {e}")
+
+    return _redirect_back_quick(sub_standar)
+
+
+@login_required
+@require_POST
+def butir_quick_delete(request, pk):
+    """Soft delete (kalau ada dokumen ter-link) atau hard delete butir."""
+    butir = get_object_or_404(ButirDokumen, pk=pk)
+    sub_standar = butir.sub_standar
+
+    has_dokumen = butir.dokumen_set.exists() if hasattr(butir, 'dokumen_set') else False
+
+    try:
+        if has_dokumen:
+            butir.aktif = False
+            butir.save()
+            messages.warning(request, f"Butir '{butir.kode}' dinonaktifkan (ada dokumen ter-link).")
+        else:
+            kode = butir.kode
+            butir.delete()
+            messages.success(request, f"Butir '{kode}' dihapus.")
+    except Exception as e:
+        messages.error(request, f"Gagal hapus: {type(e).__name__}: {e}")
+
+    return _redirect_back_quick(sub_standar)
