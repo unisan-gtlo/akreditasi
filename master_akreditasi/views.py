@@ -14,6 +14,7 @@ from .models import (
 )
 
 
+
 @login_required
 def instrumen_list(request):
     """List semua instrumen akreditasi."""
@@ -490,6 +491,7 @@ def self_process_butir_item(item, instrumen):
         defaults={
             "nama_dokumen": data.get("nama_dokumen", "").strip(),
             "deskripsi": data.get("deskripsi", "").strip(),
+            "panduan_dokumen": data.get("panduan_dokumen", "").strip(),
             "kategori_kepemilikan": kategori,
             "wajib": wajib_bool,
             "format_diterima": fmt,

@@ -92,6 +92,7 @@ BUTIR_COLUMNS = [
     "ukuran_max",
     "akses",
     "deskripsi",
+    "panduan_dokumen",
 ]
 
 VALID_KATEGORI = [k[0] for k in KategoriKepemilikan.choices]
