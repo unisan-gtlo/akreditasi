@@ -29,4 +29,10 @@ urlpatterns = [
     # Download Template
     path("import/template/", views.download_template_picker, name="template_picker"),
     path("import/template/<int:instrumen_id>/download/", views.download_template, name="template_download"),
+
+    # Mode Cepat — Manage Butir Dokumen
+    path("butir/quick/", views.butir_quick_manage, name="butir_quick_manage"),
+    path("butir/quick/save/", views.butir_quick_save, name="butir_quick_save"),
+    path("butir/quick/<int:pk>/delete/", views.butir_quick_delete, name="butir_quick_delete"),
+
 ]
