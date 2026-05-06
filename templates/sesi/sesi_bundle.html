@@ -249,6 +249,85 @@
     @media (max-width:768px) {
         .dtps-info-grid { grid-template-columns:repeat(2, 1fr); }
     }   
+    /* Drill-down inline expand */
+    .dtps-table tbody tr.dtps-row.has-bkd {
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd:hover {
+        background: #EFF6FF !important;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd.expanded {
+        background: #DBEAFE !important;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd.expanded td:first-child::before {
+        content: "▾ ";
+        color: #1D4ED8;
+        font-weight: 700;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd:not(.expanded) td:first-child::before {
+        content: "▸ ";
+        color: #6B7280;
+    }
+    .dtps-table tbody tr.bkd-detail-row td.bkd-detail-cell {
+        padding: 0;
+        background: #F8FAFC;
+        border-top: none;
+    }
+    .bkd-detail-wrap {
+        padding: 1rem 1.25rem;
+        animation: bkdExpand .2s ease;
+    }
+    @keyframes bkdExpand {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .bkd-detail-header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 1rem; margin-bottom: .6rem;
+    }
+    .bkd-detail-header strong { color: #0F172A; font-size: .9rem; }
+    .bkd-detail-meta { color: #6B7280; font-size: .78rem; }
+    .bkd-detail-meta code {
+        background: #FFF; padding: .1rem .3rem;
+        border-radius: 3px; font-size: .72rem;
+    }
+    .bkd-detail-table {
+        width: 100%; border-collapse: collapse;
+        background: #FFF; border-radius: 6px; overflow: hidden;
+        font-size: .8rem;
+    }
+    .bkd-detail-table th, .bkd-detail-table td {
+        padding: .45rem .55rem;
+        border-bottom: 1px solid #F1F5F9;
+        vertical-align: top;
+    }
+    .bkd-detail-table th {
+        background: #F1F5F9; color: #475569;
+        font-weight: 600; font-size: .7rem;
+        text-transform: uppercase; letter-spacing: .03em;
+        text-align: left;
+    }
+    .bkd-detail-table tr.bkd-detail-keterangan td {
+        background: #FFFBEB; border-bottom: 1px solid #FDE68A;
+    }
+    .bkd-link {
+        display: inline-flex; align-items: center; gap: .25rem;
+        color: #1D4ED8; text-decoration: none;
+        font-size: .8rem; font-weight: 600;
+    }
+    .bkd-link:hover { text-decoration: underline; }
+    .bkd-detail-empty {
+        padding: 1rem; background: #FFF; border-radius: 6px;
+        text-align: center; color: #6B7280;
+    }
+    .bkd-detail-loading {
+        padding: 1rem; text-align: center; color: #6B7280;
+    }
+    .bkd-detail-loading .spinner {
+        width: 20px; height: 20px; margin: 0 auto .5rem;
+        border-width: 2px; display: block;
+    }
 
   .share-panel {
     margin-top:1.5rem; background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;
@@ -608,6 +687,7 @@ function toggleAll(expand) {
     function openModal(butirId) {
         // Reset to loading state
         dialog.innerHTML = LOADING_HTML;
+        dialog.setAttribute("data-current-butir-id", butirId);
         overlay.hidden = false;
         document.body.style.overflow = "hidden";
 
@@ -665,6 +745,13 @@ function toggleAll(expand) {
             closeModal();
             return;
         }
+        // Drill-down: klik dosen row yang punya BKD
+        var dtpsRow = e.target.closest('[data-action="toggle-bkd-detail"]');
+        if (dtpsRow) {
+            e.preventDefault();
+            toggleBkdDetail(dtpsRow);
+            return;
+        }
         // Klik area overlay (di luar dialog) = close
         if (e.target === overlay) {
             closeModal();
@@ -677,6 +764,84 @@ function toggleAll(expand) {
             closeModal();
         }
     });
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && !overlay.hidden) {
+            closeModal();
+        }
+    });
+
+    // Drill-down: toggle expand row dosen → tampilkan sub-tabel BKD
+    function toggleBkdDetail(rowEl) {
+        var nidn = rowEl.getAttribute("data-nidn");
+        if (!nidn) return;
+
+        // Cari current butir_id dari modal context (data-butir-id ada di header)
+        // Lebih simple: ambil dari URL fetch terakhir, atau pakai dataset modal
+        var modalBody = dialog.querySelector(".dtps-modal-body");
+        if (!modalBody) return;
+
+        // Get butir_id dari attribute yang kita simpan di dialog
+        var butirId = dialog.getAttribute("data-current-butir-id");
+        if (!butirId) return;
+
+        // Toggle: kalau sudah expanded, collapse
+        if (rowEl.classList.contains("expanded")) {
+            var nextRow = rowEl.nextElementSibling;
+            if (nextRow && nextRow.classList.contains("bkd-detail-row")) {
+                nextRow.remove();
+            }
+            rowEl.classList.remove("expanded");
+            return;
+        }
+
+        // Single-expand: collapse semua expanded row dulu
+        var alreadyExpanded = dialog.querySelectorAll(".dtps-row.expanded");
+        alreadyExpanded.forEach(function(r) {
+            r.classList.remove("expanded");
+            var detailRow = r.nextElementSibling;
+            if (detailRow && detailRow.classList.contains("bkd-detail-row")) {
+                detailRow.remove();
+            }
+        });
+
+        // Insert loading row dulu
+        var loadingRow = document.createElement("tr");
+        loadingRow.className = "bkd-detail-row bkd-detail-loading-row";
+        loadingRow.innerHTML = '<td colspan="8" class="bkd-detail-cell"><div class="bkd-detail-loading"><div class="spinner"></div>Memuat detail BKD...</div></td>';
+        rowEl.parentNode.insertBefore(loadingRow, rowEl.nextSibling);
+        rowEl.classList.add("expanded");
+
+        // Fetch detail
+        var url = "/master/sesi/" + SESI_ID + "/butir/" + butirId + "/dosen/" + encodeURIComponent(nidn) + "/bkd-detail/";
+        if (TOKEN_PARAM) {
+            url += "?token=" + encodeURIComponent(TOKEN_PARAM);
+        }
+
+        fetch(url, {
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(function(resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            return resp.text();
+        })
+        .then(function(html) {
+            // Replace loading row dengan response
+            var temp = document.createElement("tbody");
+            temp.innerHTML = html;
+            var newRow = temp.querySelector(".bkd-detail-row");
+            if (newRow && loadingRow.parentNode) {
+                loadingRow.parentNode.replaceChild(newRow, loadingRow);
+            }
+        })
+        .catch(function(err) {
+            loadingRow.querySelector(".bkd-detail-cell").innerHTML =
+                '<div style="padding:1rem;color:#991B1B;">Gagal memuat: ' + err.message + '</div>';
+        });
+    }
+
+})();
+</script>
 })();
 </script>
 

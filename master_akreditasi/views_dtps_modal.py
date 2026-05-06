@@ -129,3 +129,66 @@ def butir_dtps_bkd_modal(request, sesi_id, butir_id):
         'master_akreditasi/_modal_dtps_bkd.html',
         context,
     )
+
+def dosen_bkd_detail(request, sesi_id, butir_id, nidn):
+    """Render sub-tabel BKD per dosen (drill-down inline expand).
+
+    URL : /master/sesi/<sesi_id>/butir/<butir_id>/dosen/<nidn>/bkd-detail/
+    Auth: Dual-mode (login OR token query param) — sama dengan endpoint modal.
+
+    Return HTML fragment <tr class="bkd-detail-row"> dengan colspan
+    yang berisi sub-tabel periode BKD + link dokumen.
+    """
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+    butir = get_object_or_404(ButirDokumen, pk=butir_id)
+
+    # Access check (reuse helper dari endpoint modal)
+    is_allowed, is_public = _check_access(request, sesi)
+    if not is_allowed:
+        return HttpResponseForbidden(
+            '<tr><td colspan="8" style="padding:1rem;color:#991B1B;">'
+            'Anda tidak memiliki akses untuk melihat data ini.'
+            '</td></tr>'
+        )
+
+    # Cari mapping aktif (untuk filter periode konsisten)
+    try:
+        mapping = ButirDataDosenMapping.objects.get(butir=butir, aktif=True)
+    except ButirDataDosenMapping.DoesNotExist:
+        return HttpResponseForbidden(
+            '<tr><td colspan="8" style="padding:1rem;color:#991B1B;">'
+            'Butir ini tidak punya mapping data dosen aktif.'
+            '</td></tr>'
+        )
+
+    # Verify dosen termasuk DTPS aktif sesi
+    try:
+        dtps = DTPSDosenSesi.objects.get(
+            sesi=sesi, dosen_nidn=nidn, aktif=True
+        )
+    except DTPSDosenSesi.DoesNotExist:
+        return HttpResponseForbidden(
+            '<tr><td colspan="8" style="padding:1rem;color:#991B1B;">'
+            'Dosen tidak termasuk DTPS aktif sesi ini.'
+            '</td></tr>'
+        )
+
+    # Fetch BKD records sesuai filter periode mapping
+    bkd_qs = sd.get_bkd_dosen_filter_periode(
+        nidn=nidn,
+        tahun_ts=str(sesi.tahun_ts),
+        filter_periode=mapping.filter_periode,
+    ).select_related('periode').order_by('-periode__urutan')
+
+    context = {
+        'sesi': sesi,
+        'butir': butir,
+        'mapping': mapping,
+        'dtps': dtps,
+        'bkd_records': bkd_qs,
+    }
+    return render(
+        request,
+        'master_akreditasi/_dosen_bkd_detail.html',
+        context,
+    )

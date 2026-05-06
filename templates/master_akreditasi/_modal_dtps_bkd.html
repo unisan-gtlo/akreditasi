@@ -54,8 +54,9 @@ Modal body: Tabel DTPS aktif sesi + agregat BKD per dosen.
           </tr>
         </thead>
         <tbody>
+          <tbody>
           {% for row in dtps_rows %}
-            <tr>
+            <tr class="dtps-row {% if row.bkd_count > 0 %}has-bkd{% else %}no-bkd{% endif %}" data-nidn="{{ row.dtps.dosen_nidn }}" {% if row.bkd_count > 0 %}data-action="toggle-bkd-detail"{% endif %} {% if row.bkd_count > 0 %}title="Klik untuk lihat detail BKD"{% endif %}>
               <td style="color:var(--text-secondary);">{{ forloop.counter }}</td>
               <td><code>{{ row.dtps.dosen_nidn }}</code></td>
               <td>{{ row.dtps.dosen_nama_snapshot|default:"—" }}</td>
