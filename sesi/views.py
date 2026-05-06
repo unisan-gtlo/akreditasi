@@ -1253,6 +1253,7 @@ def sesi_bundle_public(request, token):
         'tree': tree_data['standars'],
         'stats': tree_data['stats'],
         'share_token': share,
+        'public_token': str(share.token),
         'prodi_display': _get_prodi_display(sesi),
         'is_public_view': True,
     }
