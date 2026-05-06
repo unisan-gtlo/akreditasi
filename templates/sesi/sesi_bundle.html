@@ -156,6 +156,99 @@
   }
   .butir-row.empty .bcnt { background:#FEE2E2; color:#991B1B; }
   .butir-row.filled .bcnt { background:#D1FAE5; color:#065F46; }
+  .butir-row.empty .bcnt { background:#FEE2E2; color:#991B1B; }
+  .butir-row.filled .bcnt { background:#D1FAE5; color:#065F46; }
+  .badge-data-simda {
+        display:inline-flex; align-items:center; gap:.25rem;
+        padding:.2rem .55rem; margin-left:.5rem;
+        background:#EFF6FF; color:#1D4ED8;
+        border:1px solid #BFDBFE; border-radius:9999px;
+        font-size:.7rem; font-weight:600; cursor:pointer;
+        transition:all .15s ease;
+    }
+    .badge-data-simda:hover {
+        background:#DBEAFE; border-color:#93C5FD;
+        transform:translateY(-1px);
+    }
+    .badge-data-simda::before { content:"📊"; font-size:.85rem; }  
+
+    /* Modal DTPS+BKD */
+    .dtps-modal-overlay {
+        position:fixed; inset:0; z-index:1050;
+        background:rgba(15,23,42,.55);
+        display:flex; align-items:flex-start; justify-content:center;
+        padding:3rem 1rem 1rem 1rem; overflow-y:auto;
+        animation:dtpsFadeIn .15s ease;
+    }
+    .dtps-modal-overlay[hidden] { display:none; }
+    .dtps-modal-dialog {
+        background:#fff; width:100%; max-width:1100px;
+        border-radius:12px; box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+        overflow:hidden;
+        animation:dtpsSlideUp .2s ease;
+    }
+    @keyframes dtpsFadeIn { from{opacity:0;} to{opacity:1;} }
+    @keyframes dtpsSlideUp {
+        from{ opacity:0; transform:translateY(20px); }
+        to  { opacity:1; transform:translateY(0); }
+    }
+    .dtps-modal-loading {
+        text-align:center; padding:3rem;
+    }
+    .dtps-modal-loading .spinner {
+        width:40px; height:40px; margin:0 auto 1rem auto;
+        border:4px solid #DBEAFE; border-top-color:#1D4ED8;
+        border-radius:50%; animation:dtpsSpin .8s linear infinite;
+    }
+    @keyframes dtpsSpin { to{ transform:rotate(360deg); } }
+    .dtps-modal-loading p { color:var(--text-secondary); margin:0; }
+    .dtps-modal-header {
+        padding:1.25rem 1.5rem; border-bottom:1px solid #E5E7EB;
+        display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;
+    }
+    .dtps-modal-title { margin:0; font-size:1.05rem; font-weight:700; color:var(--text-primary); }
+    .dtps-modal-subtitle { margin-top:.35rem; color:var(--text-secondary); font-size:.85rem; line-height:1.4; }
+    .dtps-modal-close {
+        background:none; border:none; font-size:1.5rem; line-height:1;
+        color:#6B7280; cursor:pointer; padding:.25rem .5rem; border-radius:6px;
+        transition:all .15s ease;
+    }
+    .dtps-modal-close:hover { background:#F3F4F6; color:#111827; }
+    .dtps-modal-body { padding:1.5rem; max-height:65vh; overflow-y:auto; }
+    .dtps-modal-footer {
+        padding:1rem 1.5rem; border-top:1px solid #E5E7EB;
+        display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    }
+    .dtps-modal-footer-info { color:var(--text-secondary); font-size:.8rem; }
+    .dtps-info-grid {
+        display:grid; grid-template-columns:repeat(4, 1fr); gap:.75rem;
+        margin-bottom:1rem;
+    }
+    .dtps-info-card {
+        background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px;
+        padding:.6rem .8rem;
+    }
+    .dtps-info-label { color:var(--text-secondary); font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; }
+    .dtps-info-value { color:var(--text-primary); font-weight:700; margin-top:.2rem; font-size:.95rem; }
+    .dtps-table-wrap { overflow-x:auto; }
+    .dtps-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .dtps-table th, .dtps-table td {
+        padding:.55rem .6rem; border-bottom:1px solid #F1F5F9;
+        text-align:left; vertical-align:top;
+    }
+    .dtps-table th {
+        background:#F8FAFC; color:#475569; font-weight:600;
+        font-size:.75rem; text-transform:uppercase; letter-spacing:.03em;
+        position:sticky; top:0;
+    }
+    .dtps-table tbody tr:hover { background:#FAFBFC; }
+    .dtps-table code {
+        background:#F1F5F9; padding:.1rem .35rem; border-radius:4px;
+        font-size:.78rem; color:#0F172A;
+    }
+    @media (max-width:768px) {
+        .dtps-info-grid { grid-template-columns:repeat(2, 1fr); }
+    }   
 
   .share-panel {
     margin-top:1.5rem; background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px;
@@ -297,9 +390,14 @@
                             <span class="sub-count">{{ sub.butir_count }} butir</span>
                         </div>
                         <div class="sub-body">
-                            {% for butir in sub.butirs %}
-                                <div class="butir-row {% if butir.count > 0 %}filled{% else %}empty{% endif %}">
-                                    <span class="bk">{{ butir.obj.kode }}</span>
+                                {% for butir in sub.butirs %}
+                                    <div class="butir-row {% if butir.count > 0 %}filled{% else %}empty{% endif %}" data-butir-id="{{ butir.obj.id }}">
+                                        <span class="bk">{{ butir.obj.kode }}</span>
+                                        {% if butir.has_data_dosen_mapping %}
+                                            <span class="badge-data-simda" data-action="show-dtps-bkd" data-butir-id="{{ butir.obj.id }}" title="Lihat data DTPS dan BKD untuk butir ini">
+                                                Data SIMDA
+                                            </span>
+                                        {% endif %}
                                     <div class="bn">
                                         {{ butir.obj.nama_dokumen }}
                                         {% if butir.dokumens %}
@@ -413,8 +511,19 @@
     {% endif %}
 </div>
 
+<!-- Modal: Data DTPS + BKD per Butir (custom, tanpa Bootstrap) -->
+<div class="dtps-modal-overlay" id="dtpsModalOverlay" hidden>
+    <div class="dtps-modal-dialog" id="dtpsModalDialog">
+        <div class="dtps-modal-loading">
+            <div class="spinner"></div>
+            <p>Memuat data DTPS dan BKD...</p>
+        </div>
+    </div>
+</div>
+
 <script>
 function copyTok(id) {
+
     var el = document.getElementById(id);
     el.select(); el.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(el.value).then(function(){
@@ -473,4 +582,103 @@ function toggleAll(expand) {
     });
 })();
 </script>
+
+
+<script>
+/* ============================================================
+   Modal DTPS + BKD per Butir
+   - Trigger: klik <span class="badge-data-simda" data-butir-id="...">
+   - Endpoint: /master/sesi/<sesi_id>/butir/<butir_id>/dtps-bkd/
+   - Auth: dual-mode (login OR token query param)
+   ============================================================ */
+(function() {
+    var SESI_ID = {{ sesi.id }};
+    {% if is_public_view %}
+    var TOKEN_PARAM = "{{ public_token|default:'' }}";
+    {% else %}
+    var TOKEN_PARAM = "";
+    {% endif %}
+
+    var overlay = document.getElementById("dtpsModalOverlay");
+    var dialog  = document.getElementById("dtpsModalDialog");
+    if (!overlay || !dialog) return;
+
+    var LOADING_HTML = '<div class="dtps-modal-loading"><div class="spinner"></div><p>Memuat data DTPS dan BKD...</p></div>';
+
+    function openModal(butirId) {
+        // Reset to loading state
+        dialog.innerHTML = LOADING_HTML;
+        overlay.hidden = false;
+        document.body.style.overflow = "hidden";
+
+        // Build URL
+        var url = "/master/sesi/" + SESI_ID + "/butir/" + butirId + "/dtps-bkd/";
+        if (TOKEN_PARAM) {
+            url += "?token=" + encodeURIComponent(TOKEN_PARAM);
+        }
+
+        // Fetch
+        fetch(url, {
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(function(resp) {
+            if (!resp.ok) {
+                throw new Error("HTTP " + resp.status);
+            }
+            return resp.text();
+        })
+        .then(function(html) {
+            dialog.innerHTML = html;
+        })
+        .catch(function(err) {
+            dialog.innerHTML =
+                '<div class="dtps-modal-header">' +
+                '<h3 class="dtps-modal-title">Error</h3>' +
+                '<button type="button" class="dtps-modal-close" data-action="close-dtps-bkd">×</button>' +
+                '</div>' +
+                '<div class="dtps-modal-body"><div class="alert alert-danger">' +
+                '<div class="alert-icon">⚠</div><div>Gagal memuat data: ' + err.message + '</div>' +
+                '</div></div>';
+        });
+    }
+
+    function closeModal() {
+        overlay.hidden = true;
+        dialog.innerHTML = LOADING_HTML;
+        document.body.style.overflow = "";
+    }
+
+    // Trigger: badge "Data SIMDA" di butir-row
+    document.addEventListener("click", function(e) {
+        var trigger = e.target.closest('[data-action="show-dtps-bkd"]');
+        if (trigger) {
+            e.preventDefault();
+            var butirId = trigger.getAttribute("data-butir-id");
+            if (butirId) openModal(butirId);
+            return;
+        }
+        // Tombol close di dalam modal (header X dan footer)
+        var closer = e.target.closest('[data-action="close-dtps-bkd"]');
+        if (closer) {
+            e.preventDefault();
+            closeModal();
+            return;
+        }
+        // Klik area overlay (di luar dialog) = close
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+
+    // ESC key = close
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && !overlay.hidden) {
+            closeModal();
+        }
+    });
+})();
+</script>
+
+
 {% endblock %}

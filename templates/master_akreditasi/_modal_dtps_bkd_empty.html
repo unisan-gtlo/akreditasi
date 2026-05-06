@@ -1,0 +1,26 @@
+{% comment %}
+Empty state: butir tidak punya ButirDataDosenMapping aktif.
+{% endcomment %}
+
+<div class="dtps-modal-header">
+  <h3 class="dtps-modal-title">Data Dosen — {{ butir.kode }}</h3>
+  <button type="button" class="dtps-modal-close" data-action="close-dtps-bkd" aria-label="Tutup">×</button>
+</div>
+
+<div class="dtps-modal-body">
+  <div class="alert alert-info" style="margin:0;">
+    <div class="alert-icon">ℹ</div>
+    <div>
+      <strong>Butir ini belum dikonfigurasi untuk integrasi data SIMDA.</strong>
+      <p style="margin:.4rem 0 0 0; color:var(--text-secondary);">
+        Butir <code>{{ butir.kode }}</code> tidak memiliki mapping ke data dosen di SIMDA.
+        Konfigurasi mapping dapat dilakukan oleh admin LP3M melalui menu
+        <strong>Mapping Butir ↔ Data Dosen</strong> di Django Admin.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="dtps-modal-footer">
+  <button type="button" class="btn" data-action="close-dtps-bkd">Tutup</button>
+</div>

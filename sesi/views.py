@@ -1034,10 +1034,21 @@ def _build_bundle_tree(sesi, approved_only=False):
     """
     from master_akreditasi.models import Standar, SubStandar, ButirDokumen
     from dokumen.models import Dokumen
+    from master_akreditasi.models_dosen_link import ButirDataDosenMapping
 
     instrumen = sesi.instrumen
     periode_list = sesi.tahun_periode_list  # property dari Batch 2.5
+    instrumen = sesi.instrumen
+    periode_list = sesi.tahun_periode_list  # property dari Batch 2.5
 
+    # Pre-fetch butir IDs yang punya ButirDataDosenMapping aktif
+    # (untuk inject field 'has_data_dosen_mapping' ke tree butir)
+    butir_with_mapping_ids = set(
+        ButirDataDosenMapping.objects.filter(
+            aktif=True,
+            butir__sub_standar__standar__instrumen=instrumen,
+        ).values_list('butir_id', flat=True)
+    )
     # Build scope filter untuk dokumen
     scope_filter = Q()
     if sesi.kode_prodi:
@@ -1093,6 +1104,7 @@ def _build_bundle_tree(sesi, approved_only=False):
                     'obj': butir,
                     'dokumens': dokumens_list,
                     'count': len(dokumens_list),
+                    'has_data_dosen_mapping': butir.id in butir_with_mapping_ids,
                 })
 
             tree_substandars.append({
@@ -1241,6 +1253,7 @@ def sesi_bundle_public(request, token):
         'tree': tree_data['standars'],
         'stats': tree_data['stats'],
         'share_token': share,
+        'public_token': str(share.token),
         'prodi_display': _get_prodi_display(sesi),
         'is_public_view': True,
     }
