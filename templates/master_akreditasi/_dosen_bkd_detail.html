@@ -1,0 +1,97 @@
+{% comment %}
+Sub-tabel BKD per dosen — drill-down inline expand di modal DTPS+BKD.
+
+Context:
+  - sesi          : SesiAkreditasi
+  - butir         : ButirDokumen
+  - mapping       : ButirDataDosenMapping
+  - dtps          : DTPSDosenSesi (1 dosen)
+  - bkd_records   : QuerySet[RiwayatBKDRef] sesuai filter periode
+
+Output: <tr class="bkd-detail-row"> dengan colspan untuk integrate
+dengan tabel utama modal. Diharapkan inserted di bawah row dosen yg di-klik.
+{% endcomment %}
+
+<tr class="bkd-detail-row" data-detail-for="{{ dtps.dosen_nidn }}">
+  <td colspan="8" class="bkd-detail-cell">
+    <div class="bkd-detail-wrap">
+      <div class="bkd-detail-header">
+        <strong>📋 Riwayat BKD — {{ dtps.dosen_nama_snapshot }}</strong>
+        <span class="bkd-detail-meta">
+          NIDN: <code>{{ dtps.dosen_nidn }}</code> · {{ mapping.get_filter_periode_display }}
+        </span>
+      </div>
+
+      {% if bkd_records %}
+        <table class="bkd-detail-table">
+          <thead>
+            <tr>
+              <th>Periode</th>
+              <th style="text-align:right;">Pengajaran</th>
+              <th style="text-align:right;">Penelitian</th>
+              <th style="text-align:right;">PkM</th>
+              <th style="text-align:right;">Penunjang</th>
+              <th style="text-align:right;">Total SKS</th>
+              <th>Status</th>
+              <th>Dokumen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for bkd in bkd_records %}
+              {% with total=bkd.sks_pengajaran|add:bkd.sks_penelitian|add:bkd.sks_pkm|add:bkd.sks_penunjang %}
+              <tr>
+                <td>
+                  <strong>{{ bkd.periode.label_lengkap }}</strong>
+                </td>
+                <td style="text-align:right;">{{ bkd.sks_pengajaran|default:"—"|floatformat:2 }}</td>
+                <td style="text-align:right;">{{ bkd.sks_penelitian|default:"—"|floatformat:2 }}</td>
+                <td style="text-align:right;">{{ bkd.sks_pkm|default:"—"|floatformat:2 }}</td>
+                <td style="text-align:right;">{{ bkd.sks_penunjang|default:"—"|floatformat:2 }}</td>
+                <td style="text-align:right;">
+                  <strong>{{ total|floatformat:2 }}</strong>
+                </td>
+                <td>
+                  {% if bkd.status_pengesahan == 'disahkan' %}
+                    <span class="badge badge-emerald">Disahkan</span>
+                  {% elif bkd.status_pengesahan == 'belum_disahkan' %}
+                    <span class="badge badge-amber">Belum Disahkan</span>
+                  {% elif bkd.status_pengesahan == 'ditolak' %}
+                    <span class="badge badge-rose">Ditolak</span>
+                  {% else %}
+                    <span class="badge badge-gray">{{ bkd.status_pengesahan }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if bkd.link_bkd %}
+                    <a href="{{ bkd.link_bkd }}" target="_blank" rel="noopener noreferrer" class="bkd-link">
+                      🔗 Buka di Drive
+                    </a>
+                  {% else %}
+                    <span style="color:#9CA3AF; font-size:.78rem;">—</span>
+                  {% endif %}
+                  {% if bkd.file_bkd %}
+                    <div style="color:#6B7280; font-size:.7rem; margin-top:.2rem;" title="{{ bkd.file_bkd }}">
+                      📄 {{ bkd.file_bkd|truncatechars:36 }}
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if bkd.keterangan %}
+                <tr class="bkd-detail-keterangan">
+                  <td colspan="8" style="padding:.3rem .6rem; color:#6B7280; font-size:.78rem; font-style:italic;">
+                    💬 {{ bkd.keterangan }}
+                  </td>
+                </tr>
+              {% endif %}
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="bkd-detail-empty">
+          <em>Tidak ada record BKD untuk periode {{ mapping.get_filter_periode_display }}.</em>
+        </div>
+      {% endif %}
+    </div>
+  </td>
+</tr>

@@ -40,4 +40,10 @@ urlpatterns = [
         views_dtps_modal.butir_dtps_bkd_modal,
         name="butir_dtps_bkd_modal",
     ),
+    # AJAX drill-down: detail BKD per dosen (inline expand di modal)
+    path(
+        "sesi/<int:sesi_id>/butir/<int:butir_id>/dosen/<str:nidn>/bkd-detail/",
+        views_dtps_modal.dosen_bkd_detail,
+        name="dosen_bkd_detail",
+    ),
 ]
