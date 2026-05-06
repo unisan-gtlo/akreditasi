@@ -620,3 +620,28 @@ class ImportLogItem(models.Model):
 
     def __str__(self):
         return f"Row {self.row_number} ({self.sheet}) — {self.get_status_display()}"
+
+# ============================================================================
+# IMPORT MODEL UNMANAGED — REFERENSI SIMDA
+# ============================================================================
+# File terpisah agar tidak mencampur model managed SIAKRED dengan referensi
+# read-only ke schema `master` (SIMDA). Lihat models_simda_ref.py untuk detail.
+from .models_simda_ref import (  # noqa: E402, F401
+    FakultasRef,
+    ProgramStudiRef,
+    TahunAkademikRef,
+    JabatanFungsionalRef,
+    DataDosenRef,
+    RiwayatBKDRef,
+    RiwayatJabfungRef,
+    RiwayatPendidikanDosenRef,
+)
+
+# ============================================================================
+# IMPORT MODEL MANAGED — INTEGRASI DOSEN-AKREDITASI
+# ============================================================================
+from .models_dosen_link import (  # noqa: E402, F401
+    ButirDataDosenMapping,
+    DTPSDosenSesi,
+    SnapshotDataSimda,
+)
