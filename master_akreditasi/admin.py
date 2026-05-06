@@ -295,3 +295,13 @@ class ImportLogItemAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+# ============================================================================
+# IMPORT ADMIN UNTUK INTEGRASI DOSEN-AKREDITASI
+# ============================================================================
+from .admin_dosen import (  # noqa: E402, F401
+    ButirDataDosenMappingAdmin,
+    DTPSDosenSesiAdmin,
+    SnapshotDataSimdaAdmin,
+    DTPSDosenSesiInline,
+)
