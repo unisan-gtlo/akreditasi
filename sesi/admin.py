@@ -1,5 +1,5 @@
 ﻿"""Django Admin untuk Sesi Akreditasi."""
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.html import format_html
 
 from .models import SesiAkreditasi, MilestoneSesi, CatatanSesi
@@ -78,6 +78,50 @@ class SesiAkreditasiAdmin(admin.ModelAdmin):
             c, obj.get_status_display()
         )
 
+    @admin.action(description="🔄 Auto-populate DTPS dari homebase prodi")
+    def action_auto_populate_dtps(self, request, queryset):
+        """Bulk action: populate DTPS pool dengan dosen homebase prodi.
+
+        Untuk tiap sesi terpilih, panggil helper auto_populate_dtps_homebase()
+        yang ambil dosen dari master.data_dosen dengan kode_prodi yang sama.
+        Sumber DTPS = AUTO_HOMEBASE, peran default = DTPS_HOMEBASE.
+
+        Idempotent: dosen yang sudah ada di pool tidak akan duplikat.
+        """
+        from master_akreditasi.simda_dosen import auto_populate_dtps_homebase
+
+        total_sesi = 0
+        total_dtps_added = 0
+        errors = []
+
+        for sesi in queryset:
+            try:
+                added = auto_populate_dtps_homebase(sesi)
+                count = len(added) if hasattr(added, '__len__') else (added or 0)
+                total_dtps_added += count
+                total_sesi += 1
+                self.message_user(
+                    request,
+                    f"✓ {sesi.judul[:60]} ({sesi.kode_prodi}): {count} dosen homebase ditambahkan ke DTPS pool.",
+                    level=messages.SUCCESS,
+                )
+            except Exception as e:
+                errors.append(f"{sesi.judul[:40]}: {type(e).__name__}: {e}")
+                self.message_user(
+                    request,
+                    f"✗ {sesi.judul[:60]}: {type(e).__name__}: {e}",
+                    level=messages.ERROR,
+                )
+
+        # Summary
+        if total_sesi > 0:
+            self.message_user(
+                request,
+                f"Selesai: {total_dtps_added} dosen di-populate ke {total_sesi} sesi.",
+                level=messages.INFO,
+            )
+
+    actions = ['action_auto_populate_dtps']
 
 @admin.register(MilestoneSesi)
 class MilestoneSesiAdmin(admin.ModelAdmin):
