@@ -1,6 +1,6 @@
 """URL routing untuk master_akreditasi."""
 from django.urls import path
-from . import views
+from . import views, views_dtps_modal
 
 app_name = "master_akreditasi"
 
@@ -34,5 +34,10 @@ urlpatterns = [
     path("butir/quick/", views.butir_quick_manage, name="butir_quick_manage"),
     path("butir/quick/save/", views.butir_quick_save, name="butir_quick_save"),
     path("butir/quick/<int:pk>/delete/", views.butir_quick_delete, name="butir_quick_delete"),
-
+    # Modal AJAX: Data DTPS + BKD per butir (dipanggil dari halaman bundle)
+    path(
+        "sesi/<int:sesi_id>/butir/<int:butir_id>/dtps-bkd/",
+        views_dtps_modal.butir_dtps_bkd_modal,
+        name="butir_dtps_bkd_modal",
+    ),
 ]

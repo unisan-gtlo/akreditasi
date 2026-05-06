@@ -1,0 +1,158 @@
+{% comment %}
+Modal body: Tabel DTPS aktif sesi + agregat BKD per dosen sesuai filter mapping.
+
+Context:
+  - sesi          : SesiAkreditasi
+  - butir         : ButirDokumen
+  - mapping       : ButirDataDosenMapping (aktif)
+  - dtps_rows     : list of dict { dtps, bkd_count, bkd_agg, total_sks }
+  - total_dtps    : int
+  - dtps_dengan_bkd : int
+  - is_public     : bool (akses via token)
+{% endcomment %}
+
+<div class="modal-header">
+  <div>
+    <h5 class="modal-title">
+      <i class="ti ti-users me-2"></i>
+      Data Dosen DTPS — {{ butir.kode }}
+    </h5>
+    <div class="text-secondary small mt-1">
+      {{ butir.deskripsi|truncatechars:120 }}
+    </div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body">
+  {# Info Cards #}
+  <div class="row g-2 mb-3">
+    <div class="col-md-3">
+      <div class="card card-sm">
+        <div class="card-body p-2">
+          <div class="text-secondary small">Jenis Data</div>
+          <div class="fw-bold">{{ mapping.get_jenis_data_display }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-sm">
+        <div class="card-body p-2">
+          <div class="text-secondary small">Filter Periode</div>
+          <div class="fw-bold">{{ mapping.get_filter_periode_display }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-sm">
+        <div class="card-body p-2">
+          <div class="text-secondary small">Tahun TS</div>
+          <div class="fw-bold">{{ sesi.tahun_ts }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-sm">
+        <div class="card-body p-2">
+          <div class="text-secondary small">DTPS dengan Data</div>
+          <div class="fw-bold">
+            {{ dtps_dengan_bkd }} / {{ total_dtps }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if mapping.deskripsi_filter %}
+    <div class="alert alert-light py-2 mb-3" role="alert">
+      <i class="ti ti-info-circle me-1"></i>
+      {{ mapping.deskripsi_filter }}
+    </div>
+  {% endif %}
+
+  {# Tabel DTPS #}
+  {% if dtps_rows %}
+    <div class="table-responsive">
+      <table class="table table-vcenter table-bordered table-sm">
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 40px;">#</th>
+            <th>NIDN</th>
+            <th>Nama Dosen</th>
+            <th>Homebase</th>
+            <th>Jabfung</th>
+            <th>Sumber</th>
+            <th class="text-center">Records BKD</th>
+            <th class="text-end">Total SKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in dtps_rows %}
+            <tr>
+              <td class="text-center text-secondary">{{ forloop.counter }}</td>
+              <td><code>{{ row.dtps.dosen_nidn }}</code></td>
+              <td>{{ row.dtps.dosen_nama_snapshot|default:"—" }}</td>
+              <td>
+                <div class="small">{{ row.dtps.dosen_homebase_prodi_snapshot|default:"—" }}</div>
+                <div class="text-secondary small">{{ row.dtps.dosen_homebase_fakultas_snapshot|default:"" }}</div>
+              </td>
+              <td class="small">{{ row.dtps.dosen_jabfung_snapshot|default:"—" }}</td>
+              <td>
+                {% if row.dtps.sumber == 'AUTO_HOMEBASE' %}
+                  <span class="badge bg-blue-lt">Homebase</span>
+                {% elif row.dtps.sumber == 'MANUAL_TAMBAHAN' %}
+                  <span class="badge bg-orange-lt">Manual</span>
+                {% else %}
+                  <span class="badge bg-secondary-lt">{{ row.dtps.sumber }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if row.bkd_count > 0 %}
+                  <span class="badge bg-green-lt">{{ row.bkd_count }}</span>
+                {% else %}
+                  <span class="badge bg-red-lt">0</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if row.total_sks %}
+                  <strong>{{ row.total_sks|floatformat:2 }}</strong>
+                {% else %}
+                  <span class="text-secondary">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="table-light">
+            <td colspan="6" class="text-end fw-bold">Total:</td>
+            <td class="text-center fw-bold">{{ dtps_dengan_bkd }} / {{ total_dtps }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    {% if dtps_dengan_bkd == 0 %}
+      <div class="alert alert-warning mt-2 py-2" role="alert">
+        <i class="ti ti-alert-triangle me-1"></i>
+        Tidak ada DTPS yang memiliki data {{ mapping.get_jenis_data_display }} pada periode ini.
+        Pastikan data SIMDA sudah lengkap untuk periode {{ mapping.get_filter_periode_display }}.
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-warning" role="alert">
+      <i class="ti ti-alert-triangle me-1"></i>
+      Belum ada DTPS aktif untuk sesi ini.
+    </div>
+  {% endif %}
+</div>
+
+<div class="modal-footer">
+  <div class="me-auto small text-secondary">
+    Sumber: SIMDA — Sistem Informasi Master Data UNISAN
+  </div>
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+    Tutup
+  </button>
+</div>
