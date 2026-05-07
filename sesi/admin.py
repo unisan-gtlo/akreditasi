@@ -96,8 +96,8 @@ class SesiAkreditasiAdmin(admin.ModelAdmin):
 
         for sesi in queryset:
             try:
-                added = auto_populate_dtps_homebase(sesi)
-                count = len(added) if hasattr(added, '__len__') else (added or 0)
+                created_count = auto_populate_dtps_homebase(sesi)
+                count = created_count if isinstance(created_count, int) else 0
                 total_dtps_added += count
                 total_sesi += 1
                 self.message_user(
