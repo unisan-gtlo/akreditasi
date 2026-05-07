@@ -48,11 +48,22 @@ def _check_access(request, sesi):
 
 
 def butir_dtps_bkd_modal(request, sesi_id, butir_id):
-    """Render modal body: daftar DTPS + agregat BKD per butir.
+    """Render modal body: daftar DTPS + data per butir akreditasi.
 
-    URL : /master-akreditasi/sesi/<sesi_id>/butir/<butir_id>/dtps-bkd/
+    URL : /master/sesi/<sesi_id>/butir/<butir_id>/dtps-bkd/
     Auth: Dual-mode (login OR token query param).
+
+    Dispatch ke resolver yang sesuai berdasarkan mapping.jenis_data
+    (BKD, PENDIDIKAN, JABFUNG, PROFIL). Setiap resolver tahu cara fetch
+    data dan template mana yang harus dirender.
+
+    Note: nama function tetap 'butir_dtps_bkd_modal' untuk backward
+    compatibility dengan URL & template yang sudah live di production.
     """
+    from master_akreditasi.data_resolvers import (
+        get_resolver, UnsupportedJenisDataError,
+    )
+
     sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
     butir = get_object_or_404(ButirDokumen, pk=butir_id)
 
@@ -77,68 +88,76 @@ def butir_dtps_bkd_modal(request, sesi_id, butir_id):
             {'butir': butir, 'sesi': sesi},
         )
 
+    # Dispatch ke resolver
+    try:
+        resolver = get_resolver(mapping.jenis_data)
+    except UnsupportedJenisDataError as e:
+        return HttpResponseForbidden(
+            f'<div class="alert alert-warning m-3">'
+            f'Jenis data <strong>{mapping.get_jenis_data_display()}</strong> '
+            f'belum didukung. {e}</div>'
+        )
+
     # Fetch DTPS aktif sesi
     dtps_aktif = DTPSDosenSesi.objects.filter(
         sesi=sesi, aktif=True
     ).order_by('dosen_nama_snapshot')
 
-    # Build per-DTPS BKD aggregate
+    # Build per-DTPS summary via resolver
     dtps_rows = []
     for dtps in dtps_aktif:
-        # BKD per dosen sesuai filter periode mapping
-        bkd_qs = sd.get_bkd_dosen_filter_periode(
-            nidn=dtps.dosen_nidn,
-            tahun_ts=str(sesi.tahun_ts),
-            filter_periode=mapping.filter_periode,
-        )
-        bkd_count = bkd_qs.count()
-        bkd_agg = bkd_qs.aggregate(
-            total_pengajaran=Sum('sks_pengajaran'),
-            total_penelitian=Sum('sks_penelitian'),
-            total_pkm=Sum('sks_pkm'),
-            total_penunjang=Sum('sks_penunjang'),
-        )
-        total_sks = sum(
-            (bkd_agg.get(k) or 0) for k in (
-                'total_pengajaran', 'total_penelitian',
-                'total_pkm', 'total_penunjang'
-            )
-        )
-        dtps_rows.append({
+        summary = resolver.get_dosen_summary(sesi, dtps, mapping)
+        # Untuk backward compat dengan template BKD existing,
+        # extra dict di-merge ke row dict (template BKD baca total_sks, bkd_count, dst)
+        row = {
             'dtps': dtps,
-            'bkd_count': bkd_count,
-            'bkd_agg': bkd_agg,
-            'total_sks': total_sks,
-        })
+            'summary': summary,
+            'count': summary.count,
+            'agg_value': summary.agg_value,
+            'agg_value_formatted': summary.agg_value_formatted,
+        }
+        row.update(summary.extra)  # inject extra fields (bkd_agg, total_sks, dll)
+        dtps_rows.append(row)
 
     # Statistik ringkas
     total_dtps = len(dtps_rows)
-    dtps_dengan_bkd = sum(1 for r in dtps_rows if r['bkd_count'] > 0)
+    dtps_dengan_data = sum(1 for r in dtps_rows if r['count'] > 0)
 
+    # Backward compat: template BKD existing pakai 'dtps_dengan_bkd'
     context = {
         'sesi': sesi,
         'butir': butir,
         'mapping': mapping,
+        'resolver': resolver,
         'dtps_rows': dtps_rows,
         'total_dtps': total_dtps,
-        'dtps_dengan_bkd': dtps_dengan_bkd,
+        'dtps_dengan_data': dtps_dengan_data,
+        'dtps_dengan_bkd': dtps_dengan_data,  # alias untuk template BKD existing
         'is_public': is_public,
     }
-    return render(
-        request,
-        'master_akreditasi/_modal_dtps_bkd.html',
-        context,
-    )
+
+    # Template ditentukan oleh resolver — masing-masing jenis_data render template berbeda
+    return render(request, resolver.modal_template, context)
 
 def dosen_bkd_detail(request, sesi_id, butir_id, nidn):
-    """Render sub-tabel BKD per dosen (drill-down inline expand).
+    """Render sub-tabel data per dosen (drill-down inline expand).
 
     URL : /master/sesi/<sesi_id>/butir/<butir_id>/dosen/<nidn>/bkd-detail/
     Auth: Dual-mode (login OR token query param) — sama dengan endpoint modal.
 
+    Dispatch ke resolver yang sesuai berdasarkan mapping.jenis_data.
+    Setiap resolver tahu cara fetch detail records & template-nya.
+
     Return HTML fragment <tr class="bkd-detail-row"> dengan colspan
-    yang berisi sub-tabel periode BKD + link dokumen.
+    yang berisi sub-tabel detail (periode BKD, riwayat pendidikan, dst).
+
+    Note: nama function tetap 'dosen_bkd_detail' untuk backward compat
+    URL routing yang sudah live di production.
     """
+    from master_akreditasi.data_resolvers import (
+        get_resolver, UnsupportedJenisDataError,
+    )
+
     sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
     butir = get_object_or_404(ButirDokumen, pk=butir_id)
 
@@ -173,22 +192,28 @@ def dosen_bkd_detail(request, sesi_id, butir_id, nidn):
             '</td></tr>'
         )
 
-    # Fetch BKD records sesuai filter periode mapping
-    bkd_qs = sd.get_bkd_dosen_filter_periode(
-        nidn=nidn,
-        tahun_ts=str(sesi.tahun_ts),
-        filter_periode=mapping.filter_periode,
-    ).select_related('periode').order_by('-periode__urutan')
+    # Dispatch ke resolver
+    try:
+        resolver = get_resolver(mapping.jenis_data)
+    except UnsupportedJenisDataError as e:
+        return HttpResponseForbidden(
+            f'<tr><td colspan="8" style="padding:1rem;color:#991B1B;">'
+            f'Jenis data {mapping.get_jenis_data_display()} belum didukung. {e}'
+            f'</td></tr>'
+        )
+
+    # Fetch detail records via resolver
+    detail_records = resolver.get_detail_records(sesi, dtps, mapping)
 
     context = {
         'sesi': sesi,
         'butir': butir,
         'mapping': mapping,
+        'resolver': resolver,
         'dtps': dtps,
-        'bkd_records': bkd_qs,
+        # Backward compat: template BKD existing pakai 'bkd_records'
+        'bkd_records': detail_records,
+        # Generic name untuk template baru
+        'detail_records': detail_records,
     }
-    return render(
-        request,
-        'master_akreditasi/_dosen_bkd_detail.html',
-        context,
-    )
+    return render(request, resolver.detail_template, context)

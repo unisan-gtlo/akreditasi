@@ -1,0 +1,97 @@
+{% comment %}
+Sub-tabel Riwayat Pendidikan per dosen — drill-down inline expand di modal.
+
+Context:
+  - sesi          : SesiAkreditasi
+  - butir         : ButirDokumen
+  - mapping       : ButirDataDosenMapping (jenis_data=PENDIDIKAN)
+  - resolver      : PendidikanResolver
+  - dtps          : DTPSDosenSesi (1 dosen)
+  - detail_records: QuerySet[RiwayatPendidikanDosenRef]
+  - bkd_records   : alias detail_records (backward compat)
+
+Output: <tr class="bkd-detail-row"> dengan colspan untuk integrate
+dengan tabel utama modal.
+
+Dokumen: file_ijazah & file_transkrip adalah path file di SIMDA.
+Diakses lewat: https://master.unisan-g.id/media/<file_path>
+{% endcomment %}
+
+<tr class="bkd-detail-row" data-detail-for="{{ dtps.dosen_nidn }}">
+  <td colspan="8" class="bkd-detail-cell">
+    <div class="bkd-detail-wrap">
+      <div class="bkd-detail-header">
+        <strong>🎓 Riwayat Pendidikan — {{ dtps.dosen_nama_snapshot }}</strong>
+        <span class="bkd-detail-meta">
+          NIDN: <code>{{ dtps.dosen_nidn }}</code> · {{ detail_records.count }} jenjang
+        </span>
+      </div>
+
+      {% if detail_records %}
+        <table class="bkd-detail-table">
+          <thead>
+            <tr>
+              <th>Jenjang</th>
+              <th>Institusi / Perguruan Tinggi</th>
+              <th>Program Studi</th>
+              <th style="text-align:center;">Tahun Lulus</th>
+              <th>No. Ijazah</th>
+              <th>Dokumen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pend in detail_records %}
+              <tr>
+                <td>
+                  <strong style="font-size:.95rem;">{{ pend.jenjang }}</strong>
+                </td>
+                <td>{{ pend.institusi|default:"—" }}</td>
+                <td>{{ pend.prodi_studi|default:"—" }}</td>
+                <td style="text-align:center;">
+                  {% if pend.tahun_lulus %}
+                    {{ pend.tahun_lulus }}
+                  {% else %}
+                    <span style="color:#9CA3AF;">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if pend.no_ijazah %}
+                    <code>{{ pend.no_ijazah }}</code>
+                  {% else %}
+                    <span style="color:#9CA3AF;">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if pend.file_ijazah %}
+                    <a href="https://master.unisan-g.id/media/{{ pend.file_ijazah }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat ijazah di SIMDA">
+                      📜 Ijazah
+                    </a>
+                  {% endif %}
+                  {% if pend.file_transkrip %}
+                    <a href="https://master.unisan-g.id/media/{{ pend.file_transkrip }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat transkrip di SIMDA" style="margin-left:.5rem;">
+                      📋 Transkrip
+                    </a>
+                  {% endif %}
+                  {% if not pend.file_ijazah and not pend.file_transkrip %}
+                    <span style="color:#9CA3AF; font-size:.78rem;">Tidak ada dokumen</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if pend.judul_thesis %}
+                <tr class="bkd-detail-keterangan">
+                  <td colspan="6" style="padding:.3rem .6rem; color:#6B7280; font-size:.78rem; font-style:italic;">
+                    📖 Judul Tesis/Disertasi: {{ pend.judul_thesis|truncatechars:150 }}
+                  </td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="bkd-detail-empty">
+          <em>Tidak ada data riwayat pendidikan untuk dosen ini di SIMDA.</em>
+        </div>
+      {% endif %}
+    </div>
+  </td>
+</tr>
