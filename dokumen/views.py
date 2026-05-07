@@ -423,7 +423,13 @@ def _create_dokumen(butir, form, user, user_scope, request):
     catatan_revisi = form.cleaned_data.get("catatan_revisi", "").strip()
     storage_type = form.cleaned_data.get("storage_type", "LOCAL")
 
-    # Cari dokumen existing (butir + kategori + scope + tahun)
+    # Cari dokumen existing dengan key (butir + kategori + scope + tahun + judul).
+    #
+    # Judul dimasukkan ke key composite agar 1 butir bisa punya MULTIPLE
+    # dokumen berbeda dengan judul berbeda. Contoh butir "SPMI Lengkap" butuh
+    # 4 dokumen: "SK Pembentukan Tim", "Standar SPMI", "Manual SPMI", "Formulir SPMI".
+    # Re-upload dengan judul yang sama (case-sensitive) akan trigger revisi
+    # pada Dokumen yang sama (perilaku revisi tetap konsisten).
     existing = Dokumen.objects.filter(
         butir_dokumen=butir,
         kategori_pemilik=butir.kategori_kepemilikan,
@@ -431,6 +437,7 @@ def _create_dokumen(butir, form, user, user_scope, request):
         scope_kode_fakultas=user_scope["scope_kode_fakultas"],
         scope_kode_unit_kerja=user_scope["scope_kode_unit_kerja"],
         tahun_akademik=tahun,
+        judul=judul,
     ).first()
 
     if existing:
