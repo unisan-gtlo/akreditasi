@@ -25,6 +25,82 @@ from .permissions import (
     get_uploadable_butir_for_user,
 )
 
+# =========================================================
+# HELPER: BUILD BUTIR TREE (Instrumen -> Sub-Standar -> Butir)
+# =========================================================
+
+def build_butir_tree(butir_list):
+    """
+    Ubah flat butir_list [{"butir":..., "dokumen_count":...}] jadi tree:
+    Standar (Kriteria) -> Sub-Standar -> Butir.
+
+    Return list of dict (terurut sesuai urutan butir_list):
+    [
+        {
+            "standar": <Standar>,
+            "total_butir": int,
+            "total_terisi": int,
+            "substandars": [
+                {
+                    "substandar": <SubStandar>,
+                    "butir_count": int,
+                    "items": [ {"butir":..., "dokumen_count":...}, ... ],
+                },
+                ...
+            ],
+        },
+        ...
+    ]
+    """
+    standar_map = {}
+    standar_order = []
+
+    for item in butir_list:
+        butir = item["butir"]
+        sub = butir.sub_standar
+        standar = sub.standar
+
+        # --- level Standar ---
+        if standar.id not in standar_map:
+            standar_map[standar.id] = {
+                "standar": standar,
+                "kode_label": standar.nomor,
+                "total_butir": 0,
+                "total_terisi": 0,
+                "_sub_map": {},
+                "_sub_order": [],
+                "substandars": [],
+            }
+            standar_order.append(standar.id)
+        snode = standar_map[standar.id]
+
+        # --- level Sub-Standar ---
+        if sub.id not in snode["_sub_map"]:
+            snode["_sub_map"][sub.id] = {
+                "substandar": sub,
+                "butir_count": 0,
+                "items": [],
+            }
+            snode["_sub_order"].append(sub.id)
+        subnode = snode["_sub_map"][sub.id]
+
+        # --- level Butir ---
+        subnode["items"].append(item)
+        subnode["butir_count"] += 1
+        snode["total_butir"] += 1
+        if item["dokumen_count"] > 0:
+            snode["total_terisi"] += 1
+
+    # rapikan jadi list terurut
+    tree = []
+    for sid in standar_order:
+        snode = standar_map[sid]
+        snode["substandars"] = [snode["_sub_map"][ssid] for ssid in snode["_sub_order"]]
+        del snode["_sub_map"]
+        del snode["_sub_order"]
+        tree.append(snode)
+
+    return tree
 
 # =========================================================
 # HELPER: GET RELEVANT INSTRUMEN FOR USER
@@ -140,6 +216,7 @@ def butir_saya(request):
         "sub_standar__standar__urutan",
         "sub_standar__urutan",
         "urutan",
+        "kode",
     )
 
     # Annotate: apakah sudah ada dokumen untuk butir ini (by scope user)
@@ -173,11 +250,12 @@ def butir_saya(request):
 
     # Grouping by instrumen
     instrumen_all = list(relevant_instrumen.order_by("urutan"))
-
+    tree_data = build_butir_tree(butir_list)
     context = {
         "page_title": "Dokumen Saya",
         "active_menu": "dokumen",
         "butir_list": butir_list,
+        "tree_data": tree_data,
         "instrumen_all": instrumen_all,
         "filter_instrumen": instrumen_filter,
         "filter_kategori": kategori_filter,

@@ -25,6 +25,9 @@ urlpatterns = [
     # Token management (Step 8 Batch 4D)
     path('<int:sesi_id>/bundle/token/create/', views.bundle_token_create, name='bundle_token_create'),
     path('<int:sesi_id>/bundle/token/<int:token_id>/revoke/', views.bundle_token_revoke, name='bundle_token_revoke'),
-
+    # Dokumen publik via token bundle (TANPA LOGIN)
+    path('bundle/publik/<str:token>/dokumen/<int:pk>/', views.dokumen_detail_public, name='dokumen_detail_public'),
+    path('bundle/publik/<str:token>/dokumen/<int:pk>/preview/', views.dokumen_preview_serve_public, name='dokumen_preview_serve_public'),
+    path('bundle/publik/<str:token>/dokumen/<int:pk>/download/', views.dokumen_download_public, name='dokumen_download_public'),
     path('<int:sesi_id>/bundle/zip/', views.sesi_bundle_zip, name='sesi_bundle_zip'),
 ]

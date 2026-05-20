@@ -9,6 +9,7 @@ import json
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.db.models import Q
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -261,48 +262,89 @@ def sesi_detail(request, pk):
         "sub_standar__standar__urutan",
         "sub_standar__urutan",
         "urutan",
+        "kode",
     )
 
     # Cek dokumen yang sudah upload untuk masing-masing butir (sesuai scope sesi)
     dokumen_per_butir = {}
+
+    # Filter tahun: dokumen dengan tahun sesuai periode sesi ATAU tanpa tahun (umum)
+    tahun_filter = Q(tahun_akademik__in=sesi.tahun_periode_list) | Q(tahun_akademik="") | Q(tahun_akademik__isnull=True)
+
+    # Filter scope: cocok dengan scope sesi ATAU tanpa scope (dokumen umum)
+    scope_filter = (
+        Q(scope_kode_prodi=sesi.kode_prodi)
+        | Q(scope_kode_fakultas=sesi.kode_fakultas, kategori_pemilik="FAKULTAS")
+        | Q(kategori_pemilik="UNIVERSITAS")
+        | Q(scope_kode_prodi="", scope_kode_fakultas="")
+        | Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
+    )
+
     for d in Dokumen.objects.filter(
         butir_dokumen__in=butir_qs,
-        tahun_akademik__in=sesi.tahun_periode_list,
-    ).filter(
-        Q(scope_kode_prodi=sesi.kode_prodi) |
-        Q(scope_kode_fakultas=sesi.kode_fakultas, kategori_pemilik="FAKULTAS") |
-        Q(kategori_pemilik="UNIVERSITAS")
-    ).select_related("butir_dokumen"):
+        status="FINAL",
+    ).filter(tahun_filter).filter(scope_filter).select_related("butir_dokumen"):
         dokumen_per_butir.setdefault(d.butir_dokumen_id, []).append(d)
 
-    # Build per-standar progress
+    # Build per-standar progress (Standar -> Sub-Standar -> Butir)
     standar_groups = {}
     for butir in butir_qs:
-        std = butir.sub_standar.standar
+        sub = butir.sub_standar
+        std = sub.standar
+
         if std.id not in standar_groups:
             standar_groups[std.id] = {
                 "standar": std,
+                "sub_map": {},
+                "sub_order": [],
+                "sub_list": [],
+                "total": 0,
+                "terisi": 0,
+            }
+        sgroup = standar_groups[std.id]
+
+        if sub.id not in sgroup["sub_map"]:
+            sgroup["sub_map"][sub.id] = {
+                "substandar": sub,
                 "butir_list": [],
                 "total": 0,
                 "terisi": 0,
             }
+            sgroup["sub_order"].append(sub.id)
+        subgroup = sgroup["sub_map"][sub.id]
+
         dokumen_list = dokumen_per_butir.get(butir.id, [])
         is_terisi = len(dokumen_list) > 0
-        standar_groups[std.id]["butir_list"].append({
+
+        subgroup["butir_list"].append({
             "butir": butir,
             "dokumen_list": dokumen_list,
             "is_terisi": is_terisi,
         })
-        standar_groups[std.id]["total"] += 1
+        subgroup["total"] += 1
+        sgroup["total"] += 1
         if is_terisi:
-            standar_groups[std.id]["terisi"] += 1
+            subgroup["terisi"] += 1
+            sgroup["terisi"] += 1
 
-    # Add percentage
+    # Add percentage + rapikan sub_list (buang map sementara)
     for std_id, group in standar_groups.items():
         if group["total"] > 0:
             group["percentage"] = round((group["terisi"] / group["total"]) * 100, 1)
         else:
             group["percentage"] = 0
+
+        sub_list = []
+        for sid in group["sub_order"]:
+            sub = group["sub_map"][sid]
+            if sub["total"] > 0:
+                sub["percentage"] = round((sub["terisi"] / sub["total"]) * 100, 1)
+            else:
+                sub["percentage"] = 0
+            sub_list.append(sub)
+        group["sub_list"] = sub_list
+        del group["sub_map"]
+        del group["sub_order"]
 
     # Sort by standar urutan
     standar_groups_list = sorted(standar_groups.values(), key=lambda g: g["standar"].urutan)
@@ -1058,6 +1100,8 @@ def _build_bundle_tree(sesi, approved_only=False):
                         Q(scope_kode_prodi__isnull=True, scope_kode_fakultas=sesi.kode_fakultas)
     # Selalu include scope UNIVERSITAS (dokumen universal)
     scope_filter |= Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
+    # Dokumen tanpa scope (prodi & fakultas kosong) dianggap umum -> ikut dihitung
+    scope_filter |= Q(scope_kode_prodi="", scope_kode_fakultas="")
 
     # Ambil semua standar untuk instrumen ini
     standars_qs = Standar.objects.filter(
@@ -1082,11 +1126,15 @@ def _build_bundle_tree(sesi, approved_only=False):
 
             tree_butirs = []
             for butir in butirs_qs:
+                tahun_filter = (
+                    Q(tahun_akademik__in=periode_list)
+                    | Q(tahun_akademik="")
+                    | Q(tahun_akademik__isnull=True)
+                )
                 dokumens = Dokumen.objects.filter(
                     butir_dokumen=butir,
-                    tahun_akademik__in=periode_list,
                     status='FINAL',  # hanya dokumen FINAL yang masuk bundle
-                ).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat')
+                ).filter(tahun_filter).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat')
 
                 dokumens_all = list(dokumens)
                 
@@ -1259,6 +1307,147 @@ def sesi_bundle_public(request, token):
     }
     return render(request, 'sesi/sesi_bundle_public.html', context)
 
+# =========================================================
+# DOKUMEN PUBLIK (via token bundle, TANPA LOGIN)
+# =========================================================
+
+def _resolve_public_bundle(token):
+    """
+    Validasi token bundle publik.
+    Return (share, sesi) kalau valid, atau (None, None) kalau tidak.
+    """
+    try:
+        share = BundleShareToken.objects.select_related('sesi__instrumen').get(token=token)
+    except BundleShareToken.DoesNotExist:
+        return None, None
+    if not share.is_valid():
+        return None, None
+    return share, share.sesi
+
+
+def _public_doc_allowed_ids(sesi):
+    """
+    Kumpulkan set pk dokumen yang SAH ditampilkan di bundle publik sesi ini.
+    Memakai _build_bundle_tree (approved_only=True) supaya konsisten dgn tampilan.
+    """
+    tree = _build_bundle_tree(sesi, approved_only=True)
+    allowed = set()
+    for std in tree['standars']:
+        for sub in std['substandars']:
+            for butir in sub['butirs']:
+                for dok in butir['dokumens']:
+                    allowed.add(dok.pk)
+    return allowed
+
+
+def dokumen_detail_public(request, token, pk):
+    """Halaman detail dokumen versi publik (TANPA LOGIN) via token bundle."""
+    from dokumen.models import Dokumen
+
+    share, sesi = _resolve_public_bundle(token)
+    if not share:
+        return render(request, 'sesi/sesi_bundle_invalid.html', {
+            'page_title': 'Link Tidak Valid',
+            'reason': 'Token tidak valid atau sudah dinonaktifkan.',
+        }, status=403)
+
+    allowed_ids = _public_doc_allowed_ids(sesi)
+    if pk not in allowed_ids:
+        return render(request, 'sesi/sesi_bundle_invalid.html', {
+            'page_title': 'Dokumen Tidak Tersedia',
+            'reason': 'Dokumen ini tidak termasuk dalam bundle yang Anda akses.',
+        }, status=404)
+
+    dokumen = get_object_or_404(Dokumen, pk=pk)
+    revisi = dokumen.revisi_aktif
+
+    context = {
+        'page_title': dokumen.judul,
+        'sesi': sesi,
+        'dokumen': dokumen,
+        'revisi': revisi,
+        'public_token': str(share.token),
+        'is_public_view': True,
+    }
+    return render(request, 'sesi/dokumen_detail_public.html', context)
+
+@xframe_options_sameorigin
+def dokumen_preview_serve_public(request, token, pk):
+    """Serve file untuk preview inline (iframe) — publik via token. LOCAL only."""
+    import mimetypes
+    from django.http import FileResponse, Http404
+    from dokumen.models import Dokumen
+
+    share, sesi = _resolve_public_bundle(token)
+    if not share:
+        raise Http404("Token tidak valid.")
+
+    if pk not in _public_doc_allowed_ids(sesi):
+        raise Http404("Dokumen tidak tersedia.")
+
+    dokumen = get_object_or_404(Dokumen, pk=pk)
+    revisi = dokumen.revisi_aktif
+    if not revisi or not revisi.is_local or not revisi.file:
+        raise Http404("File tidak tersedia untuk preview.")
+
+    content_type, _ = mimetypes.guess_type(revisi.original_filename)
+    if not content_type:
+        ext = revisi.extension.lower()
+        if ext == "pdf":
+            content_type = "application/pdf"
+        elif ext in ("jpg", "jpeg"):
+            content_type = "image/jpeg"
+        elif ext == "png":
+            content_type = "image/png"
+        elif ext == "webp":
+            content_type = "image/webp"
+        elif ext == "gif":
+            content_type = "image/gif"
+        else:
+            content_type = "application/octet-stream"
+
+    try:
+        response = FileResponse(
+            revisi.file.open("rb"),
+            content_type=content_type,
+            as_attachment=False,
+        )
+        response["Content-Disposition"] = f'inline; filename="{revisi.original_filename}"'
+        return response
+    except FileNotFoundError:
+        raise Http404("File fisik tidak ditemukan di server.")
+
+
+def dokumen_download_public(request, token, pk):
+    """Download dokumen — publik via token. LOCAL serve file, GDRIVE redirect."""
+    from django.http import FileResponse, Http404
+    from dokumen.models import Dokumen
+
+    share, sesi = _resolve_public_bundle(token)
+    if not share:
+        raise Http404("Token tidak valid.")
+
+    if pk not in _public_doc_allowed_ids(sesi):
+        raise Http404("Dokumen tidak tersedia.")
+
+    dokumen = get_object_or_404(Dokumen, pk=pk)
+    revisi = dokumen.revisi_aktif
+    if not revisi:
+        raise Http404("Dokumen tidak memiliki revisi aktif.")
+
+    if revisi.is_gdrive:
+        return redirect(revisi.get_download_url())
+
+    if not revisi.file:
+        raise Http404("File tidak ditemukan di server.")
+    try:
+        return FileResponse(
+            revisi.file.open("rb"),
+            as_attachment=True,
+            filename=revisi.original_filename,
+        )
+    except FileNotFoundError:
+        raise Http404("File fisik tidak ditemukan di server.")
 
 @login_required(login_url='/login/')
 @require_POST

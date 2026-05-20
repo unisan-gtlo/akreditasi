@@ -191,15 +191,28 @@ class SesiAkreditasi(models.Model):
 
         periode = self.tahun_periode_list
 
+        # Filter tahun: sesuai periode sesi ATAU tanpa tahun (dokumen umum)
+        tahun_filter = (
+            models.Q(tahun_akademik__in=periode)
+            | models.Q(tahun_akademik="")
+            | models.Q(tahun_akademik__isnull=True)
+        )
+
+        # Filter scope: cocok dengan scope sesi ATAU tanpa scope (dokumen umum)
+        scope_filter = (
+            models.Q(scope_kode_prodi=self.kode_prodi)
+            | models.Q(scope_kode_fakultas=self.kode_fakultas, kategori_pemilik="FAKULTAS")
+            | models.Q(kategori_pemilik="UNIVERSITAS")
+            | models.Q(scope_kode_prodi="", scope_kode_fakultas="")
+            | models.Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
+        )
+
         terisi_butir_ids = Dokumen.objects.filter(
             butir_dokumen__in=butir_qs,
-            tahun_akademik__in=periode,
-        ).filter(
-            models.Q(scope_kode_prodi=self.kode_prodi) |
-            models.Q(scope_kode_fakultas=self.kode_fakultas, kategori_pemilik="FAKULTAS") |
-            models.Q(kategori_pemilik="UNIVERSITAS")
-        ).values_list("butir_dokumen_id", flat=True).distinct()
-
+            status="FINAL",
+        ).filter(tahun_filter).filter(scope_filter).values_list(
+            "butir_dokumen_id", flat=True
+        ).distinct()
         terisi = len(set(terisi_butir_ids))
         percentage = round((terisi / total) * 100, 1) if total > 0 else 0
 

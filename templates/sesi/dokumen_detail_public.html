@@ -1,0 +1,82 @@
+{% extends "layouts/publik.html" %}
+{% load static %}
+{% block title %}{{ dokumen.judul }} - Bundle Asesor{% endblock %}
+{% block page %}
+<style>
+  .pdoc { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .pdoc-back {
+    display: inline-flex; align-items: center; gap: .4rem; margin-bottom: 1rem;
+    font-size: .9rem; font-weight: 600; color: #3B82F6; text-decoration: none;
+  }
+  .pdoc-head {
+    background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+    color: #fff; padding: 1.5rem 1.75rem; border-radius: 14px 14px 0 0;
+  }
+  .pdoc-head h1 { margin: 0 0 .35rem; font-size: 1.3rem; font-weight: 700; }
+  .pdoc-head .meta { font-size: .85rem; opacity: .92; display: flex; gap: 1rem; flex-wrap: wrap; }
+  .pdoc-body {
+    background: #fff; border: 1px solid #E5E7EB; border-top: none;
+    border-radius: 0 0 14px 14px; padding: 1.5rem 1.75rem;
+  }
+  .pdoc-actions { display: flex; gap: .75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .pdoc-btn {
+    display: inline-flex; align-items: center; gap: .45rem; padding: .55rem 1.1rem;
+    border-radius: 8px; font-size: .9rem; font-weight: 600; text-decoration: none;
+    border: 1px solid transparent; cursor: pointer;
+  }
+  .pdoc-btn-primary { background: #3B82F6; color: #fff; }
+  .pdoc-btn-ghost { background: #fff; color: #374151; border-color: #D1D5DB; }
+  .pdoc-preview {
+    width: 100%; height: 720px; border: 1px solid #E5E7EB; border-radius: 10px;
+    background: #F9FAFB;
+  }
+  .pdoc-noprev {
+    padding: 3rem 1rem; text-align: center; color: #6B7280;
+    border: 1px dashed #D1D5DB; border-radius: 10px; background: #F9FAFB;
+  }
+</style>
+
+<div class="pdoc">
+  <a href="{% url 'bundle_public' public_token %}" class="pdoc-back">← Kembali ke Bundle</a>
+
+  <div class="pdoc-head">
+    <h1>{{ dokumen.judul }}</h1>
+    <div class="meta">
+      <span>Butir: {{ dokumen.butir_dokumen.kode }}</span>
+      {% if dokumen.tahun_akademik %}<span>Tahun: {{ dokumen.tahun_akademik }}</span>{% endif %}
+      {% if revisi %}<span>File: {{ revisi.original_filename }}</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="pdoc-body">
+    <div class="pdoc-actions">
+      <a href="{% url 'sesi:dokumen_download_public' public_token dokumen.pk %}" class="pdoc-btn pdoc-btn-primary">
+        ⬇ Download
+      </a>
+      {% if revisi and revisi.is_gdrive %}
+        <a href="{{ revisi.get_external_url }}" target="_blank" rel="noopener" class="pdoc-btn pdoc-btn-ghost">
+          Buka di Google Drive ↗
+        </a>
+      {% endif %}
+    </div>
+
+    {% if revisi and revisi.is_local %}
+      {% with ext=revisi.extension|lower %}
+        {% if ext == "pdf" or ext == "jpg" or ext == "jpeg" or ext == "png" or ext == "webp" or ext == "gif" %}
+          <iframe class="pdoc-preview"
+                  src="{% url 'sesi:dokumen_preview_serve_public' public_token dokumen.pk %}"></iframe>
+        {% else %}
+          <div class="pdoc-noprev">
+            Preview tidak tersedia untuk tipe file ini ({{ ext|upper }}).<br>
+            Silakan gunakan tombol Download di atas.
+          </div>
+        {% endif %}
+      {% endwith %}
+    {% elif revisi and revisi.is_gdrive %}
+      <iframe class="pdoc-preview" src="{{ revisi.get_preview_url }}"></iframe>
+    {% else %}
+      <div class="pdoc-noprev">File tidak tersedia.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
