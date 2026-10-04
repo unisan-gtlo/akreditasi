@@ -1,0 +1,22 @@
+{% comment %}Ringkasan kelengkapan bukti SIMDA per dosen DTPS (context: kelengkapan){% endcomment %}
+{% if kelengkapan %}
+  {% if kelengkapan.wajib and kelengkapan.lengkap == kelengkapan.wajib %}
+    <div class="alert alert-success" style="margin-bottom:1rem;">
+      <div class="alert-icon">✓</div>
+      <div><strong>Lengkap:</strong> {{ kelengkapan.lengkap }}/{{ kelengkapan.wajib }} dosen. Butir ini terhitung <strong>terisi</strong> dari data SIMDA.</div>
+    </div>
+  {% elif kelengkapan.wajib %}
+    <div class="alert alert-warning" style="margin-bottom:1rem;">
+      <div class="alert-icon">⚠</div>
+      <div>
+        <strong>Belum lengkap:</strong> {{ kelengkapan.lengkap }}/{{ kelengkapan.wajib }} dosen.
+        Lengkapi di SIMDA untuk: {{ kelengkapan.kurang|join:", " }}.
+      </div>
+    </div>
+  {% else %}
+    <div class="alert alert-info" style="margin-bottom:1rem;">
+      <div class="alert-icon">ℹ</div>
+      <div>Tidak ada dosen DTPS yang wajib memiliki bukti ini.</div>
+    </div>
+  {% endif %}
+{% endif %}

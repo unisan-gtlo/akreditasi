@@ -1,0 +1,368 @@
+{% comment %}
+Aset popup Data SIMDA (DTPS) per butir: CSS + overlay + JS.
+Dipakai Detail Sesi. Butuh variabel template `sesi` (dan opsional is_public_view/public_token).
+Disalin dari sesi_bundle.html supaya perilaku popup sama persis.
+{% endcomment %}
+<style>
+  .badge-data-simda {
+        display:inline-flex; align-items:center; gap:.25rem;
+        padding:.2rem .55rem; margin-left:.5rem;
+        background:#EFF6FF; color:#1D4ED8;
+        border:1px solid #BFDBFE; border-radius:9999px;
+        font-size:.7rem; font-weight:600; cursor:pointer;
+        transition:all .15s ease;
+    }
+    .badge-data-simda:hover {
+        background:#DBEAFE; border-color:#93C5FD;
+        transform:translateY(-1px);
+    }
+    .badge-data-simda::before { content:"📊"; font-size:.85rem; }  
+
+    /* Modal DTPS+BKD */
+    .dtps-modal-overlay {
+        position:fixed; inset:0; z-index:1050;
+        background:rgba(15,23,42,.55);
+        display:flex; align-items:flex-start; justify-content:center;
+        padding:3rem 1rem 1rem 1rem; overflow-y:auto;
+        animation:dtpsFadeIn .15s ease;
+    }
+    .dtps-modal-overlay[hidden] { display:none; }
+    .dtps-modal-dialog {
+        background:#fff; width:100%; max-width:1100px;
+        border-radius:12px; box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+        overflow:hidden;
+        animation:dtpsSlideUp .2s ease;
+    }
+    @keyframes dtpsFadeIn { from{opacity:0;} to{opacity:1;} }
+    @keyframes dtpsSlideUp {
+        from{ opacity:0; transform:translateY(20px); }
+        to  { opacity:1; transform:translateY(0); }
+    }
+    .dtps-modal-loading {
+        text-align:center; padding:3rem;
+    }
+    .dtps-modal-loading .spinner {
+        width:40px; height:40px; margin:0 auto 1rem auto;
+        border:4px solid #DBEAFE; border-top-color:#1D4ED8;
+        border-radius:50%; animation:dtpsSpin .8s linear infinite;
+    }
+    @keyframes dtpsSpin { to{ transform:rotate(360deg); } }
+    .dtps-modal-loading p { color:var(--text-secondary); margin:0; }
+    .dtps-modal-header {
+        padding:1.25rem 1.5rem; border-bottom:1px solid #E5E7EB;
+        display:flex; align-items:flex-start; justify-content:space-between; gap:1rem;
+    }
+    .dtps-modal-title { margin:0; font-size:1.05rem; font-weight:700; color:var(--text-primary); }
+    .dtps-modal-subtitle { margin-top:.35rem; color:var(--text-secondary); font-size:.85rem; line-height:1.4; }
+    .dtps-modal-close {
+        background:none; border:none; font-size:1.5rem; line-height:1;
+        color:#6B7280; cursor:pointer; padding:.25rem .5rem; border-radius:6px;
+        transition:all .15s ease;
+    }
+    .dtps-modal-close:hover { background:#F3F4F6; color:#111827; }
+    .dtps-modal-body { padding:1.5rem; max-height:65vh; overflow-y:auto; }
+    .dtps-modal-footer {
+        padding:1rem 1.5rem; border-top:1px solid #E5E7EB;
+        display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    }
+    .dtps-modal-footer-info { color:var(--text-secondary); font-size:.8rem; }
+    .dtps-info-grid {
+        display:grid; grid-template-columns:repeat(4, 1fr); gap:.75rem;
+        margin-bottom:1rem;
+    }
+    .dtps-info-card {
+        background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px;
+        padding:.6rem .8rem;
+    }
+    .dtps-info-label { color:var(--text-secondary); font-size:.72rem; text-transform:uppercase; letter-spacing:.03em; }
+    .dtps-info-value { color:var(--text-primary); font-weight:700; margin-top:.2rem; font-size:.95rem; }
+    .dtps-table-wrap { overflow-x:auto; }
+    .dtps-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .dtps-table th, .dtps-table td {
+        padding:.55rem .6rem; border-bottom:1px solid #F1F5F9;
+        text-align:left; vertical-align:top;
+    }
+    .dtps-table th {
+        background:#F8FAFC; color:#475569; font-weight:600;
+        font-size:.75rem; text-transform:uppercase; letter-spacing:.03em;
+        position:sticky; top:0;
+    }
+    .dtps-table tbody tr:hover { background:#FAFBFC; }
+    .dtps-table code {
+        background:#F1F5F9; padding:.1rem .35rem; border-radius:4px;
+        font-size:.78rem; color:#0F172A;
+    }
+    @media (max-width:768px) {
+        .dtps-info-grid { grid-template-columns:repeat(2, 1fr); }
+    }   
+    /* Drill-down inline expand */
+    .dtps-table tbody tr.dtps-row.has-bkd {
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd:hover {
+        background: #EFF6FF !important;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd.expanded {
+        background: #DBEAFE !important;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd.expanded td:first-child::before {
+        content: "▾ ";
+        color: #1D4ED8;
+        font-weight: 700;
+    }
+    .dtps-table tbody tr.dtps-row.has-bkd:not(.expanded) td:first-child::before {
+        content: "▸ ";
+        color: #6B7280;
+    }
+    .dtps-table tbody tr.bkd-detail-row td.bkd-detail-cell {
+        padding: 0;
+        background: #F8FAFC;
+        border-top: none;
+    }
+    .bkd-detail-wrap {
+        padding: 1rem 1.25rem;
+        animation: bkdExpand .2s ease;
+    }
+    @keyframes bkdExpand {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .bkd-detail-header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 1rem; margin-bottom: .6rem;
+    }
+    .bkd-detail-header strong { color: #0F172A; font-size: .9rem; }
+    .bkd-detail-meta { color: #6B7280; font-size: .78rem; }
+    .bkd-detail-meta code {
+        background: #FFF; padding: .1rem .3rem;
+        border-radius: 3px; font-size: .72rem;
+    }
+    .bkd-detail-table {
+        width: 100%; border-collapse: collapse;
+        background: #FFF; border-radius: 6px; overflow: hidden;
+        font-size: .8rem;
+    }
+    .bkd-detail-table th, .bkd-detail-table td {
+        padding: .45rem .55rem;
+        border-bottom: 1px solid #F1F5F9;
+        vertical-align: top;
+    }
+    .bkd-detail-table th {
+        background: #F1F5F9; color: #475569;
+        font-weight: 600; font-size: .7rem;
+        text-transform: uppercase; letter-spacing: .03em;
+        text-align: left;
+    }
+    .bkd-detail-table tr.bkd-detail-keterangan td {
+        background: #FFFBEB; border-bottom: 1px solid #FDE68A;
+    }
+    .bkd-link {
+        display: inline-flex; align-items: center; gap: .25rem;
+        color: #1D4ED8; text-decoration: none;
+        font-size: .8rem; font-weight: 600;
+    }
+    .bkd-link:hover { text-decoration: underline; }
+    .bkd-detail-empty {
+        padding: 1rem; background: #FFF; border-radius: 6px;
+        text-align: center; color: #6B7280;
+    }
+    .bkd-detail-loading {
+        padding: 1rem; text-align: center; color: #6B7280;
+    }
+    .bkd-detail-loading .spinner {
+        width: 20px; height: 20px; margin: 0 auto .5rem;
+        border-width: 2px; display: block;
+    }
+
+</style>
+
+<!-- Modal: Data DTPS + BKD per Butir (custom, tanpa Bootstrap) -->
+<div class="dtps-modal-overlay" id="dtpsModalOverlay" hidden>
+    <div class="dtps-modal-dialog" id="dtpsModalDialog">
+        <div class="dtps-modal-loading">
+            <div class="spinner"></div>
+            <p>Memuat data DTPS dan BKD...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ============================================================
+   Modal DTPS + BKD per Butir
+   - Trigger: klik <span class="badge-data-simda" data-butir-id="...">
+   - Endpoint: /master/sesi/<sesi_id>/butir/<butir_id>/dtps-bkd/
+   - Auth: dual-mode (login OR token query param)
+   ============================================================ */
+(function() {
+    var SESI_ID = {{ sesi.id }};
+    {% if is_public_view %}
+    var TOKEN_PARAM = "{{ public_token|default:'' }}";
+    {% else %}
+    var TOKEN_PARAM = "";
+    {% endif %}
+
+    var overlay = document.getElementById("dtpsModalOverlay");
+    var dialog  = document.getElementById("dtpsModalDialog");
+    if (!overlay || !dialog) return;
+
+    var LOADING_HTML = '<div class="dtps-modal-loading"><div class="spinner"></div><p>Memuat data DTPS dan BKD...</p></div>';
+
+    function openModal(butirId) {
+        // Reset to loading state
+        dialog.innerHTML = LOADING_HTML;
+        dialog.setAttribute("data-current-butir-id", butirId);
+        overlay.hidden = false;
+        document.body.style.overflow = "hidden";
+
+        // Build URL
+        var url = "/master/sesi/" + SESI_ID + "/butir/" + butirId + "/dtps-bkd/";
+        if (TOKEN_PARAM) {
+            url += "?token=" + encodeURIComponent(TOKEN_PARAM);
+        }
+
+        // Fetch
+        fetch(url, {
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(function(resp) {
+            if (!resp.ok) {
+                throw new Error("HTTP " + resp.status);
+            }
+            return resp.text();
+        })
+        .then(function(html) {
+            dialog.innerHTML = html;
+        })
+        .catch(function(err) {
+            dialog.innerHTML =
+                '<div class="dtps-modal-header">' +
+                '<h3 class="dtps-modal-title">Error</h3>' +
+                '<button type="button" class="dtps-modal-close" data-action="close-dtps-bkd">×</button>' +
+                '</div>' +
+                '<div class="dtps-modal-body"><div class="alert alert-danger">' +
+                '<div class="alert-icon">⚠</div><div>Gagal memuat data: ' + err.message + '</div>' +
+                '</div></div>';
+        });
+    }
+
+    function closeModal() {
+        overlay.hidden = true;
+        dialog.innerHTML = LOADING_HTML;
+        document.body.style.overflow = "";
+    }
+
+    // Trigger: badge "Data SIMDA" di butir-row
+    document.addEventListener("click", function(e) {
+        var trigger = e.target.closest('[data-action="show-dtps-bkd"]');
+        if (trigger) {
+            e.preventDefault();
+            var butirId = trigger.getAttribute("data-butir-id");
+            if (butirId) openModal(butirId);
+            return;
+        }
+        // Tombol close di dalam modal (header X dan footer)
+        var closer = e.target.closest('[data-action="close-dtps-bkd"]');
+        if (closer) {
+            e.preventDefault();
+            closeModal();
+            return;
+        }
+        // Drill-down: klik dosen row yang punya BKD
+        var dtpsRow = e.target.closest('[data-action="toggle-bkd-detail"]');
+        if (dtpsRow) {
+            e.preventDefault();
+            toggleBkdDetail(dtpsRow);
+            return;
+        }
+        // Klik area overlay (di luar dialog) = close
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+
+    // ESC key = close
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && !overlay.hidden) {
+            closeModal();
+        }
+    });
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && !overlay.hidden) {
+            closeModal();
+        }
+    });
+
+    // Drill-down: toggle expand row dosen → tampilkan sub-tabel BKD
+    function toggleBkdDetail(rowEl) {
+        var nidn = rowEl.getAttribute("data-nidn");
+        if (!nidn) return;
+
+        // Cari current butir_id dari modal context (data-butir-id ada di header)
+        // Lebih simple: ambil dari URL fetch terakhir, atau pakai dataset modal
+        var modalBody = dialog.querySelector(".dtps-modal-body");
+        if (!modalBody) return;
+
+        // Get butir_id dari attribute yang kita simpan di dialog
+        var butirId = dialog.getAttribute("data-current-butir-id");
+        if (!butirId) return;
+
+        // Toggle: kalau sudah expanded, collapse
+        if (rowEl.classList.contains("expanded")) {
+            var nextRow = rowEl.nextElementSibling;
+            if (nextRow && nextRow.classList.contains("bkd-detail-row")) {
+                nextRow.remove();
+            }
+            rowEl.classList.remove("expanded");
+            return;
+        }
+
+        // Single-expand: collapse semua expanded row dulu
+        var alreadyExpanded = dialog.querySelectorAll(".dtps-row.expanded");
+        alreadyExpanded.forEach(function(r) {
+            r.classList.remove("expanded");
+            var detailRow = r.nextElementSibling;
+            if (detailRow && detailRow.classList.contains("bkd-detail-row")) {
+                detailRow.remove();
+            }
+        });
+
+        // Insert loading row dulu
+        var loadingRow = document.createElement("tr");
+        loadingRow.className = "bkd-detail-row bkd-detail-loading-row";
+        loadingRow.innerHTML = '<td colspan="8" class="bkd-detail-cell"><div class="bkd-detail-loading"><div class="spinner"></div>Memuat detail BKD...</div></td>';
+        rowEl.parentNode.insertBefore(loadingRow, rowEl.nextSibling);
+        rowEl.classList.add("expanded");
+
+        // Fetch detail
+        var url = "/master/sesi/" + SESI_ID + "/butir/" + butirId + "/dosen/" + encodeURIComponent(nidn) + "/bkd-detail/";
+        if (TOKEN_PARAM) {
+            url += "?token=" + encodeURIComponent(TOKEN_PARAM);
+        }
+
+        fetch(url, {
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(function(resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            return resp.text();
+        })
+        .then(function(html) {
+            // Replace loading row dengan response
+            var temp = document.createElement("tbody");
+            temp.innerHTML = html;
+            var newRow = temp.querySelector(".bkd-detail-row");
+            if (newRow && loadingRow.parentNode) {
+                loadingRow.parentNode.replaceChild(newRow, loadingRow);
+            }
+        })
+        .catch(function(err) {
+            loadingRow.querySelector(".bkd-detail-cell").innerHTML =
+                '<div style="padding:1rem;color:#991B1B;">Gagal memuat: ' + err.message + '</div>';
+        });
+    }
+
+})();
+</script>

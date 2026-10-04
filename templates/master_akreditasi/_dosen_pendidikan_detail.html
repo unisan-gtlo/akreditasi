@@ -13,8 +13,8 @@ Context:
 Output: <tr class="bkd-detail-row"> dengan colspan untuk integrate
 dengan tabel utama modal.
 
-Dokumen: file_ijazah & file_transkrip adalah path file di SIMDA.
-Diakses lewat: https://master.unisan-g.id/media/<file_path>
+Dokumen: file_ijazah & file_transkrip disajikan lewat endpoint SIAKRED
+master_akreditasi:dosen_file (cek akses), bukan tautan langsung ke media SIMDA.
 {% endcomment %}
 
 <tr class="bkd-detail-row" data-detail-for="{{ dtps.dosen_nidn }}">
@@ -63,12 +63,12 @@ Diakses lewat: https://master.unisan-g.id/media/<file_path>
                 </td>
                 <td>
                   {% if pend.file_ijazah %}
-                    <a href="https://master.unisan-g.id/media/{{ pend.file_ijazah }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat ijazah di SIMDA">
+                    <a href="{% url 'master_akreditasi:dosen_file' sesi.pk butir.pk 'ijazah' pend.pk %}{{ token_qs }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat ijazah">
                       📜 Ijazah
                     </a>
                   {% endif %}
                   {% if pend.file_transkrip %}
-                    <a href="https://master.unisan-g.id/media/{{ pend.file_transkrip }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat transkrip di SIMDA" style="margin-left:.5rem;">
+                    <a href="{% url 'master_akreditasi:dosen_file' sesi.pk butir.pk 'transkrip' pend.pk %}{{ token_qs }}" target="_blank" rel="noopener noreferrer" class="bkd-link" title="Lihat transkrip" style="margin-left:.5rem;">
                       📋 Transkrip
                     </a>
                   {% endif %}

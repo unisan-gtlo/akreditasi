@@ -330,6 +330,20 @@ def _rps_siobe_info(butir, butir_ids):
     return info
 
 
+def _data_dosen_context(user, butir):
+    """Info butir yang diisi dari data dosen SIMDA + sesi (sesuai scope user) tempat melihatnya."""
+    from master_akreditasi.models_dosen_link import ButirDataDosenMapping
+    from sesi.permissions import get_visible_sesi_for_user
+
+    mapping = ButirDataDosenMapping.objects.filter(butir=butir, aktif=True).first()
+    if mapping is None:
+        return None
+    sesi_list = get_visible_sesi_for_user(user).filter(
+        instrumen_id=butir.sub_standar.standar.instrumen_id
+    ).order_by("-tanggal_mulai")[:10]
+    return {"mapping": mapping, "sesi_list": list(sesi_list)}
+
+
 def _penciri_prodi_options(user, butir):
     """Kode prodi yang boleh dipilihkan MK penciri oleh user pada butir ini."""
     instrumen_id = butir.sub_standar.standar.instrumen_id
@@ -444,6 +458,7 @@ def butir_detail(request, butir_id):
         "shared_butirs": shared_butirs,
         "rps_siobe": _rps_siobe_info(butir, butir_ids),
         "penciri": _penciri_context(request, butir, can_upload),
+        "data_dosen": _data_dosen_context(request.user, butir),
         "can_upload": can_upload,
         "upload_reason": upload_reason,
     }

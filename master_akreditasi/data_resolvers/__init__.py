@@ -22,6 +22,7 @@ from .factory import (
 # saat package ini di-import (auto-registration pattern).
 from . import bkd_resolver  # noqa: F401
 from . import pendidikan_resolver  # noqa: F401
+from . import dokumen_dosen_resolver  # noqa: F401
 
 __all__ = [
     'BaseDataResolver',

@@ -187,6 +187,14 @@
                                 <div style="font-size:.85rem; color:var(--text-primary); font-weight:500;">
                                     {{ item.butir.nama_dokumen }}
                                 </div>
+                                {% if item.simda %}
+                                    <div style="margin-top:.35rem;">
+                                        <span class="badge-data-simda" data-action="show-dtps-bkd" data-butir-id="{{ item.butir.pk }}"
+                                              title="Lihat data dosen DTPS dari SIMDA untuk butir ini">
+                                            Data SIMDA {{ item.simda.lengkap }}/{{ item.simda.wajib }} dosen lengkap
+                                        </span>
+                                    </div>
+                                {% endif %}
                                 {% if item.dokumen_list %}
                                     <div style="margin-top:.35rem; font-size:.75rem; color:var(--text-muted);">
                                         {% for d in item.dokumen_list %}
@@ -391,4 +399,6 @@
 
 </div>
 
+{# Popup Data SIMDA (DTPS) untuk butir ber-mapping data dosen #}
+{% include "master_akreditasi/_dtps_modal_assets.html" %}
 {% endblock %}

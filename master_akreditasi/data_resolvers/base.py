@@ -89,6 +89,24 @@ class BaseDataResolver(ABC):
 
     # ===== HOOKS (optional override) =====
 
+    def status_dosen(self, sesi, dtps, mapping):
+        """Status kelengkapan bukti 1 dosen: 'lengkap' / 'kurang' / 'na' (tidak berlaku).
+
+        Default: lengkap kalau summary punya minimal 1 record.
+        """
+        return "lengkap" if self.get_dosen_summary(sesi, dtps, mapping).count > 0 else "kurang"
+
+    def files_for_dosen(self, sesi, dtps, mapping):
+        """Daftar file SIMDA 1 dosen: [(label, kind, record_pk), ...] (untuk Export ZIP).
+
+        Default: kumpulkan dari get_detail_records() berformat dict {"files": [...]}.
+        """
+        files = []
+        for rec in self.get_detail_records(sesi, dtps, mapping) or []:
+            if isinstance(rec, dict):
+                files.extend(rec.get("files", []))
+        return files
+
     def get_extra_context(self, sesi, butir, mapping):
         """Hook untuk inject extra context ke template modal.
 

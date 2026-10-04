@@ -1,0 +1,41 @@
+{% comment %}
+Sub-tabel detail per dosen untuk resolver generik. detail_records: list dict
+{"cells": [...], "files": [(label, kind, pk), ...]}. File disajikan lewat
+endpoint SIAKRED (cek akses), bukan tautan langsung ke media SIMDA.
+{% endcomment %}
+<tr class="bkd-detail-row" data-detail-for="{{ dtps.dosen_nidn }}">
+  <td colspan="8" class="bkd-detail-cell">
+    <div class="bkd-detail-wrap">
+      <div class="bkd-detail-header">
+        <strong>{{ resolver.title_prefix }} — {{ dtps.dosen_nama_snapshot }}</strong>
+        <span class="bkd-detail-meta">NIDN: <code>{{ dtps.dosen_nidn }}</code></span>
+      </div>
+      {% if detail_records %}
+        <table class="bkd-detail-table">
+          <thead>
+            <tr>
+              {% for h in resolver.detail_headers %}<th>{{ h }}</th>{% endfor %}
+              <th>Dokumen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rec in detail_records %}
+              <tr>
+                {% for c in rec.cells %}<td>{{ c }}</td>{% endfor %}
+                <td>
+                  {% for f in rec.files %}
+                    <a href="{% url 'master_akreditasi:dosen_file' sesi.pk butir.pk f.1 f.2 %}{{ token_qs }}" target="_blank" rel="noopener" class="bkd-link" style="margin-right:.5rem;">📄 {{ f.0 }}</a>
+                  {% empty %}
+                    <span style="color:#9CA3AF; font-size:.78rem;">Tidak ada file di SIMDA</span>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="bkd-detail-empty"><em>Tidak ada data untuk dosen ini di SIMDA.</em></div>
+      {% endif %}
+    </div>
+  </td>
+</tr>

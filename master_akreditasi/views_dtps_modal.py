@@ -47,6 +47,13 @@ def _check_access(request, sesi):
     return False, False
 
 
+def _token_qs(request, is_public):
+    """Query string token untuk tautan file saat diakses lewat bundle publik."""
+    from urllib.parse import urlencode
+    token = request.GET.get('token', '').strip()
+    return ('?' + urlencode({'token': token})) if (is_public and token) else ''
+
+
 def butir_dtps_bkd_modal(request, sesi_id, butir_id):
     """Render modal body: daftar DTPS + data per butir akreditasi.
 
@@ -117,6 +124,10 @@ def butir_dtps_bkd_modal(request, sesi_id, butir_id):
             'agg_value_formatted': summary.agg_value_formatted,
         }
         row.update(summary.extra)  # inject extra fields (bkd_agg, total_sks, dll)
+        try:
+            row['status'] = resolver.status_dosen(sesi, dtps, mapping)
+        except Exception:
+            row['status'] = 'kurang'
         dtps_rows.append(row)
 
     # Statistik ringkas
@@ -134,6 +145,13 @@ def butir_dtps_bkd_modal(request, sesi_id, butir_id):
         'dtps_dengan_data': dtps_dengan_data,
         'dtps_dengan_bkd': dtps_dengan_data,  # alias untuk template BKD existing
         'is_public': is_public,
+        'token_qs': _token_qs(request, is_public),
+        'kelengkapan': {
+            'lengkap': sum(1 for r in dtps_rows if r['status'] == 'lengkap'),
+            'wajib': sum(1 for r in dtps_rows if r['status'] != 'na'),
+            'kurang': [r['dtps'].dosen_nama_snapshot or r['dtps'].dosen_nidn
+                       for r in dtps_rows if r['status'] == 'kurang'],
+        },
     }
 
     # Template ditentukan oleh resolver — masing-masing jenis_data render template berbeda
@@ -215,5 +233,40 @@ def dosen_bkd_detail(request, sesi_id, butir_id, nidn):
         'bkd_records': detail_records,
         # Generic name untuk template baru
         'detail_records': detail_records,
+        'token_qs': _token_qs(request, is_public),
     }
     return render(request, resolver.detail_template, context)
+
+def dosen_file(request, sesi_id, butir_id, kind, pk):
+    """Sajikan 1 file dosen dari media SIMDA dengan cek akses (bukan tautan publik SIMDA).
+
+    URL : /master/sesi/<sesi_id>/butir/<butir_id>/dosen-file/<kind>/<pk>/
+    Auth: dual-mode (login sesuai scope sesi ATAU ?token= bundle publik).
+    Syarat: butir punya mapping aktif yang jenisnya mengizinkan `kind`, dan
+    pemilik file termasuk DTPS aktif sesi.
+    """
+    import mimetypes
+    import os
+
+    from django.http import FileResponse
+    from master_akreditasi.dosen_data import JENIS_KINDS, resolve_file
+
+    sesi = get_object_or_404(SesiAkreditasi, pk=sesi_id)
+    butir = get_object_or_404(ButirDokumen, pk=butir_id)
+    is_allowed, _is_public = _check_access(request, sesi)
+    if not is_allowed:
+        return HttpResponseForbidden("Anda tidak memiliki akses ke file ini.")
+
+    mapping = ButirDataDosenMapping.objects.filter(butir=butir, aktif=True).first()
+    if mapping is None or kind not in JENIS_KINDS.get(mapping.jenis_data, set()):
+        raise Http404("File tidak tersedia untuk butir ini.")
+
+    nidn, path = resolve_file(kind, pk)
+    if not nidn or not DTPSDosenSesi.objects.filter(sesi=sesi, dosen_nidn=nidn, aktif=True).exists():
+        raise Http404("Dosen tidak termasuk DTPS aktif sesi ini.")
+    if not path:
+        raise Http404("File belum ada di SIMDA.")
+
+    mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    return FileResponse(open(path, "rb"), content_type=mime, as_attachment=False,
+                        filename=os.path.basename(path))

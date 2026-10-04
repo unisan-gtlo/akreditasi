@@ -193,6 +193,10 @@ SSO_COOKIE_DOMAIN = os.getenv("SSO_COOKIE_DOMAIN", ".unisan-g.id")
 SIOBE_BASE_URL = os.getenv("SIOBE_BASE_URL", "https://siobe.unisan.ac.id")
 SIOBE_API_TOKEN = os.getenv("SIOBE_API_TOKEN", "")
 
+# Media SIMDA (file dosen: ijazah, SK, serdos, BKD) -- dibaca langsung dari disk
+# lalu disajikan SIAKRED dengan cek akses.
+SIMDA_MEDIA_ROOT = os.getenv("SIMDA_MEDIA_ROOT", "/var/www/simda/media")
+
 # ==========================================
 # SITE
 # ==========================================

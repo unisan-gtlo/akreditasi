@@ -3,7 +3,7 @@
 Source data: master.riwayat_pendidikan_dosen
 Aggregate: Jenjang tertinggi (S1 → S2 → S3, ambil yang paling tinggi)
 Dokumen: file_ijazah, file_transkrip (path file di SIMDA storage)
-        Diakses lewat https://master.unisan-g.id/media/<path>
+        Disajikan lewat endpoint SIAKRED master_akreditasi:dosen_file (cek akses)
 """
 from .base import BaseDataResolver, DosenSummary
 from .factory import register_resolver
@@ -99,3 +99,16 @@ class PendidikanResolver(BaseDataResolver):
     def get_detail_records(self, sesi, dtps, mapping):
         """Fetch semua riwayat pendidikan dosen, diurutkan dari S1 ke atas."""
         return self._get_records_qs(dtps)
+
+    def status_dosen(self, sesi, dtps, mapping):
+        """Lengkap kalau minimal 1 jenjang punya file ijazah di SIMDA."""
+        return "lengkap" if any(r.file_ijazah for r in self._get_records_qs(dtps)) else "kurang"
+
+    def files_for_dosen(self, sesi, dtps, mapping):
+        files = []
+        for r in self._get_records_qs(dtps):
+            if r.file_ijazah:
+                files.append((f"Ijazah {r.jenjang}", "ijazah", r.pk))
+            if r.file_transkrip:
+                files.append((f"Transkrip {r.jenjang}", "transkrip", r.pk))
+        return files

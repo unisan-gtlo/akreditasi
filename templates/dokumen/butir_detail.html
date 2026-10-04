@@ -101,6 +101,25 @@
         </div>
         {% endif %}
 
+        {% if data_dosen %}
+        <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#F5F3FF; border-left:3px solid #8B5CF6; border-radius:8px;">
+            <div style="font-weight:600; color:#5B21B6; margin-bottom:4px;">📊 Diisi otomatis dari data dosen SIMDA</div>
+            <p style="margin:0; font-size:.9rem; color:#4C1D95; line-height:1.7;">
+                Jenis data: <strong>{{ data_dosen.mapping.get_jenis_data_display }}</strong> untuk setiap dosen DTPS sesi.
+                Butir terhitung <strong>terisi</strong> bila bukti semua dosen DTPS lengkap di SIMDA — tidak perlu unggah.
+                Lengkapi data/berkas dosen di <a href="https://master.unisan-g.id" target="_blank" rel="noopener">SIMDA</a>.
+            </p>
+            {% if data_dosen.sesi_list %}
+            <div style="margin-top:.5rem; font-size:.85rem; color:#4C1D95;">
+                Lihat data per dosen (tombol <em>Data SIMDA</em>) di sesi:
+                {% for s in data_dosen.sesi_list %}
+                    <a href="{% url 'sesi:sesi_detail' s.pk %}">{{ s.judul|truncatechars:60 }}</a>{% if not forloop.last %} · {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         {% if rps_siobe %}
         <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#EFF6FF; border-left:3px solid #3B82F6; border-radius:8px;">
             <div style="font-weight:600; color:#1E40AF; margin-bottom:4px;">📚 RPS otomatis dari SI-OBE</div>

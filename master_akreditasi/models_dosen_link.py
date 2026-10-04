@@ -53,6 +53,8 @@ class ButirDataDosenMapping(models.Model):
         ('JABFUNG',     'Riwayat Jabatan Fungsional'),
         ('PENDIDIKAN',  'Riwayat Pendidikan'),
         ('PROFIL',      'Profil Dosen (Identitas + ID Akademik)'),
+        ('SERDOS',      'Sertifikat Pendidik (Serdos)'),
+        ('SK_PENGANGKATAN', 'SK Pengangkatan Dosen Tetap'),
     ]
 
     FILTER_PERIODE_CHOICES = [

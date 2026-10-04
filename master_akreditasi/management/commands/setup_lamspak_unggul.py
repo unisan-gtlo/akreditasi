@@ -18,6 +18,16 @@ from master_akreditasi.models import Instrumen, MappingProdiInstrumen, Standar
 
 DATA_FILE = Path(__file__).resolve().parents[2] / "data" / "lamspak_unggul.json"
 
+# Butir Standar 6 yang buktinya diambil dari data dosen SIMDA (per DTPS sesi)
+DATA_DOSEN_MAPPING = {
+    "U6.01": ("SK_PENGANGKATAN", "AKTIF_SAJA", "SK pengangkatan dosen tetap tiap DTPS (SIMDA data dosen)."),
+    "U6.02": ("PROFIL", "AKTIF_SAJA", "NIDN & homebase tiap DTPS sebagai bukti terdaftar pada prodi (SIMDA)."),
+    "U6.03": ("PENDIDIKAN", "SEMUA", "Ijazah & transkrip tiap jenjang pendidikan DTPS (SIMDA)."),
+    "U6.04": ("JABFUNG", "SEMUA", "SK jabatan akademik DTPS; dosen tanpa jabatan akademik tidak dihitung."),
+    "U6.05": ("SERDOS", "AKTIF_SAJA", "Sertifikat pendidik DTPS yang sudah tersertifikasi (SIMDA)."),
+    "U6.10": ("BKD", "TS_TS_M1_TS_M2", "BKD/LKD DTPS 3 tahun terakhir (TS, TS-1, TS-2) dari SIMDA."),
+}
+
 
 class Command(BaseCommand):
     help = "Buat/perbarui instrumen LAMSPAK Unggul + 11 standar, opsional pindahkan mapping prodi."
@@ -27,6 +37,8 @@ class Command(BaseCommand):
                             help="Kode prodi yang dipindah ke LAMSPAK Unggul, contoh: S21")
         parser.add_argument("--sync-kode-bersama", action="store_true",
                             help="Isi kode_bersama (+ panduan) butir yang sudah diimport, dari file JSON.")
+        parser.add_argument("--sync-data-dosen", action="store_true",
+                            help="Petakan butir U6.xx ke data dosen SIMDA (ButirDataDosenMapping).")
         parser.add_argument("--dry-run", action="store_true", help="Tampilkan rencana tanpa menyimpan.")
 
     def handle(self, *args, **opts):
@@ -78,6 +90,9 @@ class Command(BaseCommand):
             if opts["sync_kode_bersama"]:
                 self._sync_kode_bersama(instrumen, data)
 
+            if opts["sync_data_dosen"]:
+                self._sync_data_dosen(instrumen)
+
             if dry_run:
                 transaction.set_rollback(True)
                 self.stdout.write(self.style.WARNING("DRY RUN: tidak ada yang disimpan."))
@@ -110,3 +125,23 @@ class Command(BaseCommand):
             f"  Kode bersama: {changed} butir diperbarui, {terisi} butir punya kode, "
             f"{missing} butir belum ada di database (import Excel dulu)."
         )
+
+    def _sync_data_dosen(self, instrumen):
+        from master_akreditasi.models import ButirDokumen
+        from master_akreditasi.models_dosen_link import ButirDataDosenMapping
+
+        for kode, (jenis, filter_periode, keterangan) in DATA_DOSEN_MAPPING.items():
+            butir = ButirDokumen.objects.filter(sub_standar__standar__instrumen=instrumen, kode=kode).first()
+            if butir is None:
+                self.stdout.write(self.style.WARNING(f"  {kode}: butir tidak ditemukan (import Excel dulu)"))
+                continue
+            _m, created = ButirDataDosenMapping.objects.update_or_create(
+                butir=butir,
+                defaults={
+                    "jenis_data": jenis,
+                    "filter_periode": filter_periode,
+                    "deskripsi_filter": keterangan,
+                    "aktif": True,
+                },
+            )
+            self.stdout.write(f"  Data dosen {kode} {butir.nama_dokumen[:35]:35} -> {jenis} ({'baru' if created else 'diperbarui'})")

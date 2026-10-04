@@ -72,3 +72,10 @@ class BKDResolver(BaseDataResolver):
             .select_related('periode')
             .order_by('-periode__urutan')
         )
+
+    def files_for_dosen(self, sesi, dtps, mapping):
+        return [
+            (f"BKD {b.periode}", "bkd", b.pk)
+            for b in self.get_detail_records(sesi, dtps, mapping)
+            if b.file_bkd
+        ]

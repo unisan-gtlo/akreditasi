@@ -46,4 +46,10 @@ urlpatterns = [
         views_dtps_modal.dosen_bkd_detail,
         name="dosen_bkd_detail",
     ),
+    # File dosen dari media SIMDA, disajikan dengan cek akses
+    path(
+        "sesi/<int:sesi_id>/butir/<int:butir_id>/dosen-file/<str:kind>/<int:pk>/",
+        views_dtps_modal.dosen_file,
+        name="dosen_file",
+    ),
 ]

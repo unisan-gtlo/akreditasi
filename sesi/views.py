@@ -274,6 +274,9 @@ def sesi_detail(request, pk):
     from dokumen.sharing import dokumen_per_butir_for_sesi
     butir_list = list(butir_qs)
     dokumen_per_butir = dokumen_per_butir_for_sesi(sesi, butir_list)
+    # Butir yang diisi dari data dosen SIMDA (DTPS): kelengkapan per butir
+    from master_akreditasi.dosen_data import kelengkapan_sesi
+    simda = kelengkapan_sesi(sesi, [b.pk for b in butir_list])
 
     # Build per-standar progress (Standar -> Sub-Standar -> Butir)
     standar_groups = {}
@@ -303,12 +306,14 @@ def sesi_detail(request, pk):
         subgroup = sgroup["sub_map"][sub.id]
 
         dokumen_list = dokumen_per_butir.get(butir.id, [])
-        is_terisi = len(dokumen_list) > 0
+        simda_info = simda.get(butir.id)
+        is_terisi = len(dokumen_list) > 0 or bool(simda_info and simda_info["terisi"])
 
         subgroup["butir_list"].append({
             "butir": butir,
             "dokumen_list": dokumen_list,
             "is_terisi": is_terisi,
+            "simda": simda_info,
         })
         subgroup["total"] += 1
         sgroup["total"] += 1
@@ -1111,6 +1116,10 @@ def _build_bundle_tree(sesi, approved_only=False):
         sesi, [b for butirs in butirs_by_sub.values() for b in butirs]
     )
 
+    # Kelengkapan data dosen SIMDA untuk butir ber-mapping (DTPS sesi ini)
+    from master_akreditasi.dosen_data import kelengkapan_sesi
+    simda = kelengkapan_sesi(sesi, list(butir_with_mapping_ids))
+
     tree_standars = []
     total_butir = 0
     total_butir_terisi = 0
@@ -1128,9 +1137,11 @@ def _build_bundle_tree(sesi, approved_only=False):
                     dokumens_list = [d for d in dokumens_all if d.is_approved()]
                 else:
                     dokumens_list = dokumens_all
+                simda_info = simda.get(butir.id)
+                simda_terisi = bool(simda_info and simda_info['terisi'])
                 total_butir += 1
                 total_dokumen += len(dokumens_list)
-                if dokumens_list:
+                if dokumens_list or simda_terisi:
                     total_butir_terisi += 1
 
                 tree_butirs.append({
@@ -1138,6 +1149,8 @@ def _build_bundle_tree(sesi, approved_only=False):
                     'dokumens': dokumens_list,
                     'count': len(dokumens_list),
                     'has_data_dosen_mapping': butir.id in butir_with_mapping_ids,
+                    'simda': simda_info,
+                    'simda_terisi': simda_terisi,
                 })
 
             tree_substandars.append({
@@ -1500,6 +1513,7 @@ def _sanitize_filename(s, max_len=80):
 def _build_bundle_zip(sesi, include_local_files=True, approved_only=False):
     """Build ZIP file bundle dalam memory. Return (bytes, filename)."""
     from dokumen.models import DokumenRevisi
+    from master_akreditasi.dosen_data import zip_data_dosen
     from django.utils import timezone
     import datetime
 
@@ -1547,6 +1561,8 @@ def _build_bundle_zip(sesi, include_local_files=True, approved_only=False):
             f"- Completion: {stats['completion_pct']}%\n\n"
             f"STRUKTUR FOLDER:\n"
             f"Dokumen dikelompokkan per Standar/Sub-Standar/Butir.\n"
+            f"Butir data dosen berisi folder DATA_SIMDA_<jenis>: rekap_dosen.csv\n"
+            f"dan berkas dosen dari SIMDA (ijazah, SK, serdos, BKD) per dosen.\n"
             f"File dokumen yang disimpan di Google Drive tidak disertakan\n"
             f"langsung dalam ZIP ini, tetapi tautan aksesnya tercatat di\n"
             f"'manifest.json'.\n\n"
@@ -1620,6 +1636,31 @@ def _build_bundle_zip(sesi, include_local_files=True, approved_only=False):
                             entry['note'] = 'File tidak tersedia (tidak ada file lokal dan bukan GDrive).'
 
                         manifest['dokumen'].append(entry)
+
+                    # Data dosen SIMDA (ijazah, SK, serdos, BKD) untuk butir ber-mapping
+                    if butir_item.get('has_data_dosen_mapping'):
+                        data_dosen = zip_data_dosen(sesi, butir)
+                        if data_dosen:
+                            jenis, csv_text, files = data_dosen
+                            simda_folder = f"{std_folder}/{sub_folder}/{butir_folder}/DATA_SIMDA_{jenis}"
+                            zf.writestr(f"{simda_folder}/rekap_dosen.csv", "﻿" + csv_text)
+                            for rel, path, label, nidn in files:
+                                zip_path = f"{simda_folder}/{rel}"
+                                try:
+                                    zf.write(path, zip_path)
+                                    included = True
+                                except OSError:
+                                    included = False
+                                manifest['dokumen'].append({
+                                    'standar': f"{std.nomor} - {std.nama}",
+                                    'sub_standar': f"{sub.nomor} - {sub.nama}",
+                                    'butir': f"{butir.kode} - {butir.nama_dokumen}",
+                                    'sumber': 'SIMDA',
+                                    'judul': label,
+                                    'dosen_nidn': nidn,
+                                    'zip_path': zip_path,
+                                    'included': included,
+                                })
 
         # Tulis manifest.json terakhir
         zf.writestr(

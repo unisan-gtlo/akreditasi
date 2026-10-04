@@ -177,6 +177,9 @@ def _get_sesi_progress_data(sesi):
     latest_rev_by_dokumen = _latest_revisi_map(
         Dokumen.objects.filter(pk__in=[d.pk for d in dokumen_by_butir.values()])
     )
+    # Butir yang diisi otomatis dari data dosen SIMDA (ButirDataDosenMapping)
+    from master_akreditasi.dosen_data import kelengkapan_sesi
+    simda = kelengkapan_sesi(sesi, [b.pk for b in butir_qs])
 
     # 4. Build butir_list dengan status
     butir_list = []
@@ -226,6 +229,17 @@ def _get_sesi_progress_data(sesi):
                 stats['status_rejected'] += 1
             elif status == 'NEED_REVISION':
                 stats['status_revision'] += 1
+        elif simda.get(butir.pk, {}).get('terisi'):
+            # Tanpa unggahan, tapi bukti lengkap dari data dosen SIMDA (DTPS)
+            info = simda[butir.pk]
+            stats['butir_terisi'] += 1
+            stats['status_approved'] += 1
+            status = 'APPROVED'
+            verifikator = 'Data SIMDA'
+            dokumen_info = {
+                'id': None,
+                'judul': f"Data SIMDA — {info['jenis']} ({info['lengkap']}/{info['wajib']} dosen lengkap)",
+            }
         else:
             stats['butir_kosong'] += 1
         

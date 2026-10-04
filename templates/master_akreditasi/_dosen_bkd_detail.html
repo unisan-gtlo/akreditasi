@@ -70,8 +70,10 @@ dengan tabel utama modal. Diharapkan inserted di bawah row dosen yg di-klik.
                     <span style="color:#9CA3AF; font-size:.78rem;">—</span>
                   {% endif %}
                   {% if bkd.file_bkd %}
-                    <div style="color:#6B7280; font-size:.7rem; margin-top:.2rem;" title="{{ bkd.file_bkd }}">
-                      📄 {{ bkd.file_bkd|truncatechars:36 }}
+                    <div style="margin-top:.2rem;">
+                      <a href="{% url 'master_akreditasi:dosen_file' sesi.pk butir.pk 'bkd' bkd.pk %}{{ token_qs }}" target="_blank" rel="noopener" class="bkd-link" style="font-size:.78rem;">
+                        📄 File BKD
+                      </a>
                     </div>
                   {% endif %}
                 </td>

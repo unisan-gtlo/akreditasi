@@ -1,0 +1,86 @@
+{% comment %}
+Modal body generik: tabel DTPS + ringkasan per dosen untuk resolver
+JABFUNG / SERDOS / SK_PENGANGKATAN / PROFIL. Context sama dengan modal lain
+(+ kelengkapan, token_qs). Klik baris -> detail (_dosen_generic_detail.html).
+{% endcomment %}
+<div class="dtps-modal-header">
+  <div>
+    <h3 class="dtps-modal-title">{{ resolver.title_prefix }} — {{ butir.kode }}</h3>
+    <div class="dtps-modal-subtitle">{{ butir.nama_dokumen }}</div>
+  </div>
+  <button type="button" class="dtps-modal-close" data-action="close-dtps-bkd" aria-label="Tutup">×</button>
+</div>
+
+<div class="dtps-modal-body">
+  <div class="dtps-info-grid">
+    <div class="dtps-info-card">
+      <div class="dtps-info-label">Jenis Data</div>
+      <div class="dtps-info-value">{{ mapping.get_jenis_data_display }}</div>
+    </div>
+    <div class="dtps-info-card">
+      <div class="dtps-info-label">Tahun TS</div>
+      <div class="dtps-info-value">{{ sesi.tahun_ts }}</div>
+    </div>
+    <div class="dtps-info-card">
+      <div class="dtps-info-label">Dosen Lengkap</div>
+      <div class="dtps-info-value">{{ kelengkapan.lengkap }} / {{ kelengkapan.wajib }}</div>
+    </div>
+    <div class="dtps-info-card">
+      <div class="dtps-info-label">Total DTPS</div>
+      <div class="dtps-info-value">{{ total_dtps }}</div>
+    </div>
+  </div>
+
+  {% include "master_akreditasi/_dtps_kelengkapan_banner.html" %}
+
+  {% if mapping.deskripsi_filter %}
+    <div class="alert alert-info" style="margin-bottom:1rem;">
+      <div class="alert-icon">ℹ</div><div>{{ mapping.deskripsi_filter }}</div>
+    </div>
+  {% endif %}
+
+  {% if dtps_rows %}
+    <div class="dtps-table-wrap">
+      <table class="dtps-table">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>NIDN</th>
+            <th>Nama Dosen</th>
+            <th>Homebase</th>
+            <th>Jabfung</th>
+            <th>Status Bukti</th>
+            <th>{{ resolver.agg_column_label }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in dtps_rows %}
+            <tr class="dtps-row {% if row.count > 0 %}has-bkd{% else %}no-bkd{% endif %}" data-nidn="{{ row.dtps.dosen_nidn }}"
+                {% if row.count > 0 %}data-action="toggle-bkd-detail" title="Klik untuk lihat detail & dokumen"{% endif %}>
+              <td style="color:var(--text-secondary);">{{ forloop.counter }}</td>
+              <td><code>{{ row.dtps.dosen_nidn }}</code></td>
+              <td>{{ row.dtps.dosen_nama_snapshot|default:"—" }}</td>
+              <td>{{ row.dtps.dosen_homebase_prodi_snapshot|default:"—" }}</td>
+              <td style="font-size:.85rem;">{{ row.dtps.dosen_jabfung_snapshot|default:"—" }}</td>
+              <td>
+                {% if row.status == 'lengkap' %}<span class="badge badge-emerald">Lengkap</span>
+                {% elif row.status == 'na' %}<span class="badge badge-gray">Tidak berlaku</span>
+                {% else %}<span class="badge badge-rose">Belum lengkap</span>{% endif %}
+              </td>
+              <td><strong>{{ row.agg_value_formatted|default:"—" }}</strong></td>
+              <td style="color:var(--text-secondary); font-size:.8rem;">{% if row.count > 0 %}▸ detail{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-warning"><div class="alert-icon">⚠</div><div>Belum ada DTPS aktif untuk sesi ini.</div></div>
+  {% endif %}
+</div>
+
+<div class="dtps-modal-footer">
+  <div class="dtps-modal-footer-info">Sumber: SIMDA — Sistem Informasi Master Data UNISAN</div>
+  <button type="button" class="btn" data-action="close-dtps-bkd">Tutup</button>
+</div>

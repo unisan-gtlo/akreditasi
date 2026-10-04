@@ -15,6 +15,9 @@ Dokumen bersama + aturan scope dokumen untuk sesi/laporan (satu sumber kebenaran
 
 3. Tahun (khusus sesi): tahun_akademik dalam periode evaluasi sesi, atau kosong
    (dokumen yang berlaku umum).
+
+4. Data dosen SIMDA: butir ber-ButirDataDosenMapping juga terhitung terisi kalau
+   bukti semua DTPS lengkap (master_akreditasi/dosen_data.py).
 """
 from django.db.models import Q
 
@@ -127,7 +130,10 @@ def butir_terisi_for_sesi(sesi, butirs):
     punya_dokumen = set(
         sesi_dokumen_qs(sesi, all_ids(groups)).values_list("butir_dokumen_id", flat=True).distinct()
     )
-    return {bid for bid, ids in groups.items() if ids & punya_dokumen}
+    terisi = {bid for bid, ids in groups.items() if ids & punya_dokumen}
+    # Butir ber-mapping data dosen SIMDA yang buktinya lengkap untuk semua DTPS
+    from master_akreditasi.dosen_data import butir_terisi_simda
+    return terisi | butir_terisi_simda(sesi, list(groups))
 
 
 def dokumen_rows(butir_ids):

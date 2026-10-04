@@ -470,11 +470,11 @@
                         </div>
                         <div class="sub-body">
                                 {% for butir in sub.butirs %}
-                                    <div class="butir-row {% if butir.count > 0 %}filled{% else %}empty{% endif %}" data-butir-id="{{ butir.obj.id }}">
+                                    <div class="butir-row {% if butir.count > 0 or butir.simda_terisi %}filled{% else %}empty{% endif %}" data-butir-id="{{ butir.obj.id }}">
                                         <span class="bk">{{ butir.obj.kode }}</span>
                                         {% if butir.has_data_dosen_mapping %}
                                             <span class="badge-data-simda" data-action="show-dtps-bkd" data-butir-id="{{ butir.obj.id }}" title="Lihat data DTPS dan BKD untuk butir ini">
-                                                Data SIMDA
+                                                Data SIMDA{% if butir.simda %} {{ butir.simda.lengkap }}/{{ butir.simda.wajib }}{% endif %}
                                             </span>
                                         {% endif %}
                                     <div class="bn">
@@ -505,6 +505,8 @@
                                     <span class="bcnt">
                                         {% if butir.count > 0 %}
                                             {{ butir.count }} dok
+                                        {% elif butir.simda_terisi %}
+                                            data SIMDA
                                         {% else %}
                                             kosong
                                         {% endif %}
@@ -840,8 +842,6 @@ function toggleAll(expand) {
         });
     }
 
-})();
-</script>
 })();
 </script>
 
