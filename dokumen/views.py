@@ -807,15 +807,9 @@ def _create_link_revisi(dokumen, nomor_rev, form, user):
 
 
 def _link_accessible(url):
-    """Cek ringan tautan bisa dibuka (HTTP < 400). Gagal cek tidak menghalangi simpan."""
-    import requests
-    try:
-        resp = requests.get(url, timeout=6, allow_redirects=True, stream=True,
-                            headers={"User-Agent": "SIAKRED-LinkCheck/1.0"})
-        resp.close()
-        return resp.status_code < 400
-    except requests.RequestException:
-        return False
+    """Cek ringan tautan bisa dibuka (lihat dokumen/tautan.py)."""
+    from .tautan import link_accessible
+    return link_accessible(url)
 
 
 def _get_client_ip(request):

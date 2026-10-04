@@ -10,12 +10,9 @@ Verifikasi dibiarkan PENDING (diverifikasi LPM seperti dokumen lain).
     python manage.py isi_tautan_aplikasi --apply    # simpan
 """
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-from django.utils import timezone
 
 from core.models import User
-from dokumen.models import Dokumen, DokumenAccessLog, DokumenRevisi
-from dokumen.views import _link_accessible
+from dokumen.tautan import buat_dokumen_tautan, link_accessible, tautan_sudah_ada
 from master_akreditasi.models import ButirDokumen
 
 TAUTAN = [
@@ -52,46 +49,17 @@ class Command(BaseCommand):
             if butir is None:
                 self.stdout.write(self.style.WARNING(f"- {kode_bersama}: butir belum ada, dilewati"))
                 continue
-            group_ids = list(ButirDokumen.objects.filter(kode_bersama=kode_bersama).values_list("pk", flat=True))
-            sudah = DokumenRevisi.objects.filter(
-                dokumen__butir_dokumen_id__in=group_ids, dokumen__status=Dokumen.Status.FINAL,
-                aktif=True, storage_type=DokumenRevisi.StorageType.LINK, gdrive_url=url,
-            ).exists()
-            if sudah:
+            if tautan_sudah_ada(butir, url):
                 self.stdout.write(f"= {butir.kode} {judul}: sudah ada, dilewati")
                 continue
-            bisa = _link_accessible(url)
+            bisa = link_accessible(url)
             self.stdout.write(f"+ {butir.kode} {judul} -> {url} ({'bisa diakses' if bisa else 'TIDAK bisa diakses'})")
             if not opts["apply"]:
                 continue
-            with transaction.atomic():
-                dokumen = Dokumen.objects.create(
-                    butir_dokumen=butir,
-                    kategori_pemilik=butir.kategori_kepemilikan,
-                    scope_kode_prodi="",
-                    scope_kode_fakultas="",
-                    judul=judul,
-                    deskripsi="Tautan aplikasi untuk bukti sarana TIK. Lengkapi dengan screenshot di butir yang sama.",
-                    status_akses=Dokumen.StatusAkses.TERBUKA,
-                    tahun_akademik="",
-                    uploaded_by=user,
-                    last_updated_by=user,
-                )
-                revisi = DokumenRevisi.objects.create(
-                    dokumen=dokumen,
-                    nomor_revisi=1,
-                    storage_type=DokumenRevisi.StorageType.LINK,
-                    gdrive_url=url,
-                    original_filename=f"[Tautan] {url}",
-                    extension="link",
-                    aktif=True,
-                    uploaded_by=user,
-                    last_verified_at=timezone.now(),
-                    is_link_broken=not bisa,
-                )
-                DokumenAccessLog.objects.create(
-                    dokumen=dokumen, revisi=revisi, aksi=DokumenAccessLog.AksiType.UPLOAD,
-                    user=user, catatan="Tautan aplikasi (isi_tautan_aplikasi)",
-                )
+            buat_dokumen_tautan(
+                butir, judul, url, user,
+                deskripsi="Tautan aplikasi untuk bukti sarana TIK. Lengkapi dengan screenshot di butir yang sama.",
+                bisa_diakses=bisa, catatan_log="Tautan aplikasi (isi_tautan_aplikasi)",
+            )
         if not opts["apply"]:
             self.stdout.write(self.style.WARNING("Preview saja. Tambahkan --apply untuk menyimpan."))
