@@ -31,7 +31,11 @@ from dokumen.models import Dokumen
 def sesi_list(request):
     """List semua sesi akreditasi dengan filter."""
 
-    sesi_qs = SesiAkreditasi.objects.select_related(
+    from .permissions import get_visible_sesi_for_user
+
+    # Hanya sesi dalam scope user (Universitas/Biro: semua, Fakultas/Prodi: miliknya)
+    visible_qs = get_visible_sesi_for_user(request.user)
+    sesi_qs = visible_qs.select_related(
         "instrumen", "dibuat_oleh"
     ).order_by("-tanggal_mulai")
 
@@ -55,7 +59,7 @@ def sesi_list(request):
         )
 
     # Stats
-    all_sesi = SesiAkreditasi.objects.all()
+    all_sesi = visible_qs
     stats = {
         "total": all_sesi.count(),
         "aktif": all_sesi.exclude(status__in=["SELESAI", "DIBATALKAN"]).count(),
@@ -1228,17 +1232,10 @@ def _get_prodi_display(sesi):
 
 
 def _check_sesi_permission(user, sesi):
-    """Cek permission view sesi.
-    
-    - Superuser/staff -> allow
-    - Authenticated user -> allow (scope filtering dihandle di view list, bukan di detail/bundle)
-    - Anonymous -> deny
-    """
+    """Cek permission view sesi untuk bundle/ZIP/token/DTPS (sesuai scope user)."""
     if not user or not user.is_authenticated:
         return False
-    if user.is_superuser or user.is_staff:
-        return True
-    return True  # allow semua authenticated user untuk bundle view
+    return can_view_sesi(user, sesi)[0]
 
 @login_required(login_url='/login/')
 def sesi_bundle(request, sesi_id):

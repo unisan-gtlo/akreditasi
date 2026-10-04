@@ -37,12 +37,19 @@ def can_edit_sesi(user, sesi):
 
 def can_view_sesi(user, sesi):
     """
-    Bisa lihat sesi:
-    - Semua user login bisa lihat (transparency)
+    Bisa lihat sesi (detail, timeline, bundle, ZIP, DTPS) sesuai scope:
+    - Super Admin, scope UNIVERSITAS / BIRO: semua sesi
+    - scope FAKULTAS: sesi dengan kode_fakultas yang sama
+    - scope PRODI: sesi dengan kode_prodi yang sama
+    Aturan sama dengan get_visible_sesi_for_user (daftar & dashboard).
     """
     if not user.is_authenticated:
         return False, "Login required"
-    return True, "OK"
+    from sesi.models import SesiAkreditasi
+    visible = get_visible_sesi_for_user(user, SesiAkreditasi.objects.filter(pk=sesi.pk))
+    if visible.exists():
+        return True, "OK"
+    return False, "Sesi ini di luar scope fakultas/prodi Anda"
 # =========================================================
 # DASHBOARD ACCESS & SCOPE FILTERING
 # =========================================================
