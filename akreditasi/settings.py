@@ -187,6 +187,13 @@ SSO_SECRET_KEY = os.getenv("SSO_SECRET_KEY", "")
 SSO_COOKIE_DOMAIN = os.getenv("SSO_COOKIE_DOMAIN", ".unisan-g.id")
 
 # ==========================================
+# SI-OBE (sumber RPS Disahkan, API baca-saja)
+# Token dari SI-OBE: Admin > Integration > External API Client (klien "SIAKRED")
+# ==========================================
+SIOBE_BASE_URL = os.getenv("SIOBE_BASE_URL", "https://siobe.unisan.ac.id")
+SIOBE_API_TOKEN = os.getenv("SIOBE_API_TOKEN", "")
+
+# ==========================================
 # SITE
 # ==========================================
 SITE_URL = os.getenv("SITE_URL", "http://localhost:8000")

@@ -300,6 +300,24 @@ def butir_saya(request):
 # DETAIL BUTIR (+ list dokumen terunggah)
 # =========================================================
 
+def _rps_siobe_info(butir, butir_ids):
+    """Ringkasan RPS hasil sinkron SI-OBE untuk butir RPS seluruh MK, atau None."""
+    from django.db.models import Max
+    from .siobe_rps import KODE_BERSAMA_RPS, MARKER
+
+    if butir.kode_bersama != KODE_BERSAMA_RPS:
+        return None
+    revisi = DokumenRevisi.objects.filter(
+        dokumen__butir_dokumen_id__in=butir_ids,
+        dokumen__status=Dokumen.Status.FINAL,
+        aktif=True,
+        catatan_revisi__startswith=MARKER,
+    )
+    info = revisi.aggregate(terakhir=Max("tanggal_upload"))
+    info["jumlah"] = revisi.count()
+    return info
+
+
 @login_required(login_url="/login/")
 def butir_detail(request, butir_id):
     """
@@ -343,6 +361,7 @@ def butir_detail(request, butir_id):
         "butir": butir,
         "dokumen_list": dokumen_qs,
         "shared_butirs": shared_butirs,
+        "rps_siobe": _rps_siobe_info(butir, butir_ids),
         "can_upload": can_upload,
         "upload_reason": upload_reason,
     }

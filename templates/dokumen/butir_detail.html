@@ -101,6 +101,18 @@
         </div>
         {% endif %}
 
+        {% if rps_siobe %}
+        <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#EFF6FF; border-left:3px solid #3B82F6; border-radius:8px;">
+            <div style="font-weight:600; color:#1E40AF; margin-bottom:4px;">📚 RPS otomatis dari SI-OBE</div>
+            <p style="margin:0; font-size:.9rem; color:#1E3A8A; line-height:1.7;">
+                RPS yang sudah <strong>disahkan di SI-OBE</strong> masuk ke butir ini otomatis (1 dokumen per mata kuliah) —
+                tidak perlu diunggah ulang. Untuk menambah atau memperbarui RPS, sahkan di
+                <a href="https://siobe.unisan.ac.id" target="_blank" rel="noopener">SI-OBE</a>.
+                <br>Tersinkron: <strong>{{ rps_siobe.jumlah }} RPS</strong>{% if rps_siobe.terakhir %}, terakhir diperbarui {{ rps_siobe.terakhir|date:"d M Y H:i" }}{% endif %}.
+            </p>
+        </div>
+        {% endif %}
+
         {% if butir.kode_bersama %}
         <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#ECFDF5; border-left:3px solid #10B981; border-radius:8px;">
             <div style="font-weight:600; color:#065F46; margin-bottom:4px;">🔗 Dokumen Bersama: <code>{{ butir.kode_bersama }}</code></div>
