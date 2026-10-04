@@ -55,6 +55,7 @@ class ButirDataDosenMapping(models.Model):
         ('PROFIL',      'Profil Dosen (Identitas + ID Akademik)'),
         ('SERDOS',      'Sertifikat Pendidik (Serdos)'),
         ('SK_PENGANGKATAN', 'SK Pengangkatan Dosen Tetap'),
+        ('ID_AKADEMIK', 'Profil & ID Akademik (SINTA, Google Scholar, Scopus, ORCID, Garuda)'),
     ]
 
     FILTER_PERIODE_CHOICES = [

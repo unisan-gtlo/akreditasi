@@ -32,6 +32,7 @@ JENIS_KINDS = {
     "SERDOS": {"serdos"},
     "SK_PENGANGKATAN": {"sk_pengangkatan"},
     "PROFIL": set(),
+    "ID_AKADEMIK": set(),
 }
 
 KELENGKAPAN_TTL = 60 * 10
@@ -160,13 +161,15 @@ def zip_data_dosen(sesi, butir):
 
     buf = io.StringIO()
     w = csv.writer(buf)
+    # Resolver boleh menambah kolom CSV (mis. URL profil akademik) lewat csv_extra()
+    csv_extra = getattr(resolver, "csv_extra", None)
+    dtps_list = list(DTPSDosenSesi.objects.filter(sesi=sesi, aktif=True).order_by("dosen_nama_snapshot"))
+    extra_cols = list(csv_extra(sesi, dtps_list[0], mapping)) if (csv_extra and dtps_list) else []
     w.writerow(["No", "NIDN", "Nama", "Homebase", "Jabfung", "Status Bukti",
-                resolver.agg_column_label, "Jumlah File"])
+                resolver.agg_column_label, "Jumlah File"] + extra_cols)
     label_status = {"lengkap": "Lengkap", "kurang": "Belum lengkap", "na": "Tidak berlaku"}
     files = []
-    for no, dtps in enumerate(
-        DTPSDosenSesi.objects.filter(sesi=sesi, aktif=True).order_by("dosen_nama_snapshot"), start=1
-    ):
+    for no, dtps in enumerate(dtps_list, start=1):
         summary = resolver.get_dosen_summary(sesi, dtps, mapping)
         status = resolver.status_dosen(sesi, dtps, mapping)
         dosen_files = []
@@ -177,7 +180,8 @@ def zip_data_dosen(sesi, butir):
                 folder = f"{aman(dtps.dosen_nidn, 20)}_{aman(dtps.dosen_nama_snapshot, 40)}"
                 dosen_files.append((f"{folder}/{aman(label, 40)}{ext}", path, label, dtps.dosen_nidn))
         files.extend(dosen_files)
+        extra = csv_extra(sesi, dtps, mapping) if extra_cols else {}
         w.writerow([no, dtps.dosen_nidn, dtps.dosen_nama_snapshot, dtps.dosen_homebase_prodi_snapshot,
                     dtps.dosen_jabfung_snapshot, label_status.get(status, status),
-                    summary.agg_value_formatted, len(dosen_files)])
+                    summary.agg_value_formatted, len(dosen_files)] + [extra.get(c, "") for c in extra_cols])
     return mapping.jenis_data, buf.getvalue(), files

@@ -21,7 +21,7 @@ endpoint SIAKRED (cek akses), bukan tautan langsung ke media SIMDA.
           <tbody>
             {% for rec in detail_records %}
               <tr>
-                {% for c in rec.cells %}<td>{{ c }}</td>{% endfor %}
+                {% for c in rec.cells %}<td>{% if c.url %}<a href="{{ c.url }}" target="_blank" rel="noopener" class="bkd-link">{{ c.text }}</a>{% else %}{{ c }}{% endif %}</td>{% endfor %}
                 <td>
                   {% for f in rec.files %}
                     <a href="{% url 'master_akreditasi:dosen_file' sesi.pk butir.pk f.1 f.2 %}{{ token_qs }}" target="_blank" rel="noopener" class="bkd-link" style="margin-right:.5rem;">📄 {{ f.0 }}</a>

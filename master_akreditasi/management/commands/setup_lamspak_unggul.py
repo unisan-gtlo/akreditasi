@@ -26,6 +26,9 @@ DATA_DOSEN_MAPPING = {
     "U6.04": ("JABFUNG", "SEMUA", "SK jabatan akademik DTPS; dosen tanpa jabatan akademik tidak dihitung."),
     "U6.05": ("SERDOS", "AKTIF_SAJA", "Sertifikat pendidik DTPS yang sudah tersertifikasi (SIMDA)."),
     "U6.10": ("BKD", "TS_TS_M1_TS_M2", "BKD/LKD DTPS 3 tahun terakhir (TS, TS-1, TS-2) dari SIMDA."),
+    "U9.15": ("ID_AKADEMIK", "AKTIF_SAJA",
+              "Tautan profil SINTA, Google Scholar, Scopus, ORCID & Garuda tiap DTPS (SIMDA). "
+              "Lengkap bila dosen punya profil SINTA atau Google Scholar."),
 }
 
 
