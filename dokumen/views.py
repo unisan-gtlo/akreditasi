@@ -170,12 +170,34 @@ def _get_relevant_instrumen_for_user(user):
 # LIST BUTIR (yang relevan untuk user)
 # =========================================================
 
+BUTIR_SAYA_FILTER_KEYS = ("q", "instrumen", "kategori", "wajib")
+BUTIR_SAYA_FILTER_SESSION_KEY = "butir_saya_filter"
+
+
 @login_required(login_url="/login/")
 def butir_saya(request):
     """
     List butir dokumen yang user relevan upload.
     Grouped by instrumen.
     """
+    # Filter diingat di session sampai diubah atau di-Reset, supaya tetap
+    # tertahan saat kembali dari halaman butir/dokumen atau lewat menu.
+    if request.GET.get("reset"):
+        request.session.pop(BUTIR_SAYA_FILTER_SESSION_KEY, None)
+        return redirect("dokumen:butir_saya")
+    if any(k in request.GET for k in BUTIR_SAYA_FILTER_KEYS):
+        saved = {k: request.GET.get(k, "").strip() for k in BUTIR_SAYA_FILTER_KEYS}
+        saved = {k: v for k, v in saved.items() if v}
+        if saved:
+            request.session[BUTIR_SAYA_FILTER_SESSION_KEY] = saved
+        else:
+            request.session.pop(BUTIR_SAYA_FILTER_SESSION_KEY, None)
+    else:
+        saved = request.session.get(BUTIR_SAYA_FILTER_SESSION_KEY)
+        if saved:
+            from urllib.parse import urlencode
+            return redirect(f"{request.path}?{urlencode(saved)}")
+
     # Filter instrumen relevan
     relevant_instrumen = _get_relevant_instrumen_for_user(request.user)
 

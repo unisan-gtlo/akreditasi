@@ -95,7 +95,7 @@
             <button type="submit" class="btn btn-primary" style="padding:.55rem 1rem;">Cari</button>
 
             {% if search or filter_instrumen or filter_kategori or filter_wajib %}
-                <a href="{% url 'dokumen:butir_saya' %}" style="font-size:.85rem; font-weight:600; color:var(--primary-600);">Reset</a>
+                <a href="{% url 'dokumen:butir_saya' %}?reset=1" style="font-size:.85rem; font-weight:600; color:var(--primary-600);">Reset</a>
             {% endif %}
         </form>
     </div>
