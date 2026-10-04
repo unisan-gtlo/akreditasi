@@ -6,6 +6,25 @@ from .models import Dokumen, DokumenRevisi
 from .gdrive_helper import validate_gdrive_url
 
 
+def normalisasi_tahun_akademik(nilai):
+    """'2024-2025' -> '2024/2025'. Diterima: kosong, '2025', '2024/2025', '2024/2025 Ganjil|Genap'."""
+    import re
+    nilai = re.sub(r"\s+", " ", (nilai or "").strip())
+    if not nilai:
+        return ""
+    nilai = re.sub(r"^(\d{4})\s*[-–]\s*(\d{4})", r"\1/\2", nilai)
+    m = re.fullmatch(r"(\d{4})(?:/(\d{4}))?(?: (ganjil|genap))?", nilai, flags=re.I)
+    if not m:
+        raise forms.ValidationError(
+            _("Format tahun akademik: 2024/2025 (boleh ditambah Ganjil/Genap) atau kosongkan untuk dokumen yang berlaku umum.")
+        )
+    if m.group(2) and int(m.group(2)) != int(m.group(1)) + 1:
+        raise forms.ValidationError(_("Tahun akademik harus berurutan, mis. 2024/2025."))
+    if m.group(3):
+        return f"{m.group(1)}/{m.group(2)} {m.group(3).capitalize()}" if m.group(2) else nilai
+    return f"{m.group(1)}/{m.group(2)}" if m.group(2) else m.group(1)
+
+
 class DokumenUploadForm(forms.Form):
     """Form upload dokumen baru atau revisi — hybrid (local upload OR gdrive link)."""
 
@@ -108,6 +127,9 @@ class DokumenUploadForm(forms.Form):
         if butir and not self.is_bound:
             self.fields["judul"].initial = butir.nama_dokumen
             self.fields["status_akses"].initial = butir.status_akses_default
+
+    def clean_tahun_akademik(self):
+        return normalisasi_tahun_akademik(self.cleaned_data.get("tahun_akademik"))
 
     def clean_file(self):
         """Validasi file upload (kalau dipilih)."""

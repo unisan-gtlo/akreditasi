@@ -79,8 +79,25 @@ def scope_match(row_prodi, row_fakultas, kode_prodi, kode_fakultas):
     return bool(kode_fakultas) and not row_prodi and row_fakultas == kode_fakultas
 
 
+def tahun_diterima(periode):
+    """Nilai tahun_akademik yang dianggap masuk periode sesi.
+
+    Selain format baku '2024/2025', diterima juga '2024-2025' dan tahun tunggal
+    ('2025') yang berada di rentang periode (data lama yang diisi bebas).
+    """
+    nilai = set(periode)
+    for p in periode:
+        nilai.add(p.replace("/", "-"))
+        nilai.update(bagian.strip() for bagian in p.split("/") if bagian.strip())
+    return nilai
+
+
 def sesi_tahun_q(sesi):
-    return Q(tahun_akademik__in=sesi.tahun_periode_list) | Q(tahun_akademik="")
+    periode = sesi.tahun_periode_list
+    q = Q(tahun_akademik="") | Q(tahun_akademik__in=tahun_diterima(periode))
+    for p in periode:  # mis. '2024/2025 Ganjil'
+        q |= Q(tahun_akademik__startswith=p + " ")
+    return q
 
 
 def sesi_dokumen_qs(sesi, butir_ids):
