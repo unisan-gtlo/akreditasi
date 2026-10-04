@@ -166,31 +166,17 @@ def _get_sesi_progress_data(sesi):
         'kode',
     )
     
-    # 2. Ambil semua dokumen untuk sesi ini (by periode evaluasi + scope)
-    # Pakai property tahun_periode_list dari sesi
-    try:
-        periode_list = sesi.tahun_periode_list
-    except Exception:
-        periode_list = [sesi.tahun_ts] if sesi.tahun_ts else []
-    
-    dokumen_qs = Dokumen.objects.filter(
-        tahun_akademik__in=periode_list,
+    # 2-3. Dokumen terbaru per butir, aturan sama dengan halaman Sesi
+    # (periode/tahun kosong, scope prodi/UPPS/Universitas, dokumen bersama).
+    # Sebelumnya dokumen Universitas tidak terhitung karena filter mencari NULL,
+    # padahal scope kosong disimpan sebagai string kosong.
+    from dokumen.sharing import dokumen_per_butir_for_sesi
+    butir_qs = list(butir_qs)
+    per_butir = dokumen_per_butir_for_sesi(sesi, butir_qs, order_by=('-tanggal_dibuat',))
+    dokumen_by_butir = {bid: docs[0] for bid, docs in per_butir.items() if docs}
+    latest_rev_by_dokumen = _latest_revisi_map(
+        Dokumen.objects.filter(pk__in=[d.pk for d in dokumen_by_butir.values()])
     )
-    
-    # Filter scope: prodi-specific atau universitas-level
-    if sesi.kode_prodi:
-        dokumen_qs = dokumen_qs.filter(
-            Q(scope_kode_prodi=sesi.kode_prodi) |
-            Q(scope_kode_fakultas=sesi.kode_fakultas) |
-            (Q(scope_kode_prodi__isnull=True) & Q(scope_kode_fakultas__isnull=True))
-        )
-    
-    # 3. Map butir_id → dokumen (ambil terbaru)
-    dokumen_by_butir = {}
-    for d in dokumen_qs.select_related('butir_dokumen').order_by('-tanggal_dibuat'):
-        if d.butir_dokumen_id not in dokumen_by_butir:
-            dokumen_by_butir[d.butir_dokumen_id] = d
-    latest_rev_by_dokumen = _latest_revisi_map(dokumen_qs)
 
     # 4. Build butir_list dengan status
     butir_list = []
@@ -372,12 +358,34 @@ def _get_prodi_completeness_data(scope_info, fakultas_filter=None):
     prodi_codes = {m.kode_prodi for m in mappings}
     dokumen_all = Dokumen.objects.filter(scope_kode_prodi__in=prodi_codes)
 
-    # Unique butir yang sudah ada dokumennya, per prodi
-    butir_terisi_by_prodi = dict(
-        dokumen_all.order_by()
-        .values_list('scope_kode_prodi')
-        .annotate(c=Count('butir_dokumen', distinct=True))
+    # Butir instrumen prodi yang sudah punya dokumen FINAL: dokumen prodi itu
+    # sendiri, dokumen UPPS fakultasnya, dokumen Universitas/Biro, termasuk
+    # dokumen bersama (kode_bersama) dari butir/instrumen lain.
+    from django.db.models import F
+    from dokumen.sharing import all_ids, butir_groups, dokumen_rows, scope_match
+    butirs_by_instrumen = {}
+    instrumen_butirs = list(
+        ButirDokumen.objects.filter(
+            aktif=True,
+            sub_standar__standar__instrumen_id__in={m.instrumen_id for m in mappings},
+        ).annotate(instr_id=F('sub_standar__standar__instrumen_id')).only('id', 'kode_bersama')
     )
+    for b in instrumen_butirs:
+        butirs_by_instrumen.setdefault(b.instr_id, []).append(b)
+    groups = butir_groups(instrumen_butirs)
+    rows_by_butir = dokumen_rows(all_ids(groups))
+
+    def _butir_terisi(kode_prodi, instrumen_id):
+        kode_fakultas = _derive_fakultas(kode_prodi)[0]
+        terisi = 0
+        for b in butirs_by_instrumen.get(instrumen_id, []):
+            if any(
+                scope_match(sp, sf, kode_prodi, kode_fakultas)
+                for gid in groups[b.id]
+                for _, sp, sf in rows_by_butir.get(gid, [])
+            ):
+                terisi += 1
+        return terisi
 
     # Count status verifikasi per prodi (revisi terbaru per dokumen)
     latest_rev_by_dokumen = _latest_revisi_map(dokumen_all)
@@ -399,7 +407,7 @@ def _get_prodi_completeness_data(scope_info, fakultas_filter=None):
 
     for mapping in mappings:
         total_butir = total_butir_by_instrumen.get(mapping.instrumen_id, 0)
-        butir_terisi = butir_terisi_by_prodi.get(mapping.kode_prodi, 0)
+        butir_terisi = _butir_terisi(mapping.kode_prodi, mapping.instrumen_id)
 
         counts = status_counts_by_prodi.get(mapping.kode_prodi, {})
         approved_count = counts.get('APPROVED', 0)

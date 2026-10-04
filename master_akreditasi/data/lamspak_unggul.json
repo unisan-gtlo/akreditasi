@@ -26,6 +26,7 @@
           "nama_dokumen": "SK Penetapan Visi Keilmuan Program Studi",
           "deskripsi": "Dilampirkan untuk mendukung uraian visi keilmuan PS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -36,6 +37,7 @@
           "nama_dokumen": "Dokumen VMTS Perguruan Tinggi, UPPS, dan Program Studi",
           "deskripsi": "Mendukung kesesuaian VMTS PT–UPPS–PS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -46,6 +48,7 @@
           "nama_dokumen": "Matriks Keselarasan VMTS",
           "deskripsi": "Menunjukkan keterkaitan visi PT, UPPS, dan visi keilmuan PS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -56,6 +59,7 @@
           "nama_dokumen": "Dokumen Kurikulum Program Studi",
           "deskripsi": "Mendukung profil lulusan, CPL, dan struktur kurikulum",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -65,7 +69,8 @@
           "urutan": 5,
           "nama_dokumen": "SK Penetapan Kurikulum",
           "deskripsi": "Bukti legal pemberlakuan kurikulum",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.01 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.01 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-SK-KURIKULUM",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -75,7 +80,8 @@
           "urutan": 6,
           "nama_dokumen": "Matriks Profil Lulusan–CPL",
           "deskripsi": "Menunjukkan hubungan profil lulusan dengan CPL",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.05 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.05 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-MATRIKS-PROFIL-LULUSAN-CPL",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -85,7 +91,8 @@
           "urutan": 7,
           "nama_dokumen": "Matriks CPL–Mata Kuliah",
           "deskripsi": "Menunjukkan bahwa CPL didukung oleh mata kuliah",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.06 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.06 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-MATRIKS-CPL-MATA-KULIAH",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -95,7 +102,8 @@
           "urutan": 8,
           "nama_dokumen": "Laporan Tracer Study",
           "deskripsi": "Bukti kajian kebutuhan lulusan dan dunia kerja",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.13 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.13 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-LAPORAN-TRACER-STUDY",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -105,7 +113,8 @@
           "urutan": 9,
           "nama_dokumen": "Laporan Survei Pengguna Lulusan",
           "deskripsi": "Bukti kepuasan pengguna dan relevansi kompetensi lulusan",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.14 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.14 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-SURVEI-PENGGUNA-LULUSAN",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -116,6 +125,7 @@
           "nama_dokumen": "Berita Acara/Notulen Lokakarya Kurikulum",
           "deskripsi": "Bukti keterlibatan stakeholder",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -126,6 +136,7 @@
           "nama_dokumen": "Daftar Hadir Stakeholder",
           "deskripsi": "Bukti keterlibatan dosen, mahasiswa, alumni, pengguna, dan pakar",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -136,6 +147,7 @@
           "nama_dokumen": "Dokumentasi Sosialisasi CPL",
           "deskripsi": "Bukti CPL diinformasikan kepada mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -146,6 +158,7 @@
           "nama_dokumen": "Laporan Monev CPL",
           "deskripsi": "Bukti evaluasi ketercapaian CPL",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -156,6 +169,7 @@
           "nama_dokumen": "Data IPK Lulusan 3 Tahun Terakhir",
           "deskripsi": "Mendukung Tabel IPK lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -166,6 +180,7 @@
           "nama_dokumen": "SK Yudisium dan Rekap Lulusan",
           "deskripsi": "Bukti jumlah lulusan, IPK, dan masa studi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -176,6 +191,7 @@
           "nama_dokumen": "Data Prestasi Akademik Mahasiswa",
           "deskripsi": "Mendukung tabel prestasi akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -186,6 +202,7 @@
           "nama_dokumen": "Data Prestasi Nonakademik Mahasiswa",
           "deskripsi": "Mendukung tabel prestasi nonakademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -196,6 +213,7 @@
           "nama_dokumen": "Data Masa Studi dan Kelulusan Tepat Waktu",
           "deskripsi": "Mendukung tabel masa studi dan keberhasilan studi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -206,6 +224,7 @@
           "nama_dokumen": "Data Waktu Tunggu Lulusan",
           "deskripsi": "Mendukung tabel waktu tunggu lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -216,6 +235,7 @@
           "nama_dokumen": "Data Kesesuaian Bidang Kerja Lulusan",
           "deskripsi": "Mendukung tabel kesesuaian bidang kerja",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -226,6 +246,7 @@
           "nama_dokumen": "Data Tingkat/Ukuran Tempat Kerja Lulusan",
           "deskripsi": "Mendukung tabel tempat kerja lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -236,6 +257,7 @@
           "nama_dokumen": "Rekap Kepuasan Pengguna Lulusan",
           "deskripsi": "Mendukung tabel kepuasan pengguna lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -252,7 +274,8 @@
           "urutan": 1,
           "nama_dokumen": "RPS Seluruh Mata Kuliah",
           "deskripsi": "Bukti ketersediaan dan kelengkapan RPS",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U5.09 (Standar 5). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U5.09 (Standar 5): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-RPS-SELURUH-MATA-KULIAH",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -263,6 +286,7 @@
           "nama_dokumen": "RPS Mata Kuliah Penciri Prodi",
           "deskripsi": "Bukti kedalaman dan keluasan pembelajaran bidang keilmuan program studi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -273,6 +297,7 @@
           "nama_dokumen": "Kontrak Kuliah",
           "deskripsi": "Bukti informasi pembelajaran disampaikan kepada mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -283,6 +308,7 @@
           "nama_dokumen": "Jurnal Perkuliahan",
           "deskripsi": "Bukti pelaksanaan perkuliahan sesuai RPS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -293,6 +319,7 @@
           "nama_dokumen": "Presensi Dosen dan Mahasiswa",
           "deskripsi": "Bukti keterlaksanaan proses pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -303,6 +330,7 @@
           "nama_dokumen": "Kalender Akademik",
           "deskripsi": "Bukti kesesuaian jadwal pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-KALENDER-AKADEMIK",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -313,6 +341,7 @@
           "nama_dokumen": "Bahan Ajar/Modul Pembelajaran",
           "deskripsi": "Bukti dukungan sumber pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -323,6 +352,7 @@
           "nama_dokumen": "Bukti Pembelajaran Berbasis Kasus/Proyek",
           "deskripsi": "Bukti pelaksanaan case method/project based learning",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -333,6 +363,7 @@
           "nama_dokumen": "Tugas Mahasiswa dan Portofolio",
           "deskripsi": "Bukti pengalaman belajar mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -343,6 +374,7 @@
           "nama_dokumen": "Laporan Monev Pembelajaran",
           "deskripsi": "Bukti evaluasi proses pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -353,6 +385,7 @@
           "nama_dokumen": "Instrumen Monev Pembelajaran",
           "deskripsi": "Bukti alat ukur evaluasi pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -363,6 +396,7 @@
           "nama_dokumen": "Rekap Hasil Evaluasi Dosen oleh Mahasiswa",
           "deskripsi": "Bukti umpan balik mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -373,6 +407,7 @@
           "nama_dokumen": "Berita Acara Rapat Evaluasi Pembelajaran",
           "deskripsi": "Bukti tindak lanjut monev",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -383,6 +418,7 @@
           "nama_dokumen": "Pedoman MBKM",
           "deskripsi": "Bukti fasilitasi pembelajaran luar program studi",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-PEDOMAN-MBKM",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -393,6 +429,7 @@
           "nama_dokumen": "MoU/PKS/IA MBKM atau Magang",
           "deskripsi": "Bukti kerja sama pembelajaran luar kampus",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -403,6 +440,7 @@
           "nama_dokumen": "Surat Tugas Pembimbing MBKM/Magang",
           "deskripsi": "Bukti pendampingan mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -413,6 +451,7 @@
           "nama_dokumen": "Laporan Kegiatan MBKM/Magang",
           "deskripsi": "Bukti pelaksanaan pembelajaran luar kampus",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -423,6 +462,7 @@
           "nama_dokumen": "Bukti Konversi Nilai MBKM",
           "deskripsi": "Bukti pengakuan beban belajar mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -440,6 +480,7 @@
           "nama_dokumen": "Pedoman Akademik",
           "deskripsi": "Bukti kebijakan umum penilaian",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-PEDOMAN-AKADEMIK",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -450,6 +491,7 @@
           "nama_dokumen": "SOP Penilaian Pembelajaran",
           "deskripsi": "Bukti mekanisme penilaian",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SOP-PENILAIAN-PEMBELAJARAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -460,6 +502,7 @@
           "nama_dokumen": "RPS yang Memuat Komponen Penilaian",
           "deskripsi": "Bukti penilaian dirancang sejak awal",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -470,6 +513,7 @@
           "nama_dokumen": "Rubrik Penilaian",
           "deskripsi": "Bukti objektivitas dan transparansi penilaian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -480,6 +524,7 @@
           "nama_dokumen": "Contoh Soal UTS dan UAS",
           "deskripsi": "Bukti penilaian sumatif",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -490,6 +535,7 @@
           "nama_dokumen": "Contoh Tugas Mahasiswa",
           "deskripsi": "Bukti penilaian formatif",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -500,6 +546,7 @@
           "nama_dokumen": "Portofolio Mahasiswa",
           "deskripsi": "Bukti capaian pembelajaran mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -510,6 +557,7 @@
           "nama_dokumen": "Berita Acara Ujian",
           "deskripsi": "Bukti pelaksanaan ujian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -520,6 +568,7 @@
           "nama_dokumen": "Daftar Hadir Ujian",
           "deskripsi": "Bukti keterlaksanaan evaluasi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -530,6 +579,7 @@
           "nama_dokumen": "Rekap Nilai Mata Kuliah",
           "deskripsi": "Bukti hasil penilaian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -540,6 +590,7 @@
           "nama_dokumen": "KHS/Transkrip Nilai",
           "deskripsi": "Bukti dokumentasi hasil belajar",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -550,6 +601,7 @@
           "nama_dokumen": "Rekap Capaian CPMK/CPL",
           "deskripsi": "Bukti ketercapaian pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -560,6 +612,7 @@
           "nama_dokumen": "Bukti Remedial/Perbaikan Nilai",
           "deskripsi": "Bukti tindak lanjut bagi mahasiswa yang belum mencapai kompetensi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -570,6 +623,7 @@
           "nama_dokumen": "Screenshot Input Nilai SIAKAD",
           "deskripsi": "Bukti sistem dokumentasi nilai",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -587,6 +641,7 @@
           "nama_dokumen": "SK Struktur Organisasi UPPS",
           "deskripsi": "Bukti legal struktur pengelolaan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SK-STRUKTUR-ORGANISASI-UPPS",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -597,6 +652,7 @@
           "nama_dokumen": "Dokumen SOTK",
           "deskripsi": "Bukti tata pamong dan tata kelola",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DOKUMEN-SOTK",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -607,6 +663,7 @@
           "nama_dokumen": "Uraian Tugas Pimpinan dan Unit Kerja",
           "deskripsi": "Bukti pembagian kewenangan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-URAIAN-TUGAS-PIMPINAN-DAN-UNIT-KERJA",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -617,6 +674,7 @@
           "nama_dokumen": "SOP Tata Kelola",
           "deskripsi": "Bukti mekanisme kerja organisasi",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SOP-TATA-KELOLA",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -627,6 +685,7 @@
           "nama_dokumen": "Dokumen Renstra UPPS",
           "deskripsi": "Bukti perencanaan strategis",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DOKUMEN-RENSTRA-UPPS",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -637,6 +696,7 @@
           "nama_dokumen": "Dokumen Renop Program Studi",
           "deskripsi": "Bukti perencanaan operasional",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -647,6 +707,7 @@
           "nama_dokumen": "Program Kerja Tahunan",
           "deskripsi": "Bukti pelaksanaan strategi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -657,6 +718,7 @@
           "nama_dokumen": "Laporan Kinerja UPPS/PS",
           "deskripsi": "Bukti capaian program kerja",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-KINERJA-UPPS-PS",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -667,6 +729,7 @@
           "nama_dokumen": "Notulen Rapat Pimpinan/Prodi",
           "deskripsi": "Bukti koordinasi dan pengambilan keputusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -677,6 +740,7 @@
           "nama_dokumen": "Laporan Monitoring Program Kerja",
           "deskripsi": "Bukti evaluasi pelaksanaan program",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -687,6 +751,7 @@
           "nama_dokumen": "MoU, PKS, dan IA Kerja Sama",
           "deskripsi": "Bukti kerja sama tridharma",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -697,6 +762,7 @@
           "nama_dokumen": "Laporan Pelaksanaan Kerja Sama",
           "deskripsi": "Bukti manfaat kerja sama",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -707,6 +773,7 @@
           "nama_dokumen": "Survei Kepuasan Mitra",
           "deskripsi": "Bukti kepuasan dan keberlanjutan kerja sama",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -717,6 +784,7 @@
           "nama_dokumen": "Pedoman Etika Akademik",
           "deskripsi": "Bukti integritas akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-PEDOMAN-ETIKA-AKADEMIK",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -727,6 +795,7 @@
           "nama_dokumen": "SOP Penerimaan Mahasiswa Baru",
           "deskripsi": "Bukti rekrutmen mahasiswa secara transparan",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SOP-PENERIMAAN-MAHASISWA-BARU",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -737,6 +806,7 @@
           "nama_dokumen": "Data Pendaftar dan Mahasiswa Baru",
           "deskripsi": "Bukti animo calon mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -747,6 +817,7 @@
           "nama_dokumen": "Dokumen Promosi Program Studi",
           "deskripsi": "Bukti upaya peningkatan animo",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -757,6 +828,7 @@
           "nama_dokumen": "SOP Layanan Mahasiswa",
           "deskripsi": "Bukti layanan akademik dan nonakademik",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SOP-LAYANAN-MAHASISWA",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -767,6 +839,7 @@
           "nama_dokumen": "Laporan Layanan Mahasiswa",
           "deskripsi": "Bukti layanan bimbingan, beasiswa, minat bakat, dan konseling",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -777,6 +850,7 @@
           "nama_dokumen": "Data Beasiswa Mahasiswa",
           "deskripsi": "Bukti layanan kesejahteraan mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -793,7 +867,8 @@
           "urutan": 1,
           "nama_dokumen": "SK Penetapan Kurikulum",
           "deskripsi": "Bukti legal pemberlakuan kurikulum",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U1.05 (Standar 1). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U1.05 (Standar 1): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-SK-KURIKULUM",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -804,6 +879,7 @@
           "nama_dokumen": "Buku Kurikulum Program Studi",
           "deskripsi": "Bukti utama struktur isi pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -814,6 +890,7 @@
           "nama_dokumen": "Profil Lulusan",
           "deskripsi": "Bukti arah kompetensi lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -824,6 +901,7 @@
           "nama_dokumen": "Rumusan CPL",
           "deskripsi": "Bukti capaian pembelajaran lulusan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -833,7 +911,8 @@
           "urutan": 5,
           "nama_dokumen": "Matriks CPL–Profil Lulusan",
           "deskripsi": "Bukti kesesuaian CPL dengan profil lulusan",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U1.06 (Standar 1). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U1.06 (Standar 1): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-MATRIKS-PROFIL-LULUSAN-CPL",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -843,7 +922,8 @@
           "urutan": 6,
           "nama_dokumen": "Matriks CPL–Mata Kuliah",
           "deskripsi": "Bukti keterkaitan mata kuliah dengan CPL",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U1.07 (Standar 1). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U1.07 (Standar 1): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-MATRIKS-CPL-MATA-KULIAH",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -854,6 +934,7 @@
           "nama_dokumen": "Peta Kurikulum",
           "deskripsi": "Bukti struktur vertikal dan horizontal kurikulum",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -864,6 +945,7 @@
           "nama_dokumen": "Sebaran Mata Kuliah per Semester",
           "deskripsi": "Bukti masa tempuh dan beban belajar",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -873,7 +955,8 @@
           "urutan": 9,
           "nama_dokumen": "RPS Seluruh Mata Kuliah",
           "deskripsi": "Bukti isi dan kedalaman materi",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U2.01 (Standar 2). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U2.01 (Standar 2): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-RPS-SELURUH-MATA-KULIAH",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -884,6 +967,7 @@
           "nama_dokumen": "RPS Mata Kuliah Penciri",
           "deskripsi": "Bukti kekhasan keilmuan program studi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -894,6 +978,7 @@
           "nama_dokumen": "Berita Acara Peninjauan Kurikulum",
           "deskripsi": "Bukti evaluasi kurikulum berkala",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -904,6 +989,7 @@
           "nama_dokumen": "Daftar Hadir Lokakarya Kurikulum",
           "deskripsi": "Bukti keterlibatan stakeholder",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -913,7 +999,8 @@
           "urutan": 13,
           "nama_dokumen": "Laporan Tracer Study",
           "deskripsi": "Bukti kebutuhan dunia kerja",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U1.08 (Standar 1). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U1.08 (Standar 1): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-LAPORAN-TRACER-STUDY",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -923,7 +1010,8 @@
           "urutan": 14,
           "nama_dokumen": "Laporan Survei Pengguna Lulusan",
           "deskripsi": "Bukti relevansi kurikulum dengan pengguna",
-          "panduan_dokumen": "Dokumen yang sama juga diminta pada butir U1.09 (Standar 1). Unggah file yang sama.",
+          "panduan_dokumen": "Dokumen bersama dengan butir U1.09 (Standar 1): cukup diunggah sekali di salah satu butir, otomatis terhitung di keduanya.",
+          "kode_bersama": "PRODI-SURVEI-PENGGUNA-LULUSAN",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -934,6 +1022,7 @@
           "nama_dokumen": "Dokumen Benchmarking Kurikulum",
           "deskripsi": "Bukti perbandingan dengan prodi sejenis",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -944,6 +1033,7 @@
           "nama_dokumen": "Dokumen Asosiasi Keilmuan",
           "deskripsi": "Bukti rujukan eksternal kurikulum",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -961,6 +1051,7 @@
           "nama_dokumen": "SK Dosen Tetap",
           "deskripsi": "Bukti legal dosen tetap",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -971,6 +1062,7 @@
           "nama_dokumen": "Data Homebase Dosen di PD-Dikti",
           "deskripsi": "Bukti dosen terdaftar pada PS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -981,6 +1073,7 @@
           "nama_dokumen": "Ijazah Dosen",
           "deskripsi": "Bukti kualifikasi akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -991,6 +1084,7 @@
           "nama_dokumen": "SK Jabatan Akademik",
           "deskripsi": "Bukti jabatan fungsional dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1001,6 +1095,7 @@
           "nama_dokumen": "Sertifikat Pendidik",
           "deskripsi": "Bukti sertifikasi dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1011,6 +1106,7 @@
           "nama_dokumen": "Sertifikat Kompetensi/Profesi",
           "deskripsi": "Bukti kompetensi tambahan dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": false,
           "format": "PDF"
@@ -1021,6 +1117,7 @@
           "nama_dokumen": "CV Dosen",
           "deskripsi": "Bukti riwayat kepakaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1031,6 +1128,7 @@
           "nama_dokumen": "SK Mengajar",
           "deskripsi": "Bukti penugasan dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1041,6 +1139,7 @@
           "nama_dokumen": "Matriks Dosen–Mata Kuliah",
           "deskripsi": "Bukti kesesuaian bidang keahlian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1051,6 +1150,7 @@
           "nama_dokumen": "BKD/LKD Dosen",
           "deskripsi": "Bukti beban kerja dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1061,6 +1161,7 @@
           "nama_dokumen": "SK Pembimbing Tugas Akhir",
           "deskripsi": "Bukti penugasan bimbingan skripsi",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1071,6 +1172,7 @@
           "nama_dokumen": "Rekap Bimbingan Tugas Akhir",
           "deskripsi": "Bukti rata-rata bimbingan dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1081,6 +1183,7 @@
           "nama_dokumen": "Data Rasio Dosen–Mahasiswa",
           "deskripsi": "Bukti kecukupan dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1091,6 +1194,7 @@
           "nama_dokumen": "Data Dosen Tidak Tetap",
           "deskripsi": "Bukti penggunaan dosen luar jika ada",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": false,
           "format": "APAPUN"
@@ -1101,6 +1205,7 @@
           "nama_dokumen": "Sertifikat Rekognisi Dosen",
           "deskripsi": "Bukti pengakuan kepakaran dosen",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1111,6 +1216,7 @@
           "nama_dokumen": "Surat Tugas Narasumber/Reviewer/Editor",
           "deskripsi": "Bukti rekognisi akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1121,6 +1227,7 @@
           "nama_dokumen": "Laporan Penelitian Dosen",
           "deskripsi": "Bukti produktivitas penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1131,6 +1238,7 @@
           "nama_dokumen": "Laporan PkM Dosen",
           "deskripsi": "Bukti produktivitas PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1141,6 +1249,7 @@
           "nama_dokumen": "Artikel Publikasi Dosen",
           "deskripsi": "Bukti luaran akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1151,6 +1260,7 @@
           "nama_dokumen": "Kartu Anggota Asosiasi",
           "deskripsi": "Bukti keanggotaan asosiasi keilmuan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1161,6 +1271,7 @@
           "nama_dokumen": "SK Tenaga Kependidikan",
           "deskripsi": "Bukti legal tenaga kependidikan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SK-TENAGA-KEPENDIDIKAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1171,6 +1282,7 @@
           "nama_dokumen": "Ijazah Tenaga Kependidikan",
           "deskripsi": "Bukti kualifikasi tendik",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-IJAZAH-TENAGA-KEPENDIDIKAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1181,6 +1293,7 @@
           "nama_dokumen": "Sertifikat Pelatihan Tendik",
           "deskripsi": "Bukti pengembangan tendik",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SERTIFIKAT-PELATIHAN-TENDIK",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1191,6 +1304,7 @@
           "nama_dokumen": "Dokumen Pengembangan Dosen dan Tendik",
           "deskripsi": "Bukti pelatihan, studi lanjut, workshop, atau sertifikasi",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DOKUMEN-PENGEMBANGAN-DOSEN-DAN-TENDIK",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1208,6 +1322,7 @@
           "nama_dokumen": "Daftar Inventaris Sarana Prasarana",
           "deskripsi": "Bukti ketersediaan fasilitas",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DAFTAR-INVENTARIS-SARANA-PRASARANA",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1218,6 +1333,7 @@
           "nama_dokumen": "Foto Ruang Kuliah",
           "deskripsi": "Bukti kondisi ruang pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-FOTO-RUANG-KULIAH",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1228,6 +1344,7 @@
           "nama_dokumen": "Foto Ruang Dosen dan Ruang Prodi",
           "deskripsi": "Bukti fasilitas akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1238,6 +1355,7 @@
           "nama_dokumen": "Foto Laboratorium",
           "deskripsi": "Bukti fasilitas praktik/pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-FOTO-LABORATORIUM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1248,6 +1366,7 @@
           "nama_dokumen": "Daftar Peralatan Laboratorium",
           "deskripsi": "Bukti kecukupan peralatan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DAFTAR-PERALATAN-LABORATORIUM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1258,6 +1377,7 @@
           "nama_dokumen": "SOP Penggunaan Laboratorium",
           "deskripsi": "Bukti pengelolaan laboratorium",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SOP-PENGGUNAAN-LABORATORIUM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1268,6 +1388,7 @@
           "nama_dokumen": "Jadwal Penggunaan Laboratorium",
           "deskripsi": "Bukti pemanfaatan laboratorium",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-JADWAL-PENGGUNAAN-LABORATORIUM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1278,6 +1399,7 @@
           "nama_dokumen": "Modul Praktikum/Panduan Praktik",
           "deskripsi": "Bukti penggunaan lab dalam pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-MODUL-PRAKTIKUM-PANDUAN-PRAKTIK",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1288,6 +1410,7 @@
           "nama_dokumen": "Daftar Koleksi Perpustakaan",
           "deskripsi": "Bukti sumber belajar",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DAFTAR-KOLEKSI-PERPUSTAKAAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1298,6 +1421,7 @@
           "nama_dokumen": "Data Akses Jurnal/E-book",
           "deskripsi": "Bukti sumber pembelajaran digital",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DATA-AKSES-JURNAL-E-BOOK",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1308,6 +1432,7 @@
           "nama_dokumen": "Screenshot Repository/Digital Library",
           "deskripsi": "Bukti sumber belajar daring",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SCREENSHOT-REPOSITORY-DIGITAL-LIBRARY",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1318,6 +1443,7 @@
           "nama_dokumen": "Screenshot LMS",
           "deskripsi": "Bukti dukungan pembelajaran digital",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SCREENSHOT-LMS",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1328,6 +1454,7 @@
           "nama_dokumen": "Screenshot SIAKAD",
           "deskripsi": "Bukti sistem informasi akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SCREENSHOT-SIAKAD",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1338,6 +1465,7 @@
           "nama_dokumen": "Data Bandwidth Internet",
           "deskripsi": "Bukti dukungan TIK",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DATA-BANDWIDTH-INTERNET",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1348,6 +1476,7 @@
           "nama_dokumen": "Laporan Pemeliharaan Sarpras",
           "deskripsi": "Bukti pemeliharaan fasilitas",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-LAPORAN-PEMELIHARAAN-SARPRAS",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1358,6 +1487,7 @@
           "nama_dokumen": "Berita Acara Perbaikan/Pengadaan",
           "deskripsi": "Bukti pengembangan fasilitas",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-BERITA-ACARA-PERBAIKAN-PENGADAAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1368,6 +1498,7 @@
           "nama_dokumen": "Dokumen K3",
           "deskripsi": "Bukti keamanan, keselamatan, dan kesehatan",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DOKUMEN-K3",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1378,6 +1509,7 @@
           "nama_dokumen": "Foto APAR/Jalur Evakuasi",
           "deskripsi": "Bukti kesiapan keselamatan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-FOTO-APAR-JALUR-EVAKUASI",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1388,6 +1520,7 @@
           "nama_dokumen": "Dokumen Pengelolaan Sampah/Limbah",
           "deskripsi": "Bukti perhatian terhadap lingkungan",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DOKUMEN-PENGELOLAAN-SAMPAH-LIMBAH",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1398,6 +1531,7 @@
           "nama_dokumen": "Foto Fasilitas Aksesibilitas",
           "deskripsi": "Bukti layanan bagi pengguna berkebutuhan khusus",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-FOTO-FASILITAS-AKSESIBILITAS",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -1415,6 +1549,7 @@
           "nama_dokumen": "RKA/RKAT UPPS",
           "deskripsi": "Bukti perencanaan anggaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-RKA-RKAT-UPPS",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1425,6 +1560,7 @@
           "nama_dokumen": "RKA/RKAT Program Studi",
           "deskripsi": "Bukti alokasi anggaran PS",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1435,6 +1571,7 @@
           "nama_dokumen": "Laporan Realisasi Anggaran",
           "deskripsi": "Bukti penggunaan dana",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-REALISASI-ANGGARAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1445,6 +1582,7 @@
           "nama_dokumen": "Laporan Dana Operasional Pendidikan",
           "deskripsi": "Bukti biaya pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-DANA-OPERASIONAL-PENDIDIKAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1455,6 +1593,7 @@
           "nama_dokumen": "Laporan Dana Kemahasiswaan",
           "deskripsi": "Bukti dukungan kegiatan mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-DANA-KEMAHASISWAAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1465,6 +1604,7 @@
           "nama_dokumen": "Laporan Dana Penelitian",
           "deskripsi": "Bukti pembiayaan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-LAPORAN-DANA-PENELITIAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1475,6 +1615,7 @@
           "nama_dokumen": "Laporan Dana PkM",
           "deskripsi": "Bukti pembiayaan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-LAPORAN-DANA-PKM",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1485,6 +1626,7 @@
           "nama_dokumen": "SK Penerima Dana Penelitian",
           "deskripsi": "Bukti legal pembiayaan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SK-PENERIMA-DANA-PENELITIAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1495,6 +1637,7 @@
           "nama_dokumen": "SK Penerima Dana PkM",
           "deskripsi": "Bukti legal pembiayaan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SK-PENERIMA-DANA-PKM",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1505,6 +1648,7 @@
           "nama_dokumen": "Kontrak Penelitian/PkM",
           "deskripsi": "Bukti pelaksanaan pendanaan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1515,6 +1659,7 @@
           "nama_dokumen": "Bukti Investasi SDM",
           "deskripsi": "Bukti pembiayaan studi lanjut/pelatihan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-BUKTI-INVESTASI-SDM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1525,6 +1670,7 @@
           "nama_dokumen": "Bukti Investasi Sarana",
           "deskripsi": "Bukti pengadaan alat/fasilitas",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-BUKTI-INVESTASI-SARANA",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1535,6 +1681,7 @@
           "nama_dokumen": "Bukti Investasi Prasarana",
           "deskripsi": "Bukti pengembangan ruang/gedung",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-BUKTI-INVESTASI-PRASARANA",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1545,6 +1692,7 @@
           "nama_dokumen": "Laporan Pertanggungjawaban Keuangan",
           "deskripsi": "Bukti akuntabilitas dana",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-PERTANGGUNGJAWABAN-KEUANGAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1555,6 +1703,7 @@
           "nama_dokumen": "Dokumen Audit/Laporan Pemeriksaan Keuangan",
           "deskripsi": "Bukti transparansi dan akuntabilitas",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DOKUMEN-AUDIT-LAPORAN-PEMERIKSAAN-KEUANGAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1565,6 +1714,7 @@
           "nama_dokumen": "Notulen Rapat Anggaran",
           "deskripsi": "Bukti pengambilan keputusan anggaran",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-NOTULEN-RAPAT-ANGGARAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1575,6 +1725,7 @@
           "nama_dokumen": "Dokumen Estimasi Sumber Pendanaan",
           "deskripsi": "Bukti keberlanjutan pembiayaan",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DOKUMEN-ESTIMASI-SUMBER-PENDANAAN",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1592,6 +1743,7 @@
           "nama_dokumen": "Roadmap Penelitian UPPS/PS",
           "deskripsi": "Bukti arah penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1602,6 +1754,7 @@
           "nama_dokumen": "SK Penetapan Roadmap Penelitian",
           "deskripsi": "Bukti legal roadmap",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1612,6 +1765,7 @@
           "nama_dokumen": "Pedoman Penelitian",
           "deskripsi": "Bukti kebijakan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-PEDOMAN-PENELITIAN",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1622,6 +1776,7 @@
           "nama_dokumen": "Proposal Penelitian Dosen",
           "deskripsi": "Bukti rencana penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1632,6 +1787,7 @@
           "nama_dokumen": "SK Peneliti",
           "deskripsi": "Bukti penugasan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1642,6 +1798,7 @@
           "nama_dokumen": "Kontrak Penelitian",
           "deskripsi": "Bukti pembiayaan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1652,6 +1809,7 @@
           "nama_dokumen": "Laporan Akhir Penelitian",
           "deskripsi": "Bukti pelaksanaan penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1662,6 +1820,7 @@
           "nama_dokumen": "Rekap Penelitian 3 Tahun Terakhir",
           "deskripsi": "Bukti produktivitas penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1672,6 +1831,7 @@
           "nama_dokumen": "Data Penelitian Melibatkan Mahasiswa",
           "deskripsi": "Bukti keterlibatan mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1682,6 +1842,7 @@
           "nama_dokumen": "Nama Mahasiswa dalam Proposal/Laporan",
           "deskripsi": "Bukti partisipasi mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1692,6 +1853,7 @@
           "nama_dokumen": "Artikel Publikasi Penelitian",
           "deskripsi": "Bukti luaran penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1702,6 +1864,7 @@
           "nama_dokumen": "Link Jurnal/Prosiding",
           "deskripsi": "Bukti publikasi ilmiah",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1712,6 +1875,7 @@
           "nama_dokumen": "Sertifikat HKI",
           "deskripsi": "Bukti luaran penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": false,
           "format": "PDF"
@@ -1722,6 +1886,7 @@
           "nama_dokumen": "Buku/Book Chapter/Policy Brief",
           "deskripsi": "Bukti luaran akademik dan kebijakan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1732,6 +1897,7 @@
           "nama_dokumen": "Bukti Sitasi Google Scholar/SINTA",
           "deskripsi": "Bukti dampak akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1742,6 +1908,7 @@
           "nama_dokumen": "Laporan Evaluasi Roadmap Penelitian",
           "deskripsi": "Bukti evaluasi kesesuaian penelitian",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1752,6 +1919,7 @@
           "nama_dokumen": "Bukti Integrasi Penelitian dalam RPS",
           "deskripsi": "Bukti hasil penelitian masuk pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1769,6 +1937,7 @@
           "nama_dokumen": "Roadmap PkM UPPS/PS",
           "deskripsi": "Bukti arah PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1779,6 +1948,7 @@
           "nama_dokumen": "SK Penetapan Roadmap PkM",
           "deskripsi": "Bukti legal roadmap",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1789,6 +1959,7 @@
           "nama_dokumen": "Pedoman PkM",
           "deskripsi": "Bukti kebijakan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-PEDOMAN-PKM",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1799,6 +1970,7 @@
           "nama_dokumen": "Proposal PkM Dosen",
           "deskripsi": "Bukti rencana PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1809,6 +1981,7 @@
           "nama_dokumen": "SK Pelaksana PkM",
           "deskripsi": "Bukti penugasan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1819,6 +1992,7 @@
           "nama_dokumen": "Kontrak PkM",
           "deskripsi": "Bukti pembiayaan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1829,6 +2003,7 @@
           "nama_dokumen": "Laporan Akhir PkM",
           "deskripsi": "Bukti pelaksanaan PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1839,6 +2014,7 @@
           "nama_dokumen": "Rekap PkM 3 Tahun Terakhir",
           "deskripsi": "Bukti produktivitas PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1849,6 +2025,7 @@
           "nama_dokumen": "Data PkM Melibatkan Mahasiswa",
           "deskripsi": "Bukti keterlibatan mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1859,6 +2036,7 @@
           "nama_dokumen": "Nama Mahasiswa dalam Proposal/Laporan PkM",
           "deskripsi": "Bukti partisipasi mahasiswa",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1869,6 +2047,7 @@
           "nama_dokumen": "Daftar Hadir Peserta PkM",
           "deskripsi": "Bukti pelaksanaan kegiatan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1879,6 +2058,7 @@
           "nama_dokumen": "Dokumentasi Kegiatan PkM",
           "deskripsi": "Bukti visual pelaksanaan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -1889,6 +2069,7 @@
           "nama_dokumen": "Surat Keterangan Mitra",
           "deskripsi": "Bukti manfaat bagi mitra",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1899,6 +2080,7 @@
           "nama_dokumen": "Survei Kepuasan Mitra PkM",
           "deskripsi": "Bukti kepuasan mitra",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1909,6 +2091,7 @@
           "nama_dokumen": "Modul/Panduan PkM",
           "deskripsi": "Bukti luaran PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1919,6 +2102,7 @@
           "nama_dokumen": "Publikasi Media/Artikel PkM",
           "deskripsi": "Bukti diseminasi PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1929,6 +2113,7 @@
           "nama_dokumen": "Sertifikat HKI Produk PkM",
           "deskripsi": "Bukti luaran PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": false,
           "format": "PDF"
@@ -1939,6 +2124,7 @@
           "nama_dokumen": "Laporan Evaluasi Roadmap PkM",
           "deskripsi": "Bukti evaluasi kesesuaian PkM",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1949,6 +2135,7 @@
           "nama_dokumen": "Bukti Integrasi PkM dalam RPS",
           "deskripsi": "Bukti hasil PkM masuk pembelajaran",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -1966,6 +2153,7 @@
           "nama_dokumen": "SK Lembaga Penjaminan Mutu",
           "deskripsi": "Bukti legal pelaksana SPMI tingkat PT",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SK-LEMBAGA-PENJAMINAN-MUTU",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1976,6 +2164,7 @@
           "nama_dokumen": "SK Unit Penjaminan Mutu UPPS/PS",
           "deskripsi": "Bukti legal pelaksana SPMI tingkat UPPS/PS",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-SK-UNIT-PENJAMINAN-MUTU-UPPS-PS",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -1986,6 +2175,7 @@
           "nama_dokumen": "Struktur Organisasi Mutu",
           "deskripsi": "Bukti tata kelola mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-STRUKTUR-ORGANISASI-MUTU",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -1996,6 +2186,7 @@
           "nama_dokumen": "Kebijakan SPMI",
           "deskripsi": "Bukti arah kebijakan mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-KEBIJAKAN-SPMI",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2006,6 +2197,7 @@
           "nama_dokumen": "Manual SPMI",
           "deskripsi": "Bukti prosedur PPEPP",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-MANUAL-SPMI",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2016,6 +2208,7 @@
           "nama_dokumen": "Standar SPMI",
           "deskripsi": "Bukti standar mutu internal",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-STANDAR-SPMI",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2026,6 +2219,7 @@
           "nama_dokumen": "Formulir SPMI",
           "deskripsi": "Bukti instrumen pelaksanaan mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-FORMULIR-SPMI",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2036,6 +2230,7 @@
           "nama_dokumen": "SOP Mutu",
           "deskripsi": "Bukti mekanisme pengendalian mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SOP-MUTU",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2046,6 +2241,7 @@
           "nama_dokumen": "Dokumen Penetapan Standar",
           "deskripsi": "Bukti tahap penetapan PPEPP",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DOKUMEN-PENETAPAN-STANDAR",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2056,6 +2252,7 @@
           "nama_dokumen": "Laporan Pelaksanaan Standar",
           "deskripsi": "Bukti tahap pelaksanaan PPEPP",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2066,6 +2263,7 @@
           "nama_dokumen": "Laporan Monev Standar",
           "deskripsi": "Bukti tahap evaluasi PPEPP",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2076,6 +2274,7 @@
           "nama_dokumen": "Laporan Audit Mutu Internal",
           "deskripsi": "Bukti evaluasi mutu internal",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2086,6 +2285,7 @@
           "nama_dokumen": "SK Auditor Mutu Internal",
           "deskripsi": "Bukti legal auditor",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-SK-AUDITOR-MUTU-INTERNAL",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2096,6 +2296,7 @@
           "nama_dokumen": "Instrumen AMI",
           "deskripsi": "Bukti alat ukur audit",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-INSTRUMEN-AMI",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "PDF"
@@ -2106,6 +2307,7 @@
           "nama_dokumen": "Daftar Temuan AMI",
           "deskripsi": "Bukti hasil audit",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2116,6 +2318,7 @@
           "nama_dokumen": "Rekomendasi Tindak Lanjut AMI",
           "deskripsi": "Bukti rencana perbaikan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2126,6 +2329,7 @@
           "nama_dokumen": "Notulen RTM",
           "deskripsi": "Bukti pengendalian mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-NOTULEN-RTM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -2136,6 +2340,7 @@
           "nama_dokumen": "Daftar Hadir RTM",
           "deskripsi": "Bukti pelaksanaan rapat tinjauan manajemen",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-DAFTAR-HADIR-RTM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -2146,6 +2351,7 @@
           "nama_dokumen": "Laporan Tindak Lanjut RTM",
           "deskripsi": "Bukti peningkatan mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UPPS-LAPORAN-TINDAK-LANJUT-RTM",
           "kategori": "FAKULTAS",
           "wajib": true,
           "format": "PDF"
@@ -2156,6 +2362,7 @@
           "nama_dokumen": "Bukti Perbaikan Kurikulum/RPS/Layanan",
           "deskripsi": "Bukti efektivitas SPMI",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2166,6 +2373,7 @@
           "nama_dokumen": "Data PD-Dikti",
           "deskripsi": "Bukti dokumentasi data akademik",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -2176,6 +2384,7 @@
           "nama_dokumen": "Dashboard/Sistem Informasi Mutu",
           "deskripsi": "Bukti pengelolaan data mutu",
           "panduan_dokumen": "",
+          "kode_bersama": "UNIV-DASHBOARD-SISTEM-INFORMASI-MUTU",
           "kategori": "UNIVERSITAS",
           "wajib": true,
           "format": "APAPUN"
@@ -2186,6 +2395,7 @@
           "nama_dokumen": "Laporan Benchmarking Eksternal",
           "deskripsi": "Bukti external benchmarking",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2196,6 +2406,7 @@
           "nama_dokumen": "MoU/PKS Benchmarking",
           "deskripsi": "Bukti kerja sama benchmarking",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2206,6 +2417,7 @@
           "nama_dokumen": "Dokumen Standar Tambahan",
           "deskripsi": "Bukti pelampauan SN-Dikti",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"
@@ -2216,6 +2428,7 @@
           "nama_dokumen": "Tabel Indikator Kinerja Tambahan",
           "deskripsi": "Bukti pengukuran pelampauan standar",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"
@@ -2226,6 +2439,7 @@
           "nama_dokumen": "Laporan Monev Indikator Tambahan",
           "deskripsi": "Bukti evaluasi dan tindak lanjut indikator tambahan",
           "panduan_dokumen": "",
+          "kode_bersama": "",
           "kategori": "PRODI",
           "wajib": true,
           "format": "PDF"

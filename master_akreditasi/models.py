@@ -357,6 +357,17 @@ class ButirDokumen(models.Model):
         blank=True,
         help_text=_("Hal-hal yang wajib ada di dalam dokumen"),
     )
+    kode_bersama = models.CharField(
+        _("Kode Dokumen Bersama"),
+        max_length=60,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text=_(
+            "Butir dengan kode yang sama (lintas instrumen) memakai dokumen yang sama: "
+            "cukup diunggah sekali. Contoh: UNIV-KEBIJAKAN-SPMI. Kosongkan jika tidak dibagi."
+        ),
+    )
 
     # Kategori kepemilikan — ini PENTING untuk visibility rule
     kategori_kepemilikan = models.CharField(
@@ -412,6 +423,16 @@ class ButirDokumen(models.Model):
 
     def __str__(self):
         return f"{self.kode} — {self.nama_dokumen}"
+
+    def save(self, *args, **kwargs):
+        self.kode_bersama = normalize_kode_bersama(self.kode_bersama)
+        super().save(*args, **kwargs)
+
+
+def normalize_kode_bersama(value):
+    """'univ kebijakan spmi' -> 'UNIV-KEBIJAKAN-SPMI' (huruf besar, pemisah '-', maks 60)."""
+    import re
+    return re.sub(r"[^A-Z0-9]+", "-", str(value or "").upper()).strip("-")[:60]
 
 
 # ============================================

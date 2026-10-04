@@ -489,20 +489,25 @@ def self_process_butir_item(item, instrumen):
     kategori = str(data.get("kategori", "")).strip().upper()
     akses = str(data.get("akses", "INTERNAL")).strip().upper() or "INTERNAL"
 
+    defaults = {
+        "nama_dokumen": data.get("nama_dokumen", "").strip(),
+        "deskripsi": data.get("deskripsi", "").strip(),
+        "panduan_dokumen": data.get("panduan_dokumen", "").strip(),
+        "kategori_kepemilikan": kategori,
+        "wajib": wajib_bool,
+        "format_diterima": fmt,
+        "ukuran_max_mb": ukuran,
+        "status_akses_default": akses,
+        "aktif": True,
+    }
+    # Hanya diubah kalau kolom kode_bersama ada di file Excel
+    if "kode_bersama" in data:
+        defaults["kode_bersama"] = str(data.get("kode_bersama") or "")
+
     butir, created = ButirDokumen.objects.update_or_create(
         sub_standar=sub_standar,
         kode=kode,
-        defaults={
-            "nama_dokumen": data.get("nama_dokumen", "").strip(),
-            "deskripsi": data.get("deskripsi", "").strip(),
-            "panduan_dokumen": data.get("panduan_dokumen", "").strip(),
-            "kategori_kepemilikan": kategori,
-            "wajib": wajib_bool,
-            "format_diterima": fmt,
-            "ukuran_max_mb": ukuran,
-            "status_akses_default": akses,
-            "aktif": True,
-        },
+        defaults=defaults,
     )
     item.butir = butir
     return "CREATED" if created else "UPDATED"
@@ -847,6 +852,7 @@ def butir_quick_save(request):
         'nama_dokumen': request.POST.get('nama_dokumen', '').strip(),
         'deskripsi': request.POST.get('deskripsi', '').strip(),
         'panduan_dokumen': request.POST.get('panduan_dokumen', '').strip(),
+        'kode_bersama': request.POST.get('kode_bersama', '').strip(),
         'kategori_kepemilikan': request.POST.get('kategori_kepemilikan', 'FAKULTAS'),
         'wajib': request.POST.get('wajib') == 'on',
         'format_diterima': request.POST.get('format_diterima', 'PDF'),

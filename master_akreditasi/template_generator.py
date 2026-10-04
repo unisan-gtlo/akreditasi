@@ -111,7 +111,11 @@ def _build_petunjuk_sheet(wb, instrumen):
         ("", ""),
         ("6. Kolom WAJIB di ButirDokumen boleh: Y atau N", ""),
         ("", ""),
-        ("7. Setelah selesai isi, upload file ini via menu Import Excel di SIAKRED", ""),
+        ("7. Kolom KODE_BERSAMA (opsional): butir dengan kode sama, juga di instrumen lain,", ""),
+        ("   memakai dokumen yang sama sehingga cukup diunggah sekali. Contoh: UNIV-KEBIJAKAN-SPMI", ""),
+        ("   Hapus kolom ini dari file kalau tidak ingin mengubah kode bersama yang sudah ada.", ""),
+        ("", ""),
+        ("8. Setelah selesai isi, upload file ini via menu Import Excel di SIAKRED", ""),
         ("", ""),
         ("", ""),
         ("TIPS", "HEADER"),
@@ -223,6 +227,7 @@ def _build_butir_sheet(wb, instrumen):
         ("ukuran_max", 12, False),
         ("akses", 12, False),
         ("deskripsi", 40, False),
+        ("kode_bersama", 24, False),
     ]
 
     for col_idx, (header_text, width, required) in enumerate(headers, start=1):
@@ -242,11 +247,11 @@ def _build_butir_sheet(wb, instrumen):
     # Contoh rows
     example_rows = [
         [f"{std_nomor}.1", f"{std_nomor}.1-A", "Contoh: Dokumen SK Senat tentang Statuta",
-         "UNIVERSITAS", "Y", "PDF", 50, "INTERNAL", "Deskripsi optional"],
+         "UNIVERSITAS", "Y", "PDF", 50, "INTERNAL", "Deskripsi optional", "UNIV-STATUTA"],
         [f"{std_nomor}.1", f"{std_nomor}.1-B", "Contoh: Renstra Prodi 2024-2029",
-         "PRODI", "Y", "PDF", 30, "INTERNAL", ""],
+         "PRODI", "Y", "PDF", 30, "INTERNAL", "", ""],
         [f"{std_nomor}.1.1", f"{std_nomor}.1.1-A", "Contoh: SK Rektor Pengesahan VMTS (dokumen terbuka)",
-         "UNIVERSITAS", "N", "PDF", 10, "TERBUKA", "Publik bisa akses"],
+         "UNIVERSITAS", "N", "PDF", 10, "TERBUKA", "Publik bisa akses", "UNIV-SK-VMTS"],
     ]
 
     for row_idx, row_data in enumerate(example_rows, start=2):

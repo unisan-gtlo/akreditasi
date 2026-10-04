@@ -269,30 +269,15 @@ def sesi_detail(request, pk):
         "kode",
     )
 
-    # Cek dokumen yang sudah upload untuk masing-masing butir (sesuai scope sesi)
-    dokumen_per_butir = {}
-
-    # Filter tahun: dokumen dengan tahun sesuai periode sesi ATAU tanpa tahun (umum)
-    tahun_filter = Q(tahun_akademik__in=sesi.tahun_periode_list) | Q(tahun_akademik="") | Q(tahun_akademik__isnull=True)
-
-    # Filter scope: cocok dengan scope sesi ATAU tanpa scope (dokumen umum)
-    scope_filter = (
-        Q(scope_kode_prodi=sesi.kode_prodi)
-        | Q(scope_kode_fakultas=sesi.kode_fakultas, kategori_pemilik="FAKULTAS")
-        | Q(kategori_pemilik="UNIVERSITAS")
-        | Q(scope_kode_prodi="", scope_kode_fakultas="")
-        | Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
-    )
-
-    for d in Dokumen.objects.filter(
-        butir_dokumen__in=butir_qs,
-        status="FINAL",
-    ).filter(tahun_filter).filter(scope_filter).select_related("butir_dokumen"):
-        dokumen_per_butir.setdefault(d.butir_dokumen_id, []).append(d)
+    # Dokumen per butir sesuai periode & scope sesi, termasuk dokumen bersama
+    # (aturan dipusatkan di dokumen/sharing.py)
+    from dokumen.sharing import dokumen_per_butir_for_sesi
+    butir_list = list(butir_qs)
+    dokumen_per_butir = dokumen_per_butir_for_sesi(sesi, butir_list)
 
     # Build per-standar progress (Standar -> Sub-Standar -> Butir)
     standar_groups = {}
-    for butir in butir_qs:
+    for butir in butir_list:
         sub = butir.sub_standar
         std = sub.standar
 
@@ -1100,18 +1085,6 @@ def _build_bundle_tree(sesi, approved_only=False):
             butir__sub_standar__standar__instrumen=instrumen,
         ).values_list('butir_id', flat=True)
     )
-    # Build scope filter untuk dokumen
-    scope_filter = Q()
-    if sesi.kode_prodi:
-        scope_filter |= Q(scope_kode_prodi=sesi.kode_prodi)
-    if sesi.kode_fakultas:
-        scope_filter |= Q(scope_kode_fakultas=sesi.kode_fakultas) | \
-                        Q(scope_kode_prodi__isnull=True, scope_kode_fakultas=sesi.kode_fakultas)
-    # Selalu include scope UNIVERSITAS (dokumen universal)
-    scope_filter |= Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
-    # Dokumen tanpa scope (prodi & fakultas kosong) dianggap umum -> ikut dihitung
-    scope_filter |= Q(scope_kode_prodi="", scope_kode_fakultas="")
-
     # Ambil seluruh struktur instrumen dalam 3 query + 1 query dokumen,
     # lalu dikelompokkan di Python (sebelumnya 1 query per standar/sub/butir).
     standars_qs = Standar.objects.filter(
@@ -1130,17 +1103,13 @@ def _build_bundle_tree(sesi, approved_only=False):
     ).order_by('urutan', 'kode'):
         butirs_by_sub.setdefault(butir.sub_standar_id, []).append(butir)
 
-    tahun_filter = (
-        Q(tahun_akademik__in=periode_list)
-        | Q(tahun_akademik="")
-        | Q(tahun_akademik__isnull=True)
+    # Dokumen FINAL sesuai periode & scope sesi, termasuk dokumen bersama.
+    # Scope: prodi sesi, UPPS (fakultas tanpa prodi), atau Universitas/Biro --
+    # dokumen PRODI milik prodi lain di fakultas yang sama tidak ikut.
+    from dokumen.sharing import dokumen_per_butir_for_sesi
+    dokumens_by_butir = dokumen_per_butir_for_sesi(
+        sesi, [b for butirs in butirs_by_sub.values() for b in butirs]
     )
-    dokumens_by_butir = {}
-    for dok in Dokumen.objects.filter(
-        butir_dokumen__sub_standar__standar__instrumen=instrumen,
-        status='FINAL',  # hanya dokumen FINAL yang masuk bundle
-    ).filter(tahun_filter).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat'):
-        dokumens_by_butir.setdefault(dok.butir_dokumen_id, []).append(dok)
 
     tree_standars = []
     total_butir = 0

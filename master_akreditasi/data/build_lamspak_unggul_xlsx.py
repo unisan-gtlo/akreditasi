@@ -49,6 +49,10 @@ lines = [
     "  format   : PDF / DOCX / XLSX / PPTX / GAMBAR / APAPUN",
     "  akses    : INTERNAL / TERBUKA (default saat upload, bisa diubah pengunggah)",
     "",
+    "Kolom kode_bersama: butir dengan kode sama (juga di instrumen lain) memakai dokumen yang sama,",
+    "  cukup diunggah sekali. UNIV-... = dokumen Universitas, UPPS-... = dokumen fakultas/UPPS,",
+    "  PRODI-... = dokumen prodi yang diminta di dua standar.",
+    "",
     "Upload: menu Master > Import Excel > instrumen 'LAMSPAK Unggul' > mode UPDATE > Preview > Commit.",
     "Sheet Petunjuk ini diabaikan oleh sistem.",
 ]
@@ -67,14 +71,14 @@ for r, std in enumerate(data["standar"], start=2):
 ws = wb.create_sheet("ButirDokumen")
 cols = [("nomor_substandar", 16), ("kode_butir", 11), ("nama_dokumen", 48), ("kategori", 15),
         ("wajib", 8), ("format", 10), ("ukuran_max", 11), ("akses", 11), ("deskripsi", 60),
-        ("panduan_dokumen", 60)]
+        ("panduan_dokumen", 60), ("kode_bersama", 34)]
 header(ws, cols)
 row = 2
 for std in data["standar"]:
     for b in std["butir"]:
         ws.append([f"{std['nomor']}.1", b["kode"], b["nama_dokumen"], b["kategori"],
                    "Y" if b["wajib"] else "N", b["format"], 50, "INTERNAL",
-                   b["deskripsi"], b["panduan_dokumen"]])
+                   b["deskripsi"], b["panduan_dokumen"], b.get("kode_bersama", "")])
         for col in (4, 5, 6, 8):
             ws.cell(row=row, column=col).fill = REVIEW_FILL
         row += 1
@@ -85,7 +89,7 @@ for col, options in (("D", "UNIVERSITAS,BIRO,FAKULTAS,PRODI"), ("E", "Y,N"),
     dv = DataValidation(type="list", formula1=f'"{options}"', allow_blank=False)
     dv.add(f"{col}2:{col}{last}")
     ws.add_data_validation(dv)
-ws.auto_filter.ref = f"A1:J{last}"
+ws.auto_filter.ref = f"A1:K{last}"
 
 out = HERE / "LAMSPAK-UNGGUL_import.xlsx"
 wb.save(out)

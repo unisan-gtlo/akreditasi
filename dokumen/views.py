@@ -225,41 +225,31 @@ def butir_saya(request):
     user_kode_prodi = [s.prodi_id for s in scopes if s.level == "PRODI" and s.prodi_id]
     user_kode_fakultas = [s.fakultas_id for s in scopes if s.level == "FAKULTAS" and s.fakultas_id]
 
-    # Precompute doc count per butir (relevan dengan scope user) dalam 1 query,
-    # bukan 1 COUNT per butir. Untuk admin/universitas: count semua;
-    # untuk scope lain: count dokumen di scope mereka.
-    final_q = Q(dokumen_terunggah__status='FINAL')
-    count_annotations = {
-        "dok_count_all": Count('dokumen_terunggah', filter=final_q, distinct=True),
+    # Fakultas user juga diambil dari scope PRODI (prodi boleh mengisi butir UPPS)
+    user_fakultas_all = set(user_kode_fakultas) | {
+        s.fakultas_id for s in scopes if s.level == "PRODI" and s.fakultas_id
     }
-    # Hanya dianotasi kalau list scope tidak kosong (hindari filter IN ())
-    if user_kode_prodi:
-        count_annotations["dok_count_prodi"] = Count(
-            'dokumen_terunggah',
-            filter=final_q & Q(dokumen_terunggah__scope_kode_prodi__in=user_kode_prodi),
-            distinct=True,
-        )
-    if user_kode_fakultas:
-        count_annotations["dok_count_fakultas"] = Count(
-            'dokumen_terunggah',
-            filter=final_q & Q(dokumen_terunggah__scope_kode_fakultas__in=user_kode_fakultas),
-            distinct=True,
-        )
-    butir_qs = butir_qs.annotate(**count_annotations)
+
+    # Hitung dokumen FINAL per butir dalam 2 query (termasuk dokumen bersama
+    # dari butir lain dengan kode_bersama yang sama). Untuk admin/universitas:
+    # semua dokumen; untuk scope lain: dokumen di scope mereka.
+    from .sharing import all_ids, butir_groups, dokumen_rows
+    butirs = list(butir_qs)
+    groups = butir_groups(butirs)
+    rows_by_butir = dokumen_rows(all_ids(groups))
 
     butir_list = []
-    for butir in butir_qs:
+    for butir in butirs:
+        rows = {r for gid in groups[butir.id] for r in rows_by_butir.get(gid, [])}
         if butir.kategori_kepemilikan == "PRODI" and user_kode_prodi:
-            dokumen_count = butir.dok_count_prodi
-        elif butir.kategori_kepemilikan == "FAKULTAS" and user_kode_fakultas:
-            dokumen_count = butir.dok_count_fakultas
-        else:
-            # UNIVERSITAS dll: tampil ke semua role tanpa filter scope
-            dokumen_count = butir.dok_count_all
+            rows = {r for r in rows if r[1] in user_kode_prodi}
+        elif butir.kategori_kepemilikan == "FAKULTAS" and user_fakultas_all:
+            rows = {r for r in rows if r[2] in user_fakultas_all}
+        # UNIVERSITAS / BIRO: tampil ke semua role tanpa filter scope
 
         butir_list.append({
             "butir": butir,
-            "dokumen_count": dokumen_count,
+            "dokumen_count": len(rows),
         })
 
     # Grouping by instrumen
@@ -298,11 +288,21 @@ def butir_detail(request, butir_id):
     # Cek apakah user boleh upload ke butir ini
     can_upload, upload_reason = can_upload_to_butir(request.user, butir)
 
-    # Ambil dokumen terunggah untuk butir ini
+    # Ambil dokumen terunggah untuk butir ini + dokumen bersama dari butir lain
+    # dengan kode_bersama yang sama (lintas instrumen).
     # Untuk semua user login: tampilkan semua dokumen (view-only)
-    # Kalau mau filter by scope user, bisa ditambah
-    dokumen_qs = butir.dokumen_terunggah.select_related(
-        "uploaded_by", "last_updated_by"
+    shared_butirs = []
+    butir_ids = [butir.pk]
+    if butir.kode_bersama:
+        shared_butirs = list(
+            ButirDokumen.objects.filter(kode_bersama=butir.kode_bersama)
+            .exclude(pk=butir.pk)
+            .select_related("sub_standar__standar__instrumen")
+            .order_by("sub_standar__standar__instrumen__urutan", "kode")
+        )
+        butir_ids += [b.pk for b in shared_butirs]
+    dokumen_qs = Dokumen.objects.filter(butir_dokumen_id__in=butir_ids).select_related(
+        "uploaded_by", "last_updated_by", "butir_dokumen__sub_standar__standar__instrumen"
     ).order_by("-tanggal_diubah")
 
     # Filter by scope user kalau bukan superadmin
@@ -320,6 +320,7 @@ def butir_detail(request, butir_id):
         "active_menu": "dokumen",
         "butir": butir,
         "dokumen_list": dokumen_qs,
+        "shared_butirs": shared_butirs,
         "can_upload": can_upload,
         "upload_reason": upload_reason,
     }

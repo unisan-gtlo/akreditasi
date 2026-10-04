@@ -101,6 +101,24 @@
         </div>
         {% endif %}
 
+        {% if butir.kode_bersama %}
+        <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#ECFDF5; border-left:3px solid #10B981; border-radius:8px;">
+            <div style="font-weight:600; color:#065F46; margin-bottom:4px;">🔗 Dokumen Bersama: <code>{{ butir.kode_bersama }}</code></div>
+            <p style="margin:0; font-size:.9rem; color:#064E3B; line-height:1.7;">
+                Cukup diunggah sekali. Dokumen untuk kode ini otomatis dipakai di
+                {% if shared_butirs %}{{ shared_butirs|length }} butir lain:{% else %}semua butir dengan kode yang sama.{% endif %}
+            </p>
+            {% if shared_butirs %}
+            <ul style="margin:.4rem 0 0 1.1rem; padding:0; font-size:.85rem; color:#064E3B;">
+                {% for sb in shared_butirs %}
+                <li><a href="{% url 'dokumen:butir_detail' sb.pk %}">{{ sb.kode }}</a> — {{ sb.nama_dokumen }}
+                    <span style="color:var(--text-muted);">({{ sb.sub_standar.standar.instrumen.nama_singkat }})</span></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
         {% if not can_upload %}
         <div style="margin-top:1rem; padding: 1rem 1.25rem; background:#FEF3C7; border-left:3px solid #F59E0B; border-radius:8px;">
             <div style="font-weight:600; color:#92400E; margin-bottom:4px;">⚠️ Anda tidak bisa upload ke butir ini</div>
@@ -141,6 +159,12 @@
                 <tr>
                     <td>
                         <div style="font-weight:600;">{{ dok.judul }}</div>
+                        {% if dok.butir_dokumen_id != butir.pk %}
+                            <div style="font-size:.75rem; color:#047857; margin-top:2px;">
+                                🔗 Dokumen bersama, diunggah di butir {{ dok.butir_dokumen.kode }}
+                                ({{ dok.butir_dokumen.sub_standar.standar.instrumen.nama_singkat }})
+                            </div>
+                        {% endif %}
                         {% if dok.total_revisi > 1 %}
                             <div style="font-size:.75rem; color:var(--text-muted); margin-top:2px;">
                                 {{ dok.total_revisi }} revisi

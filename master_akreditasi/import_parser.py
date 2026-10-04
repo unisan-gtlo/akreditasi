@@ -9,8 +9,10 @@ Sheet "SubStandar":
     | 1             | 1.1.1            | 1.1          | ...  | ...       |
 
 Sheet "ButirDokumen":
-    | nomor_substandar | kode_butir | nama_dokumen | kategori   | wajib | format | ukuran_max | akses    | deskripsi |
-    | 1.1              | 1.1-A      | ...          | UNIVERSITAS| Y     | PDF    | 50         | INTERNAL | ...       |
+    | nomor_substandar | kode_butir | nama_dokumen | kategori   | wajib | format | ukuran_max | akses    | deskripsi | kode_bersama        |
+    | 1.1              | 1.1-A      | ...          | UNIVERSITAS| Y     | PDF    | 50         | INTERNAL | ...       | UNIV-KEBIJAKAN-SPMI |
+
+Kolom kode_bersama opsional: butir dengan kode sama (lintas instrumen) berbagi dokumen.
 """
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
@@ -23,6 +25,7 @@ from .models import (
     SubStandar,
     ButirDokumen,
     KategoriKepemilikan,
+    normalize_kode_bersama,
 )
 
 
@@ -93,6 +96,12 @@ BUTIR_COLUMNS = [
     "akses",
     "deskripsi",
     "panduan_dokumen",
+]
+
+# Kolom opsional: hanya dimasukkan ke data kalau ada di header Excel, supaya
+# file lama (tanpa kolom ini) tidak mengosongkan nilai yang sudah ada saat UPDATE.
+OPTIONAL_BUTIR_COLUMNS = [
+    "kode_bersama",
 ]
 
 VALID_KATEGORI = [k[0] for k in KategoriKepemilikan.choices]
@@ -282,8 +291,12 @@ class ExcelImportParser:
             for col_name in BUTIR_COLUMNS:
                 data[col_name] = ""
             for idx, val in enumerate(row):
-                if idx < len(header) and header[idx] in BUTIR_COLUMNS:
+                if idx < len(header) and (
+                    header[idx] in BUTIR_COLUMNS or header[idx] in OPTIONAL_BUTIR_COLUMNS
+                ):
                     data[header[idx]] = self._cell_to_str(val)
+            if "kode_bersama" in data:
+                data["kode_bersama"] = normalize_kode_bersama(data["kode_bersama"])
             
             row_obj.data = data
             

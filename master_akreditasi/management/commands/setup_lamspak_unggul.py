@@ -25,6 +25,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--map-prodi", nargs="*", default=[], metavar="KODE",
                             help="Kode prodi yang dipindah ke LAMSPAK Unggul, contoh: S21")
+        parser.add_argument("--sync-kode-bersama", action="store_true",
+                            help="Isi kode_bersama (+ panduan) butir yang sudah diimport, dari file JSON.")
         parser.add_argument("--dry-run", action="store_true", help="Tampilkan rencana tanpa menyimpan.")
 
     def handle(self, *args, **opts):
@@ -73,6 +75,9 @@ class Command(BaseCommand):
                         f"    Catatan: sesi #{s.pk} '{s}' masih memakai instrumen {s.instrumen.kode} (tidak diubah)"
                     ))
 
+            if opts["sync_kode_bersama"]:
+                self._sync_kode_bersama(instrumen, data)
+
             if dry_run:
                 transaction.set_rollback(True)
                 self.stdout.write(self.style.WARNING("DRY RUN: tidak ada yang disimpan."))
@@ -80,3 +85,28 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(
                     "Selesai. Lanjutkan: menu Import Excel -> pilih instrumen LAMSPAK Unggul -> unggah LAMSPAK-UNGGUL_import.xlsx"
                 ))
+
+    def _sync_kode_bersama(self, instrumen, data):
+        from master_akreditasi.models import ButirDokumen
+
+        target = {
+            b["kode"]: (b.get("kode_bersama", ""), b.get("panduan_dokumen", ""))
+            for std in data["standar"] for b in std["butir"]
+        }
+        changed = missing = 0
+        butirs = {b.kode: b for b in ButirDokumen.objects.filter(sub_standar__standar__instrumen=instrumen)}
+        for kode, (kode_bersama, panduan) in target.items():
+            butir = butirs.get(kode)
+            if butir is None:
+                missing += 1
+                continue
+            if butir.kode_bersama != kode_bersama or butir.panduan_dokumen != panduan:
+                butir.kode_bersama = kode_bersama
+                butir.panduan_dokumen = panduan
+                butir.save(update_fields=["kode_bersama", "panduan_dokumen", "tanggal_diubah"])
+                changed += 1
+        terisi = sum(1 for v, _ in target.values() if v)
+        self.stdout.write(
+            f"  Kode bersama: {changed} butir diperbarui, {terisi} butir punya kode, "
+            f"{missing} butir belum ada di database (import Excel dulu)."
+        )

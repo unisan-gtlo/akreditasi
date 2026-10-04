@@ -177,43 +177,21 @@ class SesiAkreditasi(models.Model):
 
     @property
     def progress_dokumen(self):
-        """Auto-collect dokumen dari TS, TS-1, TS-2 dst."""
+        """Auto-collect dokumen dari TS, TS-1, TS-2 dst (termasuk dokumen bersama)."""
         from master_akreditasi.models import ButirDokumen
-        from dokumen.models import Dokumen
+        from dokumen.sharing import butir_terisi_for_sesi
 
-        butir_qs = ButirDokumen.objects.filter(
+        butirs = list(ButirDokumen.objects.filter(
             sub_standar__standar__instrumen=self.instrumen,
             aktif=True,
-        )
-        total = butir_qs.count()
+        ).only("id", "kode_bersama"))
+        total = len(butirs)
         if total == 0:
             return {"total": 0, "terisi": 0, "percentage": 0, "sisa": 0, "periode": []}
 
         periode = self.tahun_periode_list
-
-        # Filter tahun: sesuai periode sesi ATAU tanpa tahun (dokumen umum)
-        tahun_filter = (
-            models.Q(tahun_akademik__in=periode)
-            | models.Q(tahun_akademik="")
-            | models.Q(tahun_akademik__isnull=True)
-        )
-
-        # Filter scope: cocok dengan scope sesi ATAU tanpa scope (dokumen umum)
-        scope_filter = (
-            models.Q(scope_kode_prodi=self.kode_prodi)
-            | models.Q(scope_kode_fakultas=self.kode_fakultas, kategori_pemilik="FAKULTAS")
-            | models.Q(kategori_pemilik="UNIVERSITAS")
-            | models.Q(scope_kode_prodi="", scope_kode_fakultas="")
-            | models.Q(scope_kode_prodi__isnull=True, scope_kode_fakultas__isnull=True)
-        )
-
-        terisi_butir_ids = Dokumen.objects.filter(
-            butir_dokumen__in=butir_qs,
-            status="FINAL",
-        ).filter(tahun_filter).filter(scope_filter).values_list(
-            "butir_dokumen_id", flat=True
-        ).distinct()
-        terisi = len(set(terisi_butir_ids))
+        # Aturan tahun & scope dipusatkan di dokumen/sharing.py
+        terisi = len(butir_terisi_for_sesi(self, butirs))
         percentage = round((terisi / total) * 100, 1) if total > 0 else 0
 
         return {

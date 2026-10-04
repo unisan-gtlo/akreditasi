@@ -220,6 +220,15 @@
             </div>
 
             <div style="margin-top:1rem;">
+                <label class="form-label">Kode Dokumen Bersama <span style="color:var(--text-muted); font-weight:400;">(opsional)</span></label>
+                <input type="text" name="kode_bersama" id="f-kode-bersama" class="form-input" maxlength="60"
+                       placeholder="Contoh: UNIV-KEBIJAKAN-SPMI">
+                <div style="font-size:.78rem; color:var(--text-muted); margin-top:4px;">
+                    Butir dengan kode yang sama (juga di instrumen lain) memakai dokumen yang sama — cukup diunggah sekali.
+                </div>
+            </div>
+
+            <div style="margin-top:1rem;">
                 <label class="form-label">Panduan Isi Dokumen</label>
                 <textarea name="panduan_dokumen" id="f-panduan" class="form-input" rows="4"
                           style="width:100%; resize:vertical; min-height:100px;"
@@ -291,6 +300,7 @@ const butirData = {
         nama_dokumen: "{{ butir.nama_dokumen|escapejs }}",
         deskripsi: "{{ butir.deskripsi|escapejs }}",
         panduan_dokumen: "{{ butir.panduan_dokumen|escapejs }}",
+        kode_bersama: "{{ butir.kode_bersama|escapejs }}",
         kategori_kepemilikan: "{{ butir.kategori_kepemilikan }}",
         format_diterima: "{{ butir.format_diterima }}",
         status_akses_default: "{{ butir.status_akses_default }}",
@@ -311,6 +321,7 @@ function openButirModal(butirId) {
     document.getElementById('f-nama-dokumen').value = '';
     document.getElementById('f-deskripsi').value = '';
     document.getElementById('f-panduan').value = '';
+    document.getElementById('f-kode-bersama').value = '';
     document.getElementById('f-kepemilikan').value = 'FAKULTAS';
     document.getElementById('f-format').value = 'PDF';
     document.getElementById('f-akses').value = 'INTERNAL';
@@ -327,6 +338,7 @@ function openButirModal(butirId) {
         document.getElementById('f-nama-dokumen').value = d.nama_dokumen;
         document.getElementById('f-deskripsi').value = d.deskripsi;
         document.getElementById('f-panduan').value = d.panduan_dokumen;
+        document.getElementById('f-kode-bersama').value = d.kode_bersama;
         document.getElementById('f-kepemilikan').value = d.kategori_kepemilikan;
         document.getElementById('f-format').value = d.format_diterima;
         document.getElementById('f-akses').value = d.status_akses_default;
