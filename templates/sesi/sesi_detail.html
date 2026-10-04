@@ -399,6 +399,25 @@
 
 </div>
 
+{% if user.is_superuser and sesi.kode_prodi %}
+<div class="panel" style="margin-top:1.5rem;">
+    <div class="panel-body" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div style="font-size:.85rem; color:var(--text-secondary);">
+            <strong>⟳ Sinkron data sesi ini</strong> — RPS SI-OBE, DTPS &amp; data dosen SIMDA, dan tautan portal untuk prodi {{ sesi.kode_prodi }}.
+            {% if sinkron_terakhir %}<br>Terakhir: {{ sinkron_terakhir.mulai|date:"d M Y H:i" }} · {{ sinkron_terakhir.get_status_display }}
+                · <a href="{% url 'master_akreditasi:sinkron_log' sinkron_terakhir.pk %}">log</a>{% endif %}
+        </div>
+        <form method="post" action="{% url 'master_akreditasi:sinkron_jalankan' %}">
+            {% csrf_token %}
+            <input type="hidden" name="jenis" value="SEMUA">
+            <input type="hidden" name="prodi" value="{{ sesi.kode_prodi }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="btn btn-primary">Sinkron Sekarang</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 {# Popup Data SIMDA (DTPS) untuk butir ber-mapping data dosen #}
 {% include "master_akreditasi/_dtps_modal_assets.html" %}
 {% endblock %}

@@ -1,6 +1,6 @@
 """URL routing untuk master_akreditasi."""
 from django.urls import path
-from . import views, views_dtps_modal
+from . import views, views_dtps_modal, views_sinkron
 
 app_name = "master_akreditasi"
 
@@ -46,6 +46,11 @@ urlpatterns = [
         views_dtps_modal.dosen_bkd_detail,
         name="dosen_bkd_detail",
     ),
+    # Pusat Sinkronisasi (superadmin)
+    path("sinkron/", views_sinkron.pusat_sinkron, name="sinkron_home"),
+    path("sinkron/jalankan/", views_sinkron.sinkron_jalankan, name="sinkron_jalankan"),
+    path("sinkron/status/", views_sinkron.sinkron_status, name="sinkron_status"),
+    path("sinkron/log/<int:pk>/", views_sinkron.sinkron_log_detail, name="sinkron_log"),
     # File dosen dari media SIMDA, disajikan dengan cek akses
     path(
         "sesi/<int:sesi_id>/butir/<int:butir_id>/dosen-file/<str:kind>/<int:pk>/",

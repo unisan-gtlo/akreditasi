@@ -196,6 +196,14 @@ class DTPSDosenSesi(models.Model):
         help_text='True jika data dosen di SIMDA berbeda dengan snapshot. '
                   'Bisa di-refresh manual oleh operator.',
     )
+    # ---- Penanda sinkron (tidak pernah menonaktifkan otomatis) ----
+    perlu_ditinjau = models.BooleanField(
+        default=False,
+        verbose_name='Perlu Ditinjau',
+        help_text='Diisi sinkron: dosen auto-homebase yang di SIMDA tidak lagi homebase prodi ini '
+                  'atau tidak aktif. Admin yang memutuskan menonaktifkan.',
+    )
+    catatan_sinkron = models.CharField(max_length=200, blank=True, default='', verbose_name='Catatan Sinkron')
 
     # ---- Audit ----
     tanggal_dibuat = models.DateTimeField(default=timezone.now)

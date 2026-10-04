@@ -277,6 +277,11 @@ def sesi_detail(request, pk):
     # Butir yang diisi dari data dosen SIMDA (DTPS): kelengkapan per butir
     from master_akreditasi.dosen_data import kelengkapan_sesi
     simda = kelengkapan_sesi(sesi, [b.pk for b in butir_list])
+    from master_akreditasi.models_sinkron import SinkronLog
+    sinkron_terakhir = (
+        SinkronLog.objects.filter(lingkup__in=["", sesi.kode_prodi or "-"]).first()
+        if request.user.is_superuser else None
+    )
 
     # Build per-standar progress (Standar -> Sub-Standar -> Butir)
     standar_groups = {}
@@ -361,6 +366,7 @@ def sesi_detail(request, pk):
         "catatan_list": catatan_list,
         "overall_progress": overall_progress,
         "can_edit": can_edit,
+        "sinkron_terakhir": sinkron_terakhir,
     }
     return render(request, "sesi/sesi_detail.html", context)
 

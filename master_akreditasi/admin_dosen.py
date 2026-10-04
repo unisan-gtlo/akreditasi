@@ -111,12 +111,14 @@ class DTPSDosenSesiAdmin(admin.ModelAdmin):
         'peran',
         'aktif_display',
         'snapshot_status_display',
+        'perlu_ditinjau',
         'tanggal_diubah',
     )
     list_filter = (
         'sumber',
         'peran',
         'aktif',
+        'perlu_ditinjau',
         'snapshot_outdated',
         'sesi__instrumen',
         'sesi__kode_prodi',
@@ -132,7 +134,7 @@ class DTPSDosenSesiAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ('sesi',)
     readonly_fields = (
-        'snapshot_at', 'snapshot_outdated',
+        'snapshot_at', 'snapshot_outdated', 'perlu_ditinjau', 'catatan_sinkron',
         'dosen_nama_snapshot',
         'dosen_homebase_prodi_snapshot',
         'dosen_homebase_fakultas_snapshot',
@@ -165,6 +167,11 @@ class DTPSDosenSesiAdmin(admin.ModelAdmin):
                 'snapshot_outdated',
             ),
             'classes': ('collapse',),
+        }),
+        ('Hasil Sinkron SIMDA', {
+            'fields': ('perlu_ditinjau', 'catatan_sinkron'),
+            'description': 'Diisi Pusat Sinkronisasi. Sinkron tidak pernah menonaktifkan otomatis: '
+                           'nonaktifkan manual lewat field Aktif bila dosen memang tidak lagi DTPS.',
         }),
         ('Audit', {
             'fields': ('dibuat_oleh', 'tanggal_dibuat', 'tanggal_diubah'),

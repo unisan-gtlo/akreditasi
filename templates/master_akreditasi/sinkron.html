@@ -1,0 +1,188 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Pusat Sinkronisasi - SIAKRED{% endblock %}
+{% block page_heading %}Pusat Sinkronisasi{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Master Akreditasi</span>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Pusat Sinkronisasi</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<style>
+  .sk-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:1rem; margin-bottom:1.5rem; }
+  .sk-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.25rem; display:flex; flex-direction:column; gap:.6rem; }
+  .sk-card h3 { margin:0; font-size:1rem; }
+  .sk-ket { font-size:.82rem; color:var(--text-secondary); line-height:1.5; }
+  .sk-meta { font-size:.78rem; color:var(--text-muted); }
+  .sk-badge { display:inline-block; padding:.1rem .45rem; border-radius:4px; font-size:.7rem; font-weight:700; }
+  .sk-SUKSES { background:#D1FAE5; color:#065F46; } .sk-GAGAL { background:#FEE2E2; color:#991B1B; }
+  .sk-BERJALAN, .sk-ANTRI { background:#DBEAFE; color:#1E40AF; }
+  .sk-stat { font-size:.85rem; }
+  .sk-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+  .sk-table th, .sk-table td { padding:.5rem .6rem; border-bottom:1px solid var(--border-subtle); text-align:left; vertical-align:top; }
+  .sk-spin { display:inline-block; width:12px; height:12px; border:2px solid #93C5FD; border-top-color:#1D4ED8; border-radius:50%; animation:skspin 1s linear infinite; vertical-align:-2px; }
+  @keyframes skspin { to { transform:rotate(360deg); } }
+</style>
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Pusat Sinkronisasi</h1>
+            <p class="page-subtitle">
+                Perbarui data SIAKRED dari SI-OBE, SIMDA, dan portal kampus. Proses berjalan di latar belakang;
+                halaman ini memperbarui status otomatis. Sinkron otomatis juga berjalan setiap malam pukul 02.15.
+            </p>
+        </div>
+        <form method="post" action="{% url 'master_akreditasi:sinkron_jalankan' %}">
+            {% csrf_token %}
+            <input type="hidden" name="jenis" value="SEMUA">
+            <button type="submit" class="btn btn-primary" {% if berjalan %}disabled{% endif %}>⟳ Sinkron Semua</button>
+        </form>
+    </div>
+</div>
+
+{% if berjalan %}
+<div class="alert alert-info" style="margin-bottom:1rem;">
+    <div class="alert-icon"><span class="sk-spin"></span></div>
+    <div>Sinkron <strong>{{ berjalan.get_jenis_display }}</strong>{% if berjalan.lingkup %} prodi {{ berjalan.lingkup }}{% endif %}
+        sedang berjalan sejak {{ berjalan.mulai|date:"H:i:s" }}…
+        <a href="{% url 'master_akreditasi:sinkron_log' berjalan.pk %}">lihat log</a></div>
+</div>
+{% endif %}
+
+<div class="sk-grid">
+    {% for k in kartu %}
+    <div class="sk-card">
+        <h3>{{ k.judul }}</h3>
+        <div class="sk-ket">{{ k.ket }}</div>
+        <div class="sk-stat">
+            {% if k.jenis == "RPS" %}
+                <strong>{{ stat.rps_dokumen }}</strong> dokumen RPS tersinkron ·
+                prodi: {{ stat.rps_prodi|join:", "|default:"-" }}
+            {% elif k.jenis == "DTPS" %}
+                <strong>{{ stat.sesi_aktif|length }}</strong> sesi aktif ·
+                <strong style="{% if stat.dtps_ditinjau %}color:#B45309;{% endif %}">{{ stat.dtps_ditinjau|length }}</strong> dosen perlu ditinjau
+            {% elif k.jenis == "TAUTAN" %}
+                <strong>{{ stat.tautan_total }}</strong> tautan ·
+                <strong style="{% if stat.tautan_rusak %}color:#B91C1C;{% endif %}">{{ stat.tautan_rusak|length }}</strong> tidak bisa diakses
+            {% else %}
+                Cache otomatis kedaluwarsa 5–10 menit.
+            {% endif %}
+        </div>
+        <div class="sk-meta">
+            {% if k.terakhir %}
+                Terakhir: {{ k.terakhir.mulai|date:"d M Y H:i" }}
+                <span class="sk-badge sk-{{ k.terakhir.status }}" data-log-id="{{ k.terakhir.pk }}">{{ k.terakhir.get_status_display }}</span>
+                <div style="margin-top:.2rem;">{{ k.terakhir.ringkasan|truncatechars:140 }}</div>
+            {% else %}
+                Belum pernah dijalankan.
+            {% endif %}
+        </div>
+        <form method="post" action="{% url 'master_akreditasi:sinkron_jalankan' %}" style="margin-top:auto;">
+            {% csrf_token %}
+            <input type="hidden" name="jenis" value="{{ k.jenis }}">
+            <button type="submit" class="btn" {% if k.berjalan %}disabled{% endif %}>
+                {% if k.berjalan %}<span class="sk-spin"></span> Berjalan…{% elif k.jenis == "CACHE" %}Bersihkan{% else %}Sinkron{% endif %}
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+
+{% if stat.dtps_ditinjau %}
+<div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><div>
+        <div class="panel-title">⚠ Dosen DTPS perlu ditinjau</div>
+        <div class="panel-subtitle">Sinkron tidak menonaktifkan otomatis. Nonaktifkan lewat Admin &rarr; DTPS Dosen per Sesi bila memang tidak lagi DTPS.</div>
+    </div></div>
+    <div class="panel-body panel-body-flush">
+        <table class="sk-table">
+            <thead><tr><th>Prodi / Sesi</th><th>NIDN</th><th>Nama</th><th>Catatan</th></tr></thead>
+            <tbody>
+            {% for d in stat.dtps_ditinjau %}
+                <tr><td>{{ d.sesi.kode_prodi }} · #{{ d.sesi.pk }}</td><td><code>{{ d.dosen_nidn }}</code></td>
+                    <td>{{ d.dosen_nama_snapshot }}</td><td>{{ d.catatan_sinkron }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if stat.tautan_rusak %}
+<div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><div class="panel-title">🔗 Tautan tidak bisa diakses</div></div>
+    <div class="panel-body panel-body-flush">
+        <table class="sk-table">
+            <thead><tr><th>Butir</th><th>Dokumen</th><th>URL</th></tr></thead>
+            <tbody>
+            {% for r in stat.tautan_rusak %}
+                <tr><td>{{ r.dokumen.butir_dokumen.kode }}</td>
+                    <td><a href="{% url 'dokumen:dokumen_detail' r.dokumen.pk %}">{{ r.dokumen.judul }}</a></td>
+                    <td><a href="{{ r.gdrive_url }}" target="_blank" rel="noopener">{{ r.gdrive_url }}</a></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header"><div>
+        <div class="panel-title">Tautan Portal per Prodi</div>
+        <div class="panel-subtitle">Prodi dengan slug portal di Mapping Prodi ikut sinkron tautan Portal UNISAN.</div>
+    </div></div>
+    <div class="panel-body" style="font-size:.85rem;">
+        <div><strong>Aktif:</strong>
+            {% for m in stat.portal_ada %}{{ m.kode_prodi }} ({{ m.portal_slug }}){% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</div>
+        <div style="margin-top:.35rem; color:var(--text-muted);"><strong>Belum diisi slug:</strong>
+            {% for m in stat.portal_kosong %}{{ m.kode_prodi }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}
+            — isi di Admin &rarr; Mapping Prodi &harr; Instrumen.</div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header"><div class="panel-title">Riwayat Sinkronisasi</div></div>
+    <div class="panel-body panel-body-flush">
+        <table class="sk-table">
+            <thead><tr><th>#</th><th>Waktu</th><th>Jenis</th><th>Lingkup</th><th>Oleh</th><th>Status</th><th>Durasi</th><th>Ringkasan</th></tr></thead>
+            <tbody>
+            {% for s in riwayat %}
+                <tr>
+                    <td><a href="{% url 'master_akreditasi:sinkron_log' s.pk %}">#{{ s.pk }}</a></td>
+                    <td>{{ s.mulai|date:"d M Y H:i" }}</td>
+                    <td>{{ s.get_jenis_display }}</td>
+                    <td>{{ s.lingkup|default:"semua" }}</td>
+                    <td>{% if s.dipicu_oleh %}{{ s.dipicu_oleh.username }}{% else %}{{ s.sumber }}{% endif %}</td>
+                    <td><span class="sk-badge sk-{{ s.status }}" data-log-id="{{ s.pk }}">{{ s.get_status_display }}</span></td>
+                    <td>{% if s.durasi_detik is not None %}{{ s.durasi_detik }} dtk{% else %}—{% endif %}</td>
+                    <td style="max-width:420px;">{{ s.ringkasan|truncatechars:160 }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="8" style="color:var(--text-muted);">Belum ada riwayat.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Pembaruan otomatis: selama ada sinkron berjalan, cek status tiap 4 detik lalu muat ulang saat selesai.
+(function () {
+    var ids = Array.from(document.querySelectorAll('.sk-badge.sk-BERJALAN, .sk-badge.sk-ANTRI'))
+        .map(function (el) { return el.getAttribute('data-log-id'); });
+    ids = ids.filter(function (v, i) { return ids.indexOf(v) === i; });
+    if (!ids.length) return;
+    var url = "{% url 'master_akreditasi:sinkron_status' %}?ids=" + ids.join(',');
+    setInterval(function () {
+        fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+            if (d.logs.every(function (l) { return !l.aktif; })) { window.location.reload(); }
+        }).catch(function () {});
+    }, 4000);
+})();
+</script>
+{% endblock %}

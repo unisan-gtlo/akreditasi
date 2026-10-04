@@ -237,7 +237,7 @@ class ButirDokumenAdmin(admin.ModelAdmin):
 
 @admin.register(MappingProdiInstrumen)
 class MappingProdiInstrumenAdmin(admin.ModelAdmin):
-    list_display = ("kode_prodi", "nama_prodi", "instrumen", "aktif")
+    list_display = ("kode_prodi", "nama_prodi", "instrumen", "portal_slug", "aktif")
     list_filter = ("instrumen", "aktif")
     search_fields = ("kode_prodi", "nama_prodi")
     ordering = ("kode_prodi",)
@@ -305,3 +305,19 @@ from .admin_dosen import (  # noqa: E402, F401
     SnapshotDataSimdaAdmin,
     DTPSDosenSesiInline,
 )
+
+# ============================================
+# LOG SINKRONISASI (read-only)
+# ============================================
+from .models_sinkron import SinkronLog  # noqa: E402
+
+
+@admin.register(SinkronLog)
+class SinkronLogAdmin(admin.ModelAdmin):
+    list_display = ("pk", "mulai", "jenis", "lingkup", "sumber", "dipicu_oleh", "status", "ringkasan")
+    list_filter = ("jenis", "status", "sumber")
+    search_fields = ("ringkasan", "output", "lingkup")
+    readonly_fields = [f.name for f in SinkronLog._meta.fields]
+
+    def has_add_permission(self, request):
+        return False

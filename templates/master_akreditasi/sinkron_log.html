@@ -1,0 +1,45 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Log Sinkron #{{ log.pk }} - SIAKRED{% endblock %}
+{% block page_heading %}Log Sinkron #{{ log.pk }}{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'master_akreditasi:sinkron_home' %}">Pusat Sinkronisasi</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Log #{{ log.pk }}</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="panel">
+    <div class="panel-header"><div>
+        <div class="panel-title">{{ log.get_jenis_display }}{% if log.lingkup %} — prodi {{ log.lingkup }}{% endif %}</div>
+        <div class="panel-subtitle">
+            {{ log.mulai|date:"d M Y H:i:s" }} · {% if log.dipicu_oleh %}{{ log.dipicu_oleh.username }}{% else %}{{ log.sumber }}{% endif %}
+            · <strong id="log-status">{{ log.get_status_display }}</strong>
+            {% if log.durasi_detik is not None %} · {{ log.durasi_detik }} detik{% endif %}
+        </div>
+    </div>
+    <a href="{% url 'master_akreditasi:sinkron_home' %}" class="btn">← Kembali</a></div>
+    <div class="panel-body">
+        {% if log.ringkasan %}<p style="margin-top:0;"><strong>Ringkasan:</strong> {{ log.ringkasan }}</p>{% endif %}
+        <pre id="log-output" style="background:#0F172A; color:#E2E8F0; padding:1rem; border-radius:8px; font-size:.78rem; max-height:600px; overflow:auto; white-space:pre-wrap;">{{ log.output|default:"(belum ada output)" }}</pre>
+    </div>
+</div>
+{% if log.aktif %}
+<script>
+(function () {
+    var url = "{% url 'master_akreditasi:sinkron_status' %}?ids={{ log.pk }}";
+    setInterval(function () {
+        fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+            var l = d.logs[0]; if (!l) return;
+            document.getElementById('log-output').textContent = l.output_tail || '(belum ada output)';
+            document.getElementById('log-status').textContent = l.status_label;
+            if (!l.aktif) { window.location.reload(); }
+        }).catch(function () {});
+    }, 3000);
+})();
+</script>
+{% endif %}
+{% endblock %}

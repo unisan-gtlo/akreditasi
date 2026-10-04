@@ -36,6 +36,13 @@ JENIS_KINDS = {
 }
 
 KELENGKAPAN_TTL = 60 * 10
+KELENGKAPAN_VERSION_KEY = "simda_kelengkapan_version"
+
+
+def invalidate_kelengkapan():
+    """Buang semua cache kelengkapan SIMDA (dipakai Sinkron DTPS)."""
+    from core.cache_utils import bump_version
+    bump_version(KELENGKAPAN_VERSION_KEY)
 
 
 def media_root():
@@ -92,7 +99,8 @@ def kelengkapan_sesi(sesi, butir_ids):
         sorted((m.butir_id, m.jenis_data, m.filter_periode) for m in mappings.values()),
         str(sesi.tahun_ts),
     )).encode()).hexdigest()[:16]
-    key = f"simda_kelengkapan:{sesi.pk}:{sig}"
+    from core.cache_utils import get_version
+    key = f"simda_kelengkapan:v{get_version(KELENGKAPAN_VERSION_KEY)}:{sesi.pk}:{sig}"
     cached = cache.get(key)
     if cached is not None:
         return cached

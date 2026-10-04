@@ -470,7 +470,15 @@ class MappingProdiInstrumen(models.Model):
         verbose_name=_("Instrumen Akreditasi"),
     )
     catatan = models.TextField(_("Catatan"), blank=True)
-
+    # Slug di Portal UNISAN (portal.unisan.ac.id) untuk tautan bukti otomatis
+    portal_slug = models.CharField(
+        _("Slug Portal Prodi"), max_length=100, blank=True, default="",
+        help_text=_("Contoh: ilmu-pemerintahan (dari portal.unisan.ac.id/prodi/<slug>/). Kosong = tanpa tautan portal."),
+    )
+    portal_fakultas_slug = models.CharField(
+        _("Slug Portal Fakultas"), max_length=50, blank=True, default="",
+        help_text=_("Contoh: fisip (dari portal.unisan.ac.id/fakultas/<slug>/)."),
+    )
     aktif = models.BooleanField(_("Aktif"), default=True)
     tanggal_dibuat = models.DateTimeField(auto_now_add=True)
     tanggal_diubah = models.DateTimeField(auto_now=True)
@@ -666,3 +674,4 @@ from .models_dosen_link import (  # noqa: E402, F401
     DTPSDosenSesi,
     SnapshotDataSimda,
 )
+from .models_sinkron import SinkronLog  # noqa: E402, F401
