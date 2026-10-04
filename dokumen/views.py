@@ -305,7 +305,7 @@ def butir_saya(request):
 def _rps_siobe_info(butir, butir_ids):
     """Ringkasan RPS hasil sinkron SI-OBE untuk butir RPS seluruh MK, atau None."""
     from django.db.models import Max
-    from .siobe_rps import KODE_BERSAMA_RPS, MARKER
+    from .siobe_rps import KODE_BERSAMA_PENCIRI, KODE_BERSAMA_RPS, MARKER
 
     if butir.kode_bersama != KODE_BERSAMA_RPS:
         return None
@@ -317,6 +317,16 @@ def _rps_siobe_info(butir, butir_ids):
     )
     info = revisi.aggregate(terakhir=Max("tanggal_upload"))
     info["jumlah"] = revisi.count()
+    # Pintasan ke butir RPS MK penciri di instrumen yang sama (tempat memilih penciri)
+    info["penciri_butir"] = (
+        ButirDokumen.objects.filter(
+            sub_standar__standar__instrumen_id=butir.sub_standar.standar.instrumen_id,
+            kode_bersama=KODE_BERSAMA_PENCIRI,
+            aktif=True,
+        )
+        .order_by("sub_standar__standar__urutan", "sub_standar__urutan", "urutan", "kode")
+        .first()
+    )
     return info
 
 

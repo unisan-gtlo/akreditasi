@@ -110,6 +110,12 @@
                 <a href="https://siobe.unisan.ac.id" target="_blank" rel="noopener">SI-OBE</a>.
                 <br>Tersinkron: <strong>{{ rps_siobe.jumlah }} RPS</strong>{% if rps_siobe.terakhir %}, terakhir diperbarui {{ rps_siobe.terakhir|date:"d M Y H:i" }}{% endif %}.
             </p>
+            {% if rps_siobe.penciri_butir %}
+            <a href="{% url 'dokumen:butir_detail' rps_siobe.penciri_butir.pk %}#pilih-penciri" class="btn btn-primary"
+               style="margin-top:.75rem; display:inline-flex; gap:.4rem; align-items:center;">
+                ⭐ Pilih MK Penciri dari RPS ini ({{ rps_siobe.penciri_butir.kode }}) →
+            </a>
+            {% endif %}
         </div>
         {% endif %}
 
@@ -142,7 +148,7 @@
 
 {# Pilih MK penciri dari RPS SI-OBE (khusus butir RPS MK penciri) #}
 {% if penciri %}
-<div class="panel" style="margin-bottom:1.5rem;">
+<div class="panel" id="pilih-penciri" style="margin-bottom:1.5rem; scroll-margin-top:90px;">
     <div class="panel-header">
         <div>
             <div class="panel-title">⭐ Pilih Mata Kuliah Penciri Prodi</div>

@@ -505,3 +505,33 @@ def refresh_penciri(kode_prodi, user):
         with transaction.atomic():
             diperbarui += _tulis_cermin(butir, kode_prodi, sumber[kode][0], sumber[kode][1], cermin, user)
     return diperbarui, diarsipkan
+
+
+# =========================================================
+# TAMPILAN CATATAN REVISI
+# =========================================================
+
+def catatan_revisi_tampil(catatan):
+    """Ubah penanda teknis sinkron SI-OBE jadi kalimat yang mudah dibaca.
+
+    'SIOBE jenis=berkas; disahkan=2026-10-01T04:45:20+00:00; url='
+        -> 'Sinkron otomatis dari SI-OBE · RPS disahkan 01 Okt 2026'
+    Catatan biasa dikembalikan apa adanya.
+    """
+    catatan = catatan or ""
+    penciri = catatan.startswith(MARKER_PENCIRI)
+    if not (penciri or catatan.startswith(MARKER)):
+        return catatan
+
+    from django.utils.dateparse import parse_datetime
+    from django.utils.formats import date_format
+
+    m = re.search(r"disahkan=([^;]*)", catatan)
+    tanggal = parse_datetime(m.group(1).strip()) if m and m.group(1).strip() else None
+    jenis = re.search(r"jenis=(\w+)", catatan)
+    teks = "Dipilih sebagai RPS MK penciri" if penciri else "Sinkron otomatis dari SI-OBE"
+    if jenis and jenis.group(1) == "tautan":
+        teks += " (tautan)"
+    if tanggal:
+        teks += " · RPS disahkan " + date_format(timezone.localtime(tanggal), "d M Y")
+    return teks

@@ -360,6 +360,12 @@ class DokumenRevisi(models.Model):
         return f"{self.dokumen.judul} — Rev.{self.nomor_revisi}"
 
     @property
+    def catatan_tampil(self):
+        """Catatan revisi untuk ditampilkan (penanda sinkron SI-OBE dibuat mudah dibaca)."""
+        from .siobe_rps import catatan_revisi_tampil
+        return catatan_revisi_tampil(self.catatan_revisi)
+
+    @property
     def file_size_display(self):
         """Format ukuran file jadi string user-friendly."""
         kb = self.file_size_kb
