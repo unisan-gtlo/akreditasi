@@ -1115,6 +1115,14 @@ def _build_bundle_tree(sesi, approved_only=False):
     dokumens_by_butir = dokumen_per_butir_for_sesi(
         sesi, [b for butirs in butirs_by_sub.values() for b in butirs]
     )
+    # Dokumen bertipe tautan aplikasi: URL-nya ditempel ke objek (1 query) supaya
+    # bundle bisa menampilkan tombol "Buka" langsung.
+    from dokumen.models import DokumenRevisi
+    semua_dok = {d.pk: d for docs in dokumens_by_butir.values() for d in docs}
+    for dok_id, url in DokumenRevisi.objects.filter(
+        dokumen_id__in=list(semua_dok), aktif=True, storage_type=DokumenRevisi.StorageType.LINK,
+    ).values_list('dokumen_id', 'gdrive_url'):
+        semua_dok[dok_id].tautan_url = url
 
     # Kelengkapan data dosen SIMDA untuk butir ber-mapping (DTPS sesi ini)
     from master_akreditasi.dosen_data import kelengkapan_sesi
@@ -1426,6 +1434,8 @@ def dokumen_download_public(request, token, pk):
     if not revisi:
         raise Http404("Dokumen tidak memiliki revisi aktif.")
 
+    if revisi.is_link:
+        return redirect(revisi.gdrive_url)
     if revisi.is_gdrive:
         return redirect(revisi.get_download_url())
 
@@ -1626,6 +1636,15 @@ def _build_bundle_zip(sesi, include_local_files=True, approved_only=False):
                             except Exception as e:
                                 entry['included'] = False
                                 entry['error'] = f'Gagal baca file: {str(e)[:100]}'
+                        elif rev.storage_type == 'LINK':
+                            # Pintasan internet (.url) supaya bisa diklik langsung dari ZIP
+                            url_path = f"{std_folder}/{sub_folder}/{butir_folder}/{base_name}.url"
+                            shortcut = "[InternetShortcut]" + "\r\n" + "URL=" + rev.gdrive_url + "\r\n"
+                            zf.writestr(url_path, shortcut)
+                            entry['included'] = True
+                            entry['zip_path'] = url_path
+                            entry['url'] = rev.gdrive_url
+                            entry['note'] = 'Tautan aplikasi/website (file pintasan .url).'
                         elif rev.storage_type == 'GDRIVE':
                             entry['included'] = False
                             entry['gdrive_url'] = rev.gdrive_url

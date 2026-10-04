@@ -268,6 +268,7 @@ class DokumenRevisi(models.Model):
     class StorageType(models.TextChoices):
         LOCAL = "LOCAL", _("Upload File Lokal")
         GDRIVE = "GDRIVE", _("Google Drive Link")
+        LINK = "LINK", _("Tautan Aplikasi/Website")
 
     storage_type = models.CharField(
         _("Tipe Storage"),
@@ -301,7 +302,7 @@ class DokumenRevisi(models.Model):
         _("Google Drive URL"),
         max_length=500,
         blank=True,
-        help_text=_("Diisi kalau storage_type=GDRIVE"),
+        help_text=_("Diisi kalau storage_type=GDRIVE, atau URL aplikasi kalau storage_type=LINK"),
     )
     gdrive_file_id = models.CharField(
         _("Google Drive File ID"),
@@ -393,6 +394,11 @@ class DokumenRevisi(models.Model):
     def is_local(self):
         return self.storage_type == self.StorageType.LOCAL
 
+    @property
+    def is_link(self):
+        """Tautan aplikasi/website (URL disimpan di gdrive_url)."""
+        return self.storage_type == self.StorageType.LINK
+
     def get_preview_url(self):
         """Return URL untuk preview inline (iframe src)."""
         if self.is_gdrive and self.gdrive_file_id:
@@ -405,13 +411,15 @@ class DokumenRevisi(models.Model):
         """Return URL untuk download langsung."""
         if self.is_gdrive and self.gdrive_file_id:
             return f"https://drive.google.com/uc?export=download&id={self.gdrive_file_id}"
+        if self.is_link:
+            return self.gdrive_url
         if self.is_local and self.file:
             return self.file.url
         return None
 
     def get_external_url(self):
         """URL untuk buka di tab baru (GDrive asli atau file lokal)."""
-        if self.is_gdrive:
+        if self.is_gdrive or self.is_link:
             return self.gdrive_url
         if self.is_local and self.file:
             return self.file.url
@@ -420,6 +428,8 @@ class DokumenRevisi(models.Model):
     @property
     def storage_badge_class(self):
         """CSS class untuk badge storage type."""
+        if self.is_link:
+            return "badge-blue"
         return "badge-emerald" if self.is_local else "badge-amber"
 
 

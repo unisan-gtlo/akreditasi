@@ -38,6 +38,8 @@
                 {% if revisi_aktif %}
                     {% if revisi_aktif.is_local %}
                         <span class="badge badge-emerald">📁 LOCAL</span>
+                    {% elif revisi_aktif.is_link %}
+                        <span class="badge badge-blue">🌐 TAUTAN APLIKASI</span>
                     {% else %}
                         <span class="badge badge-amber">🔗 GOOGLE DRIVE</span>
                     {% endif %}
@@ -46,11 +48,17 @@
         </div>
         <div style="display:flex; gap:.5rem;">
             {% if revisi_aktif %}
+                {% if revisi_aktif.is_link %}
+                <a href="{{ revisi_aktif.gdrive_url }}" class="btn btn-primary" target="_blank" rel="noopener">
+                    🌐 Buka Aplikasi ↗
+                </a>
+                {% else %}
                 <a href="{% url 'dokumen:dokumen_download' dokumen.pk %}" class="btn btn-primary"
                    {% if revisi_aktif.is_gdrive %}target="_blank"{% endif %}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download
                 </a>
+                {% endif %}
                 {% include "dokumen/_copy_link_button.html" with dokumen=dokumen %}
             {% endif %}
             {% if can_edit %}
@@ -92,6 +100,8 @@
                     Revisi {{ revisi_aktif.nomor_revisi }}
                     {% if revisi_aktif.is_local %}
                         • {{ revisi_aktif.original_filename|truncatechars:50 }} • {{ revisi_aktif.file_size_display }}
+                    {% elif revisi_aktif.is_link %}
+                        • Tautan Aplikasi/Website
                     {% else %}
                         • Google Drive Link
                     {% endif %}
@@ -100,7 +110,7 @@
             </div>
 
             {% if can_preview %}
-                {{% if preview_type == "pdf" %}
+                {% if preview_type == "pdf" %}
                     {# PDF preview - via custom serve URL (bypass X-Frame DENY) #}
                     <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">
                         <iframe src="{% url 'dokumen:dokumen_preview_serve' dokumen.pk %}" width="100%" height="700"
@@ -113,6 +123,19 @@
                     <div style="background:#F3F4F6; padding: 2rem; text-align:center; border-radius: 0 0 12px 12px;">
                         <img src="{% url 'dokumen:dokumen_preview_serve' dokumen.pk %}" alt="{{ dokumen.judul }}"
                              style="max-width: 100%; max-height: 700px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+                    </div>
+                {% elif preview_type == "link" %}
+                    {# Tautan aplikasi: tidak di-embed (banyak situs menolak iframe) #}
+                    <div class="panel-body" style="text-align:center; padding: 2.5rem 2rem;">
+                        <div style="font-size:3rem; margin-bottom:.75rem;">🌐</div>
+                        <div style="font-weight:700; font-size:1.05rem; margin-bottom:.35rem;">{{ dokumen.judul }}</div>
+                        <div style="margin-bottom:1.25rem;">
+                            <a href="{{ preview_url }}" target="_blank" rel="noopener" style="color:var(--primary-600); word-break:break-all;">{{ preview_url }}</a>
+                        </div>
+                        <a href="{{ preview_url }}" target="_blank" rel="noopener" class="btn btn-primary">Buka Aplikasi di Tab Baru ↗</a>
+                        {% if revisi_aktif.is_link_broken %}
+                            <div style="margin-top:1rem; color:#92400E; font-size:.85rem;">⚠️ Saat disimpan, tautan ini tidak bisa diakses dari server. Periksa kembali alamatnya.</div>
+                        {% endif %}
                     </div>
                 {% elif preview_type == "gdrive" %}
                     {# Google Drive embed #}
@@ -200,6 +223,8 @@
                             <td>
                                 {% if rev.is_local %}
                                     <span class="badge badge-emerald" style="font-size:.65rem;">{{ rev.extension|upper }}</span>
+                                {% elif rev.is_link %}
+                                    <span class="badge badge-blue" style="font-size:.65rem;">🌐 TAUTAN</span>
                                 {% else %}
                                     <span class="badge badge-amber" style="font-size:.65rem;">🔗 GDRIVE</span>
                                 {% endif %}

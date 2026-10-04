@@ -12,6 +12,7 @@ class DokumenUploadForm(forms.Form):
     STORAGE_CHOICES = [
         ("LOCAL", _("Upload File Lokal")),
         ("GDRIVE", _("Google Drive Link")),
+        ("LINK", _("Tautan Aplikasi/Website")),
     ]
 
     # Pilih tipe storage
@@ -37,6 +38,18 @@ class DokumenUploadForm(forms.Form):
         widget=forms.URLInput(attrs={
             "class": "form-input",
             "placeholder": "https://drive.google.com/file/d/XXXXXXXXX/view",
+        }),
+    )
+
+    # Tautan aplikasi/website (mis. LMS, SIAKAD, repository)
+    link_url = forms.URLField(
+        label=_("URL Aplikasi/Website"),
+        required=False,
+        max_length=500,
+        assume_scheme="https",
+        widget=forms.URLInput(attrs={
+            "class": "form-input",
+            "placeholder": "https://lms.unisan.ac.id/",
         }),
     )
 
@@ -175,7 +188,22 @@ class DokumenUploadForm(forms.Form):
             if "gdrive_url" not in self._errors:
                 self.add_error("gdrive_url", _("URL Google Drive wajib diisi."))
 
+        if storage == "LINK" and not cleaned.get("link_url"):
+            if "link_url" not in self._errors:
+                self.add_error("link_url", _("URL aplikasi/website wajib diisi."))
+
         return cleaned
+
+    def clean_link_url(self):
+        """Validasi tautan aplikasi/website (kalau dipilih): wajib http/https."""
+        url = (self.cleaned_data.get("link_url") or "").strip()
+        if self.data.get("storage_type", "LOCAL") != "LINK":
+            return ""
+        if not url:
+            raise forms.ValidationError(_("URL aplikasi/website wajib diisi."))
+        if not url.lower().startswith(("http://", "https://")):
+            raise forms.ValidationError(_("URL harus diawali http:// atau https://"))
+        return url
 
 class RevisiUploadForm(forms.Form):
     """

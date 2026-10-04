@@ -496,7 +496,12 @@ def dokumen_detail(request, pk):
     preview_url = None
 
     if revisi_aktif:
-        if revisi_aktif.is_gdrive and not revisi_aktif.is_link_broken:
+        if revisi_aktif.is_link:
+            # Tautan aplikasi: tidak di-embed (banyak situs menolak iframe), tampil kartu + tombol buka
+            can_preview = True
+            preview_type = "link"
+            preview_url = revisi_aktif.gdrive_url
+        elif revisi_aktif.is_gdrive and not revisi_aktif.is_link_broken:
             can_preview = True
             preview_type = "gdrive"
             preview_url = revisi_aktif.get_preview_url()
@@ -705,6 +710,8 @@ def _create_dokumen(butir, form, user, user_scope, request):
     # Build revisi sesuai storage type
     if storage_type == "LOCAL":
         revisi = _create_local_revisi(dokumen, nomor_rev, form, user)
+    elif storage_type == "LINK":
+        revisi = _create_link_revisi(dokumen, nomor_rev, form, user)
     else:  # GDRIVE
         revisi = _create_gdrive_revisi(dokumen, nomor_rev, form, user)
 
@@ -775,6 +782,38 @@ def _create_gdrive_revisi(dokumen, nomor_rev, form, user):
         is_link_broken=not gdrive_accessible,
     )
     return revisi
+
+
+def _create_link_revisi(dokumen, nomor_rev, form, user):
+    """Create DokumenRevisi untuk tautan aplikasi/website (URL disimpan di gdrive_url)."""
+    from django.utils import timezone
+
+    url = form.cleaned_data["link_url"]
+    return DokumenRevisi.objects.create(
+        dokumen=dokumen,
+        nomor_revisi=nomor_rev,
+        storage_type=DokumenRevisi.StorageType.LINK,
+        gdrive_url=url,
+        original_filename=f"[Tautan] {url}"[:300],
+        extension="link",
+        catatan_revisi=form.cleaned_data.get("catatan_revisi", "").strip(),
+        aktif=True,
+        uploaded_by=user,
+        last_verified_at=timezone.now(),
+        is_link_broken=not _link_accessible(url),
+    )
+
+
+def _link_accessible(url):
+    """Cek ringan tautan bisa dibuka (HTTP < 400). Gagal cek tidak menghalangi simpan."""
+    import requests
+    try:
+        resp = requests.get(url, timeout=6, allow_redirects=True, stream=True,
+                            headers={"User-Agent": "SIAKRED-LinkCheck/1.0"})
+        resp.close()
+        return resp.status_code < 400
+    except requests.RequestException:
+        return False
 
 
 def _get_client_ip(request):
@@ -854,6 +893,8 @@ def dokumen_download(request, pk):
     )
 
     # Serve berdasarkan storage type
+    if revisi.is_link:
+        return redirect(revisi.gdrive_url)
     if revisi.is_gdrive:
         # Redirect ke GDrive direct download URL
         return redirect(revisi.get_download_url())
@@ -1319,7 +1360,12 @@ def dokumen_publik_detail(request, pk):
     preview_url = None
 
     if revisi_aktif:
-        if revisi_aktif.is_gdrive and not revisi_aktif.is_link_broken:
+        if revisi_aktif.is_link:
+            # Tautan aplikasi: tidak di-embed (banyak situs menolak iframe), tampil kartu + tombol buka
+            can_preview = True
+            preview_type = "link"
+            preview_url = revisi_aktif.gdrive_url
+        elif revisi_aktif.is_gdrive and not revisi_aktif.is_link_broken:
             can_preview = True
             preview_type = "gdrive"
             preview_url = revisi_aktif.get_preview_url()
@@ -1864,6 +1910,8 @@ def public_dokumen(request, token):
     )
 
     # Routing berdasarkan storage mode
+    if revisi.storage_type == "LINK" and revisi.gdrive_url:
+        return redirect(revisi.gdrive_url)
     if revisi.storage_type == "GDRIVE" and revisi.gdrive_file_id:
         return redirect(build_drive_view_url(revisi.gdrive_file_id))
 
@@ -1904,6 +1952,8 @@ def public_download(request, token):
     if not revisi:
         raise Http404("Dokumen belum punya file aktif")
 
+    if revisi.storage_type == "LINK" and revisi.gdrive_url:
+        return redirect(revisi.gdrive_url)
     if revisi.storage_type == "GDRIVE" and revisi.gdrive_file_id:
         return redirect(build_drive_view_url(revisi.gdrive_file_id))
 

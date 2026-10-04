@@ -38,6 +38,10 @@
                         <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
                             📁 {{ revisi_aktif.extension|upper }}
                         </span>
+                    {% elif revisi_aktif.is_link %}
+                        <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
+                            🌐 TAUTAN APLIKASI
+                        </span>
                     {% else %}
                         <span style="background: rgba(255,255,255,0.2); padding:.25rem .65rem; border-radius:6px; font-size:.75rem; font-weight:600;">
                             🔗 GOOGLE DRIVE
@@ -53,9 +57,13 @@
                 {% if revisi_aktif %}
                     <a href="{% url 'dokumen_publik_download' dokumen.pk %}"
                        style="background:#FBBF24; color:#1E3A8A; padding:.75rem 1.5rem; border-radius:10px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:.5rem;"
-                       {% if revisi_aktif.is_gdrive %}target="_blank"{% endif %}>
+                       {% if revisi_aktif.is_gdrive or revisi_aktif.is_link %}target="_blank" rel="noopener"{% endif %}>
+                        {% if revisi_aktif.is_link %}
+                        🌐 Buka Aplikasi ↗
+                        {% else %}
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Download
+                        {% endif %}
                     </a>
                 {% endif %}
             </div>
@@ -81,6 +89,8 @@
         <div class="panel-subtitle">
             {% if revisi_aktif.is_local %}
                 {{ revisi_aktif.original_filename|truncatechars:50 }} • {{ revisi_aktif.file_size_display }}
+            {% elif revisi_aktif.is_link %}
+                Tautan Aplikasi/Website
             {% else %}
                 Google Drive Link
             {% endif %}
@@ -98,6 +108,14 @@
             <div style="background:#F3F4F6; padding: 2rem; text-align:center; border-radius: 0 0 12px 12px;">
                 <img src="{% url 'dokumen_publik_preview' dokumen.pk %}" alt="{{ dokumen.judul }}"
                      style="max-width: 100%; max-height: 700px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+            </div>
+        {% elif preview_type == "link" %}
+            <div style="text-align:center; padding: 2.5rem 2rem;">
+                <div style="font-size:3rem; margin-bottom:.75rem;">🌐</div>
+                <div style="margin-bottom:1.25rem;">
+                    <a href="{{ preview_url }}" target="_blank" rel="noopener" style="color:var(--primary-600); word-break:break-all;">{{ preview_url }}</a>
+                </div>
+                <a href="{{ preview_url }}" target="_blank" rel="noopener" class="btn btn-primary">Buka Aplikasi di Tab Baru ↗</a>
             </div>
         {% elif preview_type == "gdrive" %}
             <div style="background:#1F2937; padding:0; border-radius: 0 0 12px 12px; overflow:hidden;">

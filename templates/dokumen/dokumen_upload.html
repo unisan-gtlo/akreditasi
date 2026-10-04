@@ -63,9 +63,19 @@
                             <span class="radio-label-sub">Share link GDrive untuk file besar</span>
                         </div>
                     </label>
+                    <label class="radio-card">
+                        <input type="radio" name="storage_type" value="LINK" id="storage-link"
+                               {% if form.storage_type.value == "LINK" %}checked{% endif %}>
+                        <div class="radio-label">
+                            <span class="radio-label-main">🌐 Tautan Aplikasi/Website</span>
+                            <span class="radio-label-sub">Link aplikasi yang bisa langsung diklik (LMS, SIAKAD, dll)</span>
+                        </div>
+                    </label>
                 </div>
                 <div class="form-help">
                     💡 Gunakan Google Drive untuk file besar (SK scan, dokumen PDF lengkap ratusan halaman).
+                    Untuk bukti aplikasi (LMS, SIAKAD, repository), simpan <strong>tautan aplikasinya</strong>
+                    lalu unggah <strong>screenshot</strong> sebagai dokumen kedua di butir yang sama.
                 </div>
             </div>
 
@@ -92,6 +102,20 @@
                 {% if form.file.errors %}
                     <div class="form-errors">{{ form.file.errors|join:", " }}</div>
                 {% endif %}
+            </div>
+
+            {# Tautan aplikasi/website (LINK) #}
+            <div class="form-group" id="upload-link-section" style="display:none;">
+                <label class="form-label">URL Aplikasi/Website</label>
+                {{ form.link_url }}
+                {% if form.link_url.errors %}
+                    <div class="form-errors">{{ form.link_url.errors|join:", " }}</div>
+                {% endif %}
+                <div class="form-help">
+                    Contoh: <code>https://lms.unisan.ac.id/</code>, <code>https://siakun.unisan.ac.id/</code>,
+                    <code>https://siperpus.unisan.ac.id/</code>. Tautan tampil sebagai tombol yang bisa langsung diklik
+                    di halaman dokumen, Bundle, dan Export ZIP (file pintasan .url).
+                </div>
             </div>
 
             {# GDrive Link Input (GDRIVE) #}
@@ -235,18 +259,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const storageRadios = document.querySelectorAll('input[name="storage_type"]');
     const localSection = document.getElementById('upload-local-section');
     const gdriveSection = document.getElementById('upload-gdrive-section');
+    const linkSection = document.getElementById('upload-link-section');
 
     function toggleStorageSection() {
         const selected = document.querySelector('input[name="storage_type"]:checked');
         if (!selected) return;
 
-        if (selected.value === 'LOCAL') {
-            localSection.style.display = '';
-            gdriveSection.style.display = 'none';
-        } else {
-            localSection.style.display = 'none';
-            gdriveSection.style.display = '';
-        }
+        localSection.style.display = selected.value === 'LOCAL' ? '' : 'none';
+        gdriveSection.style.display = selected.value === 'GDRIVE' ? '' : 'none';
+        linkSection.style.display = selected.value === 'LINK' ? '' : 'none';
     }
 
     storageRadios.forEach(r => r.addEventListener('change', toggleStorageSection));
