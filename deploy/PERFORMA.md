@@ -45,7 +45,7 @@ ALLOWED_HOSTS=siakred.unisan.ac.id,siakred.unisan-g.id
 CSRF_TRUSTED_ORIGINS=https://siakred.unisan.ac.id,https://siakred.unisan-g.id
 DB_CONN_MAX_AGE=60
 # Opsional, jika Redis terpasang (pip install redis):
-# REDIS_URL=redis://127.0.0.1:6379/1
+# REDIS_URL=redis://127.0.0.1:6379/3?protocol=2   (protocol=2 wajib untuk Redis server < 6)
 ```
 
 Tanpa `REDIS_URL`, cache memakai file di folder `cache/`, yang tetap

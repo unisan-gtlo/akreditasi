@@ -21,7 +21,8 @@ BUNDLE=$DEPLOY_DIR/perf.bundle
 BRANCH=perf/optimasi-kecepatan
 SERVICE=gunicorn-akreditasi
 NGINX_CONF=/etc/nginx/conf.d/siakred-unisan.conf
-REDIS_URL_VALUE=redis://127.0.0.1:6379/3
+# protocol=2: Redis server di VPS masih 5.x (belum dukung RESP3/HELLO)
+REDIS_URL_VALUE="redis://127.0.0.1:6379/3?protocol=2"
 TS=$(date +%Y%m%d-%H%M%S)
 
 USE_HTTP2=0
