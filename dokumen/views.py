@@ -265,6 +265,7 @@ def butir_saya(request):
     # Grouping by instrumen
     instrumen_all = list(relevant_instrumen.order_by("urutan"))
     tree_data = build_butir_tree(butir_list)
+    total_terunggah = sum(1 for b in butir_list if b["dokumen_count"] > 0)
     context = {
         "page_title": "Dokumen Saya",
         "active_menu": "dokumen",
@@ -277,7 +278,8 @@ def butir_saya(request):
         "search": search,
         "total_butir": len(butir_list),
         "total_wajib": sum(1 for b in butir_list if b["butir"].wajib),
-        "total_terunggah": sum(1 for b in butir_list if b["dokumen_count"] > 0),
+        "total_terunggah": total_terunggah,
+        "total_belum": len(butir_list) - total_terunggah,
     }
     return render(request, "dokumen/butir_saya.html", context)
 
