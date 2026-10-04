@@ -623,7 +623,7 @@
           "nama_dokumen": "Screenshot Input Nilai SIAKAD",
           "deskripsi": "Bukti sistem dokumentasi nilai",
           "panduan_dokumen": "",
-          "kode_bersama": "",
+          "kode_bersama": "PRODI-SCREENSHOT-INPUT-NILAI-SIAKAD",
           "kategori": "PRODI",
           "wajib": true,
           "format": "APAPUN"

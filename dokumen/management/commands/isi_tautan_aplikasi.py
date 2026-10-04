@@ -24,6 +24,8 @@ TAUTAN = [
      "https://siperpus.unisan.ac.id/"),
     ("UNIV-SCREENSHOT-LMS", "Tautan LMS UNISAN", "https://lms.unisan.ac.id/"),
     ("UNIV-SCREENSHOT-SIAKAD", "Tautan SIAKAD UNISAN (SIAKUN)", "https://siakun.unisan.ac.id/"),
+    ("PRODI-SCREENSHOT-INPUT-NILAI-SIAKAD", "Tautan SIAKAD (SIAKUN) - Input Nilai", "https://siakun.unisan.ac.id/"),
+    ("UNIV-DASHBOARD-SISTEM-INFORMASI-MUTU", "Tautan Sistem Informasi Mutu (SIAMI)", "https://siami.unisan-g.id/"),
 ]
 
 

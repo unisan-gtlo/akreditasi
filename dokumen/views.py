@@ -265,10 +265,12 @@ def butir_saya(request):
     butir_list = []
     for butir in butirs:
         rows = {r for gid in groups[butir.id] for r in rows_by_butir.get(gid, [])}
+        # Dokumen umum (scope prodi & fakultas kosong, mis. tautan aplikasi
+        # Universitas) ikut terhitung -- sama dengan aturan di halaman Sesi.
         if butir.kategori_kepemilikan == "PRODI" and user_kode_prodi:
-            rows = {r for r in rows if r[1] in user_kode_prodi}
+            rows = {r for r in rows if r[1] in user_kode_prodi or (not r[1] and not r[2])}
         elif butir.kategori_kepemilikan == "FAKULTAS" and user_fakultas_all:
-            rows = {r for r in rows if r[2] in user_fakultas_all}
+            rows = {r for r in rows if r[2] in user_fakultas_all or (not r[1] and not r[2])}
         # UNIVERSITAS / BIRO: tampil ke semua role tanpa filter scope
 
         butir_list.append({
