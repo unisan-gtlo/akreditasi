@@ -28,6 +28,27 @@ def _derive_fakultas(kode_prodi):
     return _FAKULTAS_MAP.get(prefix, ('—', '—'))
 
 
+def _latest_revisi_map(dokumen_qs):
+    """Revisi terbaru per dokumen (+ verifikasi & verifikator) dalam 1 query.
+
+    Pengganti pola `d.revisi.order_by('-nomor_revisi').first()` lalu
+    `latest_rev.verifikasi` di dalam loop (2 query per dokumen).
+
+    Returns: {dokumen_id: DokumenRevisi}. Dokumen tanpa revisi tidak ada
+    di dict. Akses `rev.verifikasi` tetap raise kalau belum diverifikasi,
+    sama seperti sebelumnya.
+    """
+    from dokumen.models import DokumenRevisi
+
+    result = {}
+    revisi_qs = DokumenRevisi.objects.filter(
+        dokumen__in=dokumen_qs.order_by().values('pk'),
+    ).select_related('verifikasi', 'verifikasi__verifikator').order_by('dokumen_id', '-nomor_revisi')
+    for rev in revisi_qs:
+        result.setdefault(rev.dokumen_id, rev)
+    return result
+
+
 
 def _check_permission(request):
     if not can_access_laporan(request.user):
@@ -169,7 +190,8 @@ def _get_sesi_progress_data(sesi):
     for d in dokumen_qs.select_related('butir_dokumen').order_by('-tanggal_dibuat'):
         if d.butir_dokumen_id not in dokumen_by_butir:
             dokumen_by_butir[d.butir_dokumen_id] = d
-    
+    latest_rev_by_dokumen = _latest_revisi_map(dokumen_qs)
+
     # 4. Build butir_list dengan status
     butir_list = []
     stats = {
@@ -198,7 +220,7 @@ def _get_sesi_progress_data(sesi):
                 'judul': dokumen.judul,
             }
             # Ambil verifikasi dari revisi terbaru
-            latest_rev = dokumen.revisi.order_by('-nomor_revisi').first()
+            latest_rev = latest_rev_by_dokumen.get(dokumen.pk)
             if latest_rev:
                 try:
                     verif = latest_rev.verifikasi
@@ -336,45 +358,55 @@ def _get_prodi_completeness_data(scope_info, fakultas_filter=None):
     # Filter by fakultas di Python (karena MappingProdiInstrumen tidak punya field kode_fakultas)
     # Fakultas di-derive dari huruf pertama kode_prodi
     
-    result = []
-    
-    for mapping in mapping_qs:
-        # Hitung total butir untuk instrumen ini
-        total_butir = ButirDokumen.objects.filter(
-            sub_standar__standar__instrumen=mapping.instrumen,
-            aktif=True,
-        ).count()
-        
-        # Hitung dokumen untuk prodi ini
-        dokumen_qs = Dokumen.objects.filter(
-            scope_kode_prodi=mapping.kode_prodi,
+    mappings = list(mapping_qs)
+
+    # Semua agregat dihitung sekali untuk seluruh prodi (sebelumnya
+    # beberapa query per prodi + 2 query per dokumen).
+    total_butir_by_instrumen = dict(
+        ButirDokumen.objects.filter(aktif=True)
+        .order_by()
+        .values_list('sub_standar__standar__instrumen')
+        .annotate(c=Count('id'))
+    )
+
+    prodi_codes = {m.kode_prodi for m in mappings}
+    dokumen_all = Dokumen.objects.filter(scope_kode_prodi__in=prodi_codes)
+
+    # Unique butir yang sudah ada dokumennya, per prodi
+    butir_terisi_by_prodi = dict(
+        dokumen_all.order_by()
+        .values_list('scope_kode_prodi')
+        .annotate(c=Count('butir_dokumen', distinct=True))
+    )
+
+    # Count status verifikasi per prodi (revisi terbaru per dokumen)
+    latest_rev_by_dokumen = _latest_revisi_map(dokumen_all)
+    status_counts_by_prodi = {}
+    for dok_id, kode_prodi in dokumen_all.values_list('pk', 'scope_kode_prodi'):
+        counts = status_counts_by_prodi.setdefault(
+            kode_prodi, {'APPROVED': 0, 'PENDING': 0, 'REJECTED': 0, 'NEED_REVISION': 0}
         )
-        
-        # Unique butir yang sudah ada dokumennya
-        butir_terisi = dokumen_qs.values('butir_dokumen').distinct().count()
-        
-        # Count status verifikasi per status (revisi terbaru per dokumen)
-        approved_count = 0
-        pending_count = 0
-        rejected_count = 0
-        revision_count = 0
-        
-        for d in dokumen_qs.prefetch_related('revisi'):
-            latest_rev = d.revisi.order_by('-nomor_revisi').first()
-            if latest_rev:
-                try:
-                    status = latest_rev.verifikasi.status
-                    if status == 'APPROVED':
-                        approved_count += 1
-                    elif status == 'PENDING':
-                        pending_count += 1
-                    elif status == 'REJECTED':
-                        rejected_count += 1
-                    elif status == 'NEED_REVISION':
-                        revision_count += 1
-                except Exception:
-                    pending_count += 1
-        
+        latest_rev = latest_rev_by_dokumen.get(dok_id)
+        if latest_rev:
+            try:
+                status = latest_rev.verifikasi.status
+                if status in counts:
+                    counts[status] += 1
+            except Exception:
+                counts['PENDING'] += 1
+
+    result = []
+
+    for mapping in mappings:
+        total_butir = total_butir_by_instrumen.get(mapping.instrumen_id, 0)
+        butir_terisi = butir_terisi_by_prodi.get(mapping.kode_prodi, 0)
+
+        counts = status_counts_by_prodi.get(mapping.kode_prodi, {})
+        approved_count = counts.get('APPROVED', 0)
+        pending_count = counts.get('PENDING', 0)
+        rejected_count = counts.get('REJECTED', 0)
+        revision_count = counts.get('NEED_REVISION', 0)
+
         progress_pct = round((butir_terisi / total_butir * 100), 1) if total_butir > 0 else 0
         approved_pct = round((approved_count / total_butir * 100), 1) if total_butir > 0 else 0
         
@@ -508,16 +540,22 @@ def _get_heatmap_data(instrumen, scope_info, fakultas_filter=None):
     
     standar_list = []
     butir_per_standar = {}  # standar_id -> [butir_ids]
-    
+
+    # Semua butir instrumen dalam 1 query (bukan 1 query per standar)
+    butir_ids_by_standar = {}
+    for butir_id, std_id in ButirDokumen.objects.filter(
+        sub_standar__standar__instrumen=instrumen,
+        aktif=True,
+    ).values_list('id', 'sub_standar__standar_id'):
+        butir_ids_by_standar.setdefault(std_id, []).append(butir_id)
+    standar_by_butir = {}
+
     for s in standar_qs:
         # Ambil semua butir untuk standar ini
-        butir_ids = list(
-            ButirDokumen.objects.filter(
-                sub_standar__standar=s,
-                aktif=True,
-            ).values_list('id', flat=True)
-        )
-        
+        butir_ids = butir_ids_by_standar.get(s.id, [])
+        for butir_id in butir_ids:
+            standar_by_butir.setdefault(butir_id, s.id)
+
         standar_list.append({
             'id': s.id,
             'nomor': s.nomor,
@@ -558,27 +596,24 @@ def _get_heatmap_data(instrumen, scope_info, fakultas_filter=None):
     prodi_codes = [p['kode_prodi'] for p in prodi_list]
     dokumen_qs = Dokumen.objects.filter(
         scope_kode_prodi__in=prodi_codes,
-    ).prefetch_related('revisi').select_related('butir_dokumen')
-    
+    )
+    latest_rev_by_dokumen = _latest_revisi_map(dokumen_qs)
+
     # 4. Build index: (standar_id, kode_prodi) -> list of (butir_id, status)
     cells_data = {}  # (s_id, prodi_code) -> list of status
-    
+
     for d in dokumen_qs:
         if not d.butir_dokumen_id:
             continue
-        
+
         # Cari standar yang match butir ini
-        s_id = None
-        for sid, butir_set in butir_per_standar.items():
-            if d.butir_dokumen_id in butir_set:
-                s_id = sid
-                break
-        
+        s_id = standar_by_butir.get(d.butir_dokumen_id)
+
         if s_id is None:
             continue
-        
+
         # Ambil status dari revisi terbaru
-        latest_rev = d.revisi.order_by('-nomor_revisi').first()
+        latest_rev = latest_rev_by_dokumen.get(d.pk)
         status = 'KOSONG'
         if latest_rev:
             try:

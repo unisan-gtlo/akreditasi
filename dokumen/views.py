@@ -225,27 +225,41 @@ def butir_saya(request):
     user_kode_prodi = [s.prodi_id for s in scopes if s.level == "PRODI" and s.prodi_id]
     user_kode_fakultas = [s.fakultas_id for s in scopes if s.level == "FAKULTAS" and s.fakultas_id]
 
-    # Precompute doc count per butir (relevan dengan scope user)
+    # Precompute doc count per butir (relevan dengan scope user) dalam 1 query,
+    # bukan 1 COUNT per butir. Untuk admin/universitas: count semua;
+    # untuk scope lain: count dokumen di scope mereka.
+    final_q = Q(dokumen_terunggah__status='FINAL')
+    count_annotations = {
+        "dok_count_all": Count('dokumen_terunggah', filter=final_q, distinct=True),
+    }
+    # Hanya dianotasi kalau list scope tidak kosong (hindari filter IN ())
+    if user_kode_prodi:
+        count_annotations["dok_count_prodi"] = Count(
+            'dokumen_terunggah',
+            filter=final_q & Q(dokumen_terunggah__scope_kode_prodi__in=user_kode_prodi),
+            distinct=True,
+        )
+    if user_kode_fakultas:
+        count_annotations["dok_count_fakultas"] = Count(
+            'dokumen_terunggah',
+            filter=final_q & Q(dokumen_terunggah__scope_kode_fakultas__in=user_kode_fakultas),
+            distinct=True,
+        )
+    butir_qs = butir_qs.annotate(**count_annotations)
+
     butir_list = []
     for butir in butir_qs:
-        # Hitung dokumen yang sudah diupload untuk butir ini
-        # Untuk admin/universitas: count semua
-        # Untuk scope lain: count dokumen di scope mereka
-        dokumen_qs = butir.dokumen_terunggah.filter(
-            status='FINAL'
-        ).select_related('revisi')
-
         if butir.kategori_kepemilikan == "PRODI" and user_kode_prodi:
-            dokumen_qs = dokumen_qs.filter(scope_kode_prodi__in=user_kode_prodi)
+            dokumen_count = butir.dok_count_prodi
         elif butir.kategori_kepemilikan == "FAKULTAS" and user_kode_fakultas:
-            dokumen_qs = dokumen_qs.filter(scope_kode_fakultas__in=user_kode_fakultas)
-        elif butir.kategori_kepemilikan == "UNIVERSITAS":
-            # Dokumen universitas tampil ke semua role tanpa filter scope
-            pass
+            dokumen_count = butir.dok_count_fakultas
+        else:
+            # UNIVERSITAS dll: tampil ke semua role tanpa filter scope
+            dokumen_count = butir.dok_count_all
 
         butir_list.append({
             "butir": butir,
-            "dokumen_count": dokumen_qs.count(),
+            "dokumen_count": dokumen_count,
         })
 
     # Grouping by instrumen

@@ -813,19 +813,24 @@ def dashboard_sesi(request):
     instrumen_qs = visible_qs.values("instrumen__nama_singkat").annotate(
         total=Count("id")
     ).order_by("-total")
+    # Hitungan per (instrumen, status) dalam 1 query, bukan 7 COUNT per instrumen
+    status_per_instrumen = {}
+    for row in visible_qs.order_by().values("instrumen__nama_singkat", "status").annotate(
+        count=Count("id")
+    ):
+        status_per_instrumen[(row["instrumen__nama_singkat"], row["status"])] = row["count"]
     for ins in instrumen_qs:
         nama_ins = ins["instrumen__nama_singkat"]
-        sesi_ins = visible_qs.filter(instrumen__nama_singkat=nama_ins)
         instrumen_breakdown.append({
             "nama": nama_ins,
             "total": ins["total"],
-            "persiapan": sesi_ins.filter(status="PERSIAPAN").count(),
-            "review": sesi_ins.filter(status="REVIEW_INTERNAL").count(),
-            "submitted": sesi_ins.filter(status="SUBMITTED").count(),
-            "visitasi": sesi_ins.filter(status="VISITASI_AKTIF").count(),
-            "menunggu": sesi_ins.filter(status="MENUNGGU_HASIL").count(),
-            "selesai": sesi_ins.filter(status="SELESAI").count(),
-            "dibatalkan": sesi_ins.filter(status="DIBATALKAN").count(),
+            "persiapan": status_per_instrumen.get((nama_ins, "PERSIAPAN"), 0),
+            "review": status_per_instrumen.get((nama_ins, "REVIEW_INTERNAL"), 0),
+            "submitted": status_per_instrumen.get((nama_ins, "SUBMITTED"), 0),
+            "visitasi": status_per_instrumen.get((nama_ins, "VISITASI_AKTIF"), 0),
+            "menunggu": status_per_instrumen.get((nama_ins, "MENUNGGU_HASIL"), 0),
+            "selesai": status_per_instrumen.get((nama_ins, "SELESAI"), 0),
+            "dibatalkan": status_per_instrumen.get((nama_ins, "DIBATALKAN"), 0),
         })
 
     # Recent Activity: catatan terbaru + status change recent
@@ -1103,10 +1108,35 @@ def _build_bundle_tree(sesi, approved_only=False):
     # Dokumen tanpa scope (prodi & fakultas kosong) dianggap umum -> ikut dihitung
     scope_filter |= Q(scope_kode_prodi="", scope_kode_fakultas="")
 
-    # Ambil semua standar untuk instrumen ini
+    # Ambil seluruh struktur instrumen dalam 3 query + 1 query dokumen,
+    # lalu dikelompokkan di Python (sebelumnya 1 query per standar/sub/butir).
     standars_qs = Standar.objects.filter(
         instrumen=instrumen
     ).order_by('urutan', 'nomor')
+
+    subs_by_standar = {}
+    for sub in SubStandar.objects.filter(
+        standar__instrumen=instrumen
+    ).order_by('urutan', 'nomor'):
+        subs_by_standar.setdefault(sub.standar_id, []).append(sub)
+
+    butirs_by_sub = {}
+    for butir in ButirDokumen.objects.filter(
+        sub_standar__standar__instrumen=instrumen
+    ).order_by('urutan', 'kode'):
+        butirs_by_sub.setdefault(butir.sub_standar_id, []).append(butir)
+
+    tahun_filter = (
+        Q(tahun_akademik__in=periode_list)
+        | Q(tahun_akademik="")
+        | Q(tahun_akademik__isnull=True)
+    )
+    dokumens_by_butir = {}
+    for dok in Dokumen.objects.filter(
+        butir_dokumen__sub_standar__standar__instrumen=instrumen,
+        status='FINAL',  # hanya dokumen FINAL yang masuk bundle
+    ).filter(tahun_filter).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat'):
+        dokumens_by_butir.setdefault(dok.butir_dokumen_id, []).append(dok)
 
     tree_standars = []
     total_butir = 0
@@ -1114,30 +1144,12 @@ def _build_bundle_tree(sesi, approved_only=False):
     total_dokumen = 0
 
     for std in standars_qs:
-        substandars_qs = SubStandar.objects.filter(
-            standar=std
-        ).order_by('urutan', 'nomor')
-
         tree_substandars = []
-        for sub in substandars_qs:
-            butirs_qs = ButirDokumen.objects.filter(
-                sub_standar=sub
-            ).order_by('urutan', 'kode')
-
+        for sub in subs_by_standar.get(std.id, []):
             tree_butirs = []
-            for butir in butirs_qs:
-                tahun_filter = (
-                    Q(tahun_akademik__in=periode_list)
-                    | Q(tahun_akademik="")
-                    | Q(tahun_akademik__isnull=True)
-                )
-                dokumens = Dokumen.objects.filter(
-                    butir_dokumen=butir,
-                    status='FINAL',  # hanya dokumen FINAL yang masuk bundle
-                ).filter(tahun_filter).filter(scope_filter).distinct().order_by('tahun_akademik', '-tanggal_dibuat')
+            for butir in butirs_by_sub.get(sub.id, []):
+                dokumens_all = dokumens_by_butir.get(butir.id, [])
 
-                dokumens_all = list(dokumens)
-                
                 # Filter by approved status kalau approved_only=True
                 if approved_only:
                     dokumens_list = [d for d in dokumens_all if d.is_approved()]

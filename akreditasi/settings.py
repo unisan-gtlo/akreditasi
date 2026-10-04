@@ -53,6 +53,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "core.middleware.SessionRefreshMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -101,8 +102,35 @@ DATABASES = {
         "OPTIONS": {
              "options": "-c search_path=akreditasi"
         },
+        # Pakai ulang koneksi antar request (hemat handshake PostgreSQL tiap klik)
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
+        "CONN_HEALTH_CHECKS": True,
     }
 }
+
+# ==========================================
+# CACHE
+# REDIS_URL diisi -> Redis (butuh paket `redis`), kosong -> file cache
+# yang tetap dibagi antar worker gunicorn di server yang sama.
+# ==========================================
+REDIS_URL = os.getenv("REDIS_URL", "")
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "KEY_PREFIX": "siakred",
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": os.getenv("CACHE_DIR", str(BASE_DIR / "cache")),
+            "KEY_PREFIX": "siakred",
+            "OPTIONS": {"MAX_ENTRIES": 10000},
+        }
+    }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -130,7 +158,16 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATICFILES_STORAGE sudah dihapus di Django 5.1+, jadi wajib lewat STORAGES.
+# Nama file jadi ber-hash (siakred.3f9a.css) -> aman di-cache browser 1 tahun.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "core.storage.SiakredStaticStorage",
+    },
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -245,7 +282,12 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 # Session inactivity timeout (30 menit)
 SESSION_COOKIE_AGE = 60 * 30
-SESSION_SAVE_EVERY_REQUEST = True
+# Session dibaca dari cache dulu, DB hanya fallback.
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+# Tidak simpan session tiap request; perpanjangan timeout ditangani
+# core.middleware.SessionRefreshMiddleware (maks. 1 tulis DB per 5 menit).
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_REFRESH_INTERVAL = 60 * 5
 # ==========================================
 # PRODUCTION HTTPS & PROXY SETTINGS
 # ==========================================

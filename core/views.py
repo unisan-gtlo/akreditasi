@@ -16,8 +16,10 @@ from django.core.paginator import Paginator
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
+from django.core.cache import cache
 from django.db.models import Avg, Count
 from .models import SurveiVMTS
+from .cache_utils import PUBLIK_TTL, invalidate_notif
 
 
 from .forms import LoginForm, MathCaptcha
@@ -203,6 +205,11 @@ https://akreditasi.unisan-g.id
 # ============================================================
 
 def _get_publik_stats():
+    """Stats landing publik, di-cache 5 menit (invalidasi di core/signals.py)."""
+    return cache.get_or_set("publik_stats", _compute_publik_stats, PUBLIK_TTL)
+
+
+def _compute_publik_stats():
     """Query real-time stats untuk landing publik.
     
     Sources:
@@ -261,6 +268,25 @@ def _get_publik_stats():
 
 
 def _get_fakultas_list():
+    """List fakultas + prodi, di-cache 5 menit (invalidasi di core/signals.py).
+
+    Cache mengembalikan salinan baru tiap get, jadi pemanggil boleh
+    memodifikasi hasilnya (mis. fakultas_detail menambah field prodi).
+    """
+    return cache.get_or_set("publik_fakultas_list", _compute_fakultas_list, PUBLIK_TTL)
+
+
+def _get_institusi_simda():
+    """Data institusi SIMDA, di-cache 5 menit. Kegagalan tidak di-cache."""
+    data = cache.get("publik_institusi_simda")
+    if data is None:
+        from master_akreditasi.simda import get_institusi_from_simda
+        data = get_institusi_from_simda() or {}
+        cache.set("publik_institusi_simda", data, PUBLIK_TTL)
+    return dict(data)
+
+
+def _compute_fakultas_list():
     """Get list fakultas dari SIMDA + prodi-nya dari SIAKRED mapping.
     
     SOURCE OF TRUTH:
@@ -364,20 +390,19 @@ def landing_page(request):
     """Landing publik SIAKRED. Hybrid: single page scroll dengan section lengkap."""
     from core.models import SiteProfile
     site = SiteProfile.get_instance()
-    profile = SiteProfile.get_instance()
+    profile = site
     stats = _get_publik_stats()
     fakultas_list = _get_fakultas_list()
-    
-    # Ambil preview dokumen publik terbaru (6 dokumen)
+
+    # Ambil preview dokumen publik terbaru (template menampilkan 4)
     from dokumen.models import Dokumen
     dokumen_terbaru = Dokumen.objects.filter(
         status='FINAL',
         status_akses='TERBUKA',
-    ).select_related('butir_dokumen').order_by('-tanggal_dibuat')[:6]
-    
+    ).select_related('butir_dokumen').order_by('-tanggal_dibuat')[:4]
+
     try:
-        from master_akreditasi.simda import get_institusi_from_simda
-        institusi_simda = get_institusi_from_simda() or {}
+        institusi_simda = _get_institusi_simda()
     except Exception:
         institusi_simda = {}
     
@@ -605,7 +630,9 @@ def notifikasi_mark_all_read(request):
         sudah_dibaca=True,
         tanggal_dibaca=_tz.now(),
     )
-    
+    # .update() tidak memicu signal -> hapus cache badge notifikasi manual
+    invalidate_notif(request.user.pk)
+
     messages.success(request, f'{updated} notifikasi ditandai dibaca.')
     return redirect('core:notifikasi_list')
 
@@ -963,22 +990,22 @@ def dashboard_vmts(request):
         p.kode_prodi: p for p in ProdiProfile.objects.filter(aktif=True)
     }
 
-    # Gabungkan target ke per_prodi
+    # Peta "Nama Prodi (Jenjang)" -> kode_prodi, sekali query (bukan per prodi)
     from django.db import connections
-    cursor = connections['default'].cursor()
-    per_prodi_list = []
-    for p in per_prodi:
-        nama_prodi = p['prodi']
-        # Cari ProdiProfile berdasarkan nama_prodi dari SIMDA
+    label_to_kode = {}
+    with connections['default'].cursor() as cursor:
         cursor.execute("""
-            SELECT m.kode_prodi 
+            SELECT CONCAT(ps.nama_prodi, ' (', ps.jenjang, ')'), m.kode_prodi
             FROM master.program_studi ps
             JOIN mapping_prodi_instrumen m ON m.kode_prodi = ps.kode_prodi
-            WHERE CONCAT(ps.nama_prodi, ' (', ps.jenjang, ')') = %s
-            LIMIT 1
-        """, [nama_prodi])
-        row = cursor.fetchone()
-        kode = row[0] if row else None
+        """)
+        for label, kode in cursor.fetchall():
+            label_to_kode.setdefault(label, kode)
+
+    # Gabungkan target ke per_prodi
+    per_prodi_list = []
+    for p in per_prodi:
+        kode = label_to_kode.get(p['prodi'])
         profile = prodi_profiles.get(kode) if kode else None
         target = profile.target_survei_total if profile else site.survei_vmts_target
         pct = round((p['jumlah'] / target) * 100) if target else 0
@@ -1002,12 +1029,16 @@ def dashboard_vmts(request):
 
     # Data distribusi jawaban untuk grafik PIE (per pilar)
     # Ambil dari data mentah per butir — kita simpan skor bulat
-    from collections import Counter
+    # Satu query untuk keempat pilar (sebelumnya 4x scan tabel)
+    skor_rows = list(data.values_list('skor_v', 'skor_m', 'skor_t', 'skor_s'))
+    skor_idx = {'skor_v': 0, 'skor_m': 1, 'skor_t': 2, 'skor_s': 3}
 
     def distribusi_skor(field):
         """Hitung distribusi skor 1-5 untuk satu pilar."""
         counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        for val in data.values_list(field, flat=True):
+        idx = skor_idx[field]
+        for row in skor_rows:
+            val = row[idx]
             if val is not None:
                 rounded = round(val)
                 if 1 <= rounded <= 5:
@@ -1030,24 +1061,6 @@ def dashboard_vmts(request):
     page_obj = paginator.get_page(page_number)
 
     import json
-    context = {
-        'stats': stats,
-        'per_status': per_status,
-        'per_prodi': per_prodi_list,
-        'page_obj': page_obj,
-        'paginator': paginator,
-        'jumlah_prodi': per_prodi.count(),
-        'target_responden': site.survei_vmts_target,
-        'tahun_akademik': site.survei_vmts_tahun_akademik,
-        'daftar_prodi_filter': daftar_prodi_filter,
-        'prodi_filter': prodi_filter,
-        'pct_pemahaman': pct_pemahaman,
-        'pie_v': json.dumps(pie_v),
-        'pie_m': json.dumps(pie_m),
-        'pie_t': json.dumps(pie_t),
-        'pie_s': json.dumps(pie_s),
-    }
-    return render(request, 'survei/vmts_dashboard.html', context)
     context = {
         'stats': stats,
         'per_status': per_status,
