@@ -140,6 +140,76 @@
     </div>
 </div>
 
+{# Pilih MK penciri dari RPS SI-OBE (khusus butir RPS MK penciri) #}
+{% if penciri %}
+<div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-header">
+        <div>
+            <div class="panel-title">⭐ Pilih Mata Kuliah Penciri Prodi</div>
+            <div class="panel-subtitle">
+                Centang MK penciri dari RPS yang sudah disahkan di SI-OBE. RPS terpilih otomatis menjadi dokumen butir ini
+                (file yang sama, tanpa unggah ulang) dan ikut diperbarui saat RPS direvisi di SI-OBE.
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        {% if penciri.prodi_options|length > 1 %}
+        <form method="get" style="margin-bottom:1rem;">
+            <label class="form-label" style="margin-right:.5rem;">Prodi</label>
+            <select name="prodi" class="form-input" style="max-width:160px; display:inline-block;" onchange="this.form.submit()">
+                {% for p in penciri.prodi_options %}
+                <option value="{{ p }}" {% if p == penciri.prodi %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+
+        {% if penciri.rps_list %}
+        <form method="post" action="{% url 'dokumen:pilih_penciri' butir.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="prodi" value="{{ penciri.prodi }}">
+            <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; margin-bottom:.75rem;">
+                <input type="text" id="penciri-cari" class="form-input" style="max-width:320px;"
+                       placeholder="🔍 Cari kode / nama MK..." oninput="filterPenciri(this.value)">
+                <span style="font-size:.85rem; color:var(--text-muted);">
+                    Prodi <strong>{{ penciri.prodi }}</strong> · terpilih: <strong id="penciri-jumlah">{{ penciri.jumlah_terpilih }}</strong>
+                    dari {{ penciri.rps_list|length }} RPS
+                </span>
+            </div>
+            <div style="max-height:360px; overflow-y:auto; border:1px solid var(--border-subtle); border-radius:8px; padding:.25rem .75rem;">
+                {% for r in penciri.rps_list %}
+                <label class="penciri-item" style="display:flex; gap:.6rem; align-items:center; padding:.4rem 0; border-bottom:1px solid var(--border-subtle); cursor:pointer;">
+                    <input type="checkbox" name="kode_mk" value="{{ r.kode }}" {% if r.checked %}checked{% endif %} onchange="hitungPenciri()">
+                    <span style="font-size:.9rem;">{{ r.judul }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <div style="margin-top:1rem;">
+                <button type="submit" class="btn btn-primary">Simpan Pilihan MK Penciri</button>
+            </div>
+        </form>
+        <script>
+        function filterPenciri(q) {
+            q = q.toLowerCase();
+            document.querySelectorAll('.penciri-item').forEach(function (el) {
+                el.style.display = el.textContent.toLowerCase().indexOf(q) >= 0 ? 'flex' : 'none';
+            });
+        }
+        function hitungPenciri() {
+            document.getElementById('penciri-jumlah').textContent =
+                document.querySelectorAll('.penciri-item input:checked').length;
+        }
+        </script>
+        {% else %}
+        <p style="margin:0; color:var(--text-muted);">
+            Belum ada RPS SI-OBE yang tersinkron untuk prodi {{ penciri.prodi }}.
+            Jalankan sinkron RPS terlebih dahulu.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {# Daftar dokumen terunggah #}
 <div class="panel">
     <div class="panel-header">

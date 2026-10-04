@@ -61,6 +61,10 @@ class Command(BaseCommand):
                 f"  RPS tersedia {r.dengan_rps}/{r.total_mk} | baru {len(r.dibuat)} | "
                 f"diperbarui {len(r.diperbarui)} | tetap {len(r.tetap)} | diarsipkan {len(r.diarsipkan)}"
             )
+            if r.penciri_diperbarui or r.penciri_diarsipkan:
+                self.stdout.write(
+                    f"  MK penciri: {r.penciri_diperbarui} diperbarui, {r.penciri_diarsipkan} diarsipkan"
+                )
             for judul in r.dibuat:
                 self.stdout.write(f"    + {judul}")
             for judul in r.diperbarui:

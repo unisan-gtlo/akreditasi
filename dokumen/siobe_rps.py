@@ -56,6 +56,8 @@ class SyncReport:
     diarsipkan: list = field(default_factory=list)
     tanpa_rps: list = field(default_factory=list)
     gagal: list = field(default_factory=list)
+    penciri_diperbarui: int = 0
+    penciri_diarsipkan: int = 0
 
     @property
     def dengan_rps(self):
@@ -323,4 +325,183 @@ def sync_prodi(kode_prodi, user, apply=False, tahun_kurikulum=None):
                 dokumen.status = Dokumen.Status.ARSIP
                 dokumen.last_updated_by = user
                 dokumen.save(update_fields=["status", "last_updated_by", "tanggal_diubah"])
+
+    # Dokumen RPS MK penciri (cermin) ikut versi terbaru RPS sumber
+    if apply:
+        report.penciri_diperbarui, report.penciri_diarsipkan = refresh_penciri(kode_prodi, user)
     return report
+
+
+# =========================================================
+# RPS MATA KULIAH PENCIRI
+# =========================================================
+# Prodi memilih MK penciri dari RPS hasil sinkron. Tiap pilihan menjadi
+# Dokumen "cermin" di butir ber-kode bersama KODE_BERSAMA_PENCIRI (mis. U2.02
+# & U5.10) yang MEMAKAI FILE YANG SAMA dengan dokumen RPS sumber -- tidak ada
+# salinan berkas. Cermin ikut diperbarui saat RPS sumber direvisi
+# (refresh_penciri dipanggil di akhir sync_prodi) dan diarsipkan kalau
+# RPS sumber dicabut.
+
+KODE_BERSAMA_PENCIRI = "PRODI-RPS-MK-PENCIRI"
+MARKER_PENCIRI = "PENCIRI"
+
+
+def penciri_butir(kode_prodi):
+    """Butir RPS MK penciri pada instrumen prodi, atau None."""
+    mapping = MappingProdiInstrumen.objects.filter(kode_prodi=kode_prodi, aktif=True).first()
+    if not mapping:
+        return None
+    return (
+        ButirDokumen.objects.filter(
+            sub_standar__standar__instrumen_id=mapping.instrumen_id,
+            kode_bersama=KODE_BERSAMA_PENCIRI,
+            aktif=True,
+        )
+        .order_by("sub_standar__standar__urutan", "sub_standar__urutan", "urutan", "kode")
+        .first()
+    )
+
+
+def rps_sumber(kode_prodi):
+    """{kode MK: (Dokumen, revisi aktif)} RPS hasil sinkron yang masih FINAL."""
+    butir = target_butir(kode_prodi)
+    if butir is None:
+        return {}
+    return {
+        kode: (dok, rev)
+        for kode, (dok, rev) in _sync_docs(butir, kode_prodi).items()
+        if dok.status == Dokumen.Status.FINAL
+    }
+
+
+def _penciri_docs(butir, kode_prodi):
+    """{kode MK: (Dokumen, revisi aktif)} dokumen cermin penciri (FINAL maupun ARSIP)."""
+    docs = {}
+    for d in Dokumen.objects.filter(butir_dokumen=butir, scope_kode_prodi=kode_prodi, judul__startswith="RPS "):
+        rev = d.revisi.filter(aktif=True).order_by("-nomor_revisi").first()
+        if rev and rev.catatan_revisi.startswith(MARKER_PENCIRI):
+            docs[kode_dari_judul(d.judul)] = (d, rev)
+    return docs
+
+
+def _penanda_penciri(src_rev):
+    return f"{MARKER_PENCIRI} src={src_rev.pk}; {src_rev.catatan_revisi}"[:2000]
+
+
+def _cermin_revisi(dokumen, src_rev, user, nomor_rev):
+    revisi = DokumenRevisi.objects.create(
+        dokumen=dokumen,
+        nomor_revisi=nomor_rev,
+        storage_type=src_rev.storage_type,
+        file=src_rev.file.name if src_rev.file else None,  # file yang sama, tanpa salinan
+        original_filename=src_rev.original_filename,
+        file_size_kb=src_rev.file_size_kb,
+        file_hash=src_rev.file_hash,
+        mime_type=src_rev.mime_type,
+        extension=src_rev.extension,
+        gdrive_url=src_rev.gdrive_url,
+        gdrive_file_id=src_rev.gdrive_file_id,
+        last_verified_at=src_rev.last_verified_at,
+        catatan_revisi=_penanda_penciri(src_rev),
+        aktif=True,
+        uploaded_by=user,
+    )
+    VerifikasiDokumen.objects.filter(revisi=revisi).update(
+        status=VerifikasiDokumen.Status.APPROVED,
+        catatan="RPS MK penciri dari RPS Disahkan SI-OBE.",
+        tanggal_verifikasi=timezone.now(),
+    )
+    return revisi
+
+
+def _tulis_cermin(butir, kode_prodi, src_doc, src_rev, cermin, user):
+    """Buat / perbarui / aktifkan kembali dokumen cermin. Return True kalau ada perubahan."""
+    if cermin:
+        dokumen, rev = cermin
+        if dokumen.status == Dokumen.Status.FINAL and rev.catatan_revisi == _penanda_penciri(src_rev):
+            return False
+        dokumen.judul = src_doc.judul
+        dokumen.status = Dokumen.Status.FINAL
+        dokumen.last_updated_by = user
+        dokumen.save()
+        dokumen.revisi.update(aktif=False)
+        last = dokumen.revisi.order_by("-nomor_revisi").first()
+        nomor, aksi = (last.nomor_revisi + 1 if last else 1), DokumenAccessLog.AksiType.REVISI
+    else:
+        dokumen = Dokumen.objects.create(
+            butir_dokumen=butir,
+            kategori_pemilik=butir.kategori_kepemilikan,
+            scope_kode_prodi=kode_prodi,
+            scope_kode_fakultas=src_doc.scope_kode_fakultas,
+            judul=src_doc.judul,
+            deskripsi="RPS mata kuliah penciri prodi (dipilih dari RPS Disahkan SI-OBE).",
+            status_akses=src_doc.status_akses,
+            tahun_akademik="",
+            uploaded_by=user,
+            last_updated_by=user,
+        )
+        nomor, aksi = 1, DokumenAccessLog.AksiType.UPLOAD
+    revisi = _cermin_revisi(dokumen, src_rev, user, nomor)
+    DokumenAccessLog.objects.create(
+        dokumen=dokumen, revisi=revisi, aksi=aksi, user=user,
+        catatan="Dipilih sebagai MK penciri (RPS SI-OBE)",
+    )
+    return True
+
+
+def _arsipkan(dokumen, user):
+    if dokumen.status != Dokumen.Status.ARSIP:
+        dokumen.status = Dokumen.Status.ARSIP
+        dokumen.last_updated_by = user
+        dokumen.save(update_fields=["status", "last_updated_by", "tanggal_diubah"])
+        return True
+    return False
+
+
+def set_penciri(kode_prodi, kode_mk_terpilih, user):
+    """Simpan pilihan MK penciri. Return dict ringkasan {ditambah, dihapus, tetap}."""
+    butir = penciri_butir(kode_prodi)
+    if butir is None:
+        raise SiobeError(f"Instrumen prodi {kode_prodi} tidak punya butir {KODE_BERSAMA_PENCIRI}.")
+    sumber = rps_sumber(kode_prodi)
+    terpilih = {k for k in kode_mk_terpilih if k in sumber}
+    cermin = _penciri_docs(butir, kode_prodi)
+    hasil = {"ditambah": 0, "dihapus": 0, "tetap": 0}
+    with transaction.atomic():
+        for kode in sorted(terpilih):
+            src_doc, src_rev = sumber[kode]
+            if _tulis_cermin(butir, kode_prodi, src_doc, src_rev, cermin.get(kode), user):
+                hasil["ditambah"] += 1
+            else:
+                hasil["tetap"] += 1
+        for kode, (dokumen, _rev) in cermin.items():
+            if kode not in terpilih and _arsipkan(dokumen, user):
+                hasil["dihapus"] += 1
+    return hasil
+
+
+def penciri_terpilih(kode_prodi):
+    """Set kode MK yang saat ini terpilih sebagai penciri (dokumen cermin FINAL)."""
+    butir = penciri_butir(kode_prodi)
+    if butir is None:
+        return set()
+    return {k for k, (d, _r) in _penciri_docs(butir, kode_prodi).items() if d.status == Dokumen.Status.FINAL}
+
+
+def refresh_penciri(kode_prodi, user):
+    """Ikutkan perubahan RPS sumber ke dokumen cermin penciri. Return (diperbarui, diarsipkan)."""
+    butir = penciri_butir(kode_prodi)
+    if butir is None:
+        return 0, 0
+    sumber = rps_sumber(kode_prodi)
+    diperbarui = diarsipkan = 0
+    for kode, cermin in _penciri_docs(butir, kode_prodi).items():
+        dokumen, _rev = cermin
+        if dokumen.status != Dokumen.Status.FINAL:
+            continue
+        if kode not in sumber:
+            diarsipkan += _arsipkan(dokumen, user)
+            continue
+        with transaction.atomic():
+            diperbarui += _tulis_cermin(butir, kode_prodi, sumber[kode][0], sumber[kode][1], cermin, user)
+    return diperbarui, diarsipkan

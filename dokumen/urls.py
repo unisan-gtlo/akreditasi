@@ -19,6 +19,7 @@ urlpatterns = [
 
     # Upload baru (untuk butir)
     path("butir/<int:butir_id>/upload/", views.dokumen_upload, name="dokumen_upload"),
+    path("butir/<int:butir_id>/penciri/", views.pilih_penciri, name="pilih_penciri"),
 
     # Detail dokumen (preview inline)
     path("dokumen/<int:pk>/", views.dokumen_detail, name="dokumen_detail"),

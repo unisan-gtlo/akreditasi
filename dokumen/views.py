@@ -3,6 +3,8 @@ Views untuk modul Dokumen.
 """
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Count, Q, F
 from django.db import models, transaction
@@ -318,6 +320,75 @@ def _rps_siobe_info(butir, butir_ids):
     return info
 
 
+def _penciri_prodi_options(user, butir):
+    """Kode prodi yang boleh dipilihkan MK penciri oleh user pada butir ini."""
+    instrumen_id = butir.sub_standar.standar.instrumen_id
+    mapped = list(
+        MappingProdiInstrumen.objects.filter(instrumen_id=instrumen_id, aktif=True)
+        .order_by("kode_prodi").values_list("kode_prodi", flat=True)
+    )
+    if is_superadmin(user):
+        return mapped
+    milik = {s.prodi_id for s in get_user_scopes(user) if s.level == "PRODI" and s.prodi_id}
+    return [k for k in mapped if k in milik]
+
+
+def _penciri_context(request, butir, can_upload):
+    """Data panel 'Pilih MK Penciri' (hanya untuk butir RPS MK penciri), atau None."""
+    from .siobe_rps import KODE_BERSAMA_PENCIRI, penciri_terpilih, rps_sumber
+
+    if butir.kode_bersama != KODE_BERSAMA_PENCIRI or not can_upload:
+        return None
+    options = _penciri_prodi_options(request.user, butir)
+    if not options:
+        return None
+    prodi = request.GET.get("prodi", "").strip().upper()
+    if prodi not in options:
+        prodi = options[0]
+    terpilih = penciri_terpilih(prodi)
+    rps = sorted(rps_sumber(prodi).items(), key=lambda kv: kv[1][0].judul)
+    return {
+        "prodi": prodi,
+        "prodi_options": options,
+        "rps_list": [
+            {"kode": kode, "judul": dok.judul, "checked": kode in terpilih}
+            for kode, (dok, _rev) in rps
+        ],
+        "jumlah_terpilih": len(terpilih),
+    }
+
+
+@login_required(login_url="/login/")
+@require_POST
+def pilih_penciri(request, butir_id):
+    """Simpan pilihan MK penciri (dari RPS SI-OBE) untuk 1 prodi."""
+    from urllib.parse import urlencode
+    from .siobe_rps import KODE_BERSAMA_PENCIRI, SiobeError, set_penciri
+
+    butir = get_object_or_404(ButirDokumen, pk=butir_id, aktif=True)
+    can_upload, reason = can_upload_to_butir(request.user, butir)
+    prodi = request.POST.get("prodi", "").strip().upper()
+    back = reverse("dokumen:butir_detail", args=[butir.pk]) + "?" + urlencode({"prodi": prodi})
+
+    if butir.kode_bersama != KODE_BERSAMA_PENCIRI:
+        messages.error(request, "Butir ini bukan butir RPS MK penciri.")
+        return redirect(back)
+    if not can_upload or prodi not in _penciri_prodi_options(request.user, butir):
+        messages.error(request, f"Anda tidak bisa mengatur MK penciri prodi {prodi}. {reason or ''}")
+        return redirect(back)
+    try:
+        hasil = set_penciri(prodi, request.POST.getlist("kode_mk"), request.user)
+    except SiobeError as exc:
+        messages.error(request, str(exc))
+        return redirect(back)
+    messages.success(
+        request,
+        f"MK penciri {prodi} disimpan: {hasil['ditambah']} ditambah/diperbarui, "
+        f"{hasil['dihapus']} dihapus, {hasil['tetap']} tetap.",
+    )
+    return redirect(back)
+
+
 @login_required(login_url="/login/")
 def butir_detail(request, butir_id):
     """
@@ -362,6 +433,7 @@ def butir_detail(request, butir_id):
         "dokumen_list": dokumen_qs,
         "shared_butirs": shared_butirs,
         "rps_siobe": _rps_siobe_info(butir, butir_ids),
+        "penciri": _penciri_context(request, butir, can_upload),
         "can_upload": can_upload,
         "upload_reason": upload_reason,
     }
