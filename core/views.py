@@ -547,6 +547,23 @@ def logout_view(request):
     return resp
 
 
+def sso_status_view(request):
+    """Diagnosis SSO untuk browser ini (tanpa menampilkan isi token)."""
+    from django.http import JsonResponse
+    from . import sso
+    from .middleware_sso import COOKIE_KELUAR, COOKIE_PAKAI_SSO
+    return JsonResponse({
+        "domain": request.get_host(),
+        "sso_aktif": sso.aktif(),
+        "cookie_sso_diterima": bool(request.COOKIES.get(settings.SSO_COOKIE_NAME)),
+        "tanda_pernah_pakai_sso": bool(request.COOKIES.get(COOKIE_PAKAI_SSO)),
+        "penanda_logout_aktif": bool(request.COOKIES.get(COOKIE_KELUAR)),
+        "sudah_login": request.user.is_authenticated,
+        "login_lewat_sso": bool(request.session.get("sso_token")),
+        "alamat_sso": sso.basis_sso(request),
+    }, json_dumps_params={"indent": 2})
+
+
 def sso_masuk_view(request):
     """Arahkan ke login SSO UNISAN; SSO kembali ke SIAKRED membawa ?sso_token=."""
     from . import sso

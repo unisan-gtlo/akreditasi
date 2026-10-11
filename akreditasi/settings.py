@@ -80,6 +80,7 @@ TEMPLATES = [
                 "dokumen.context_processors.verifikasi_context",
                 "core.context_processors.notifikasi_context",
                 "core.context_processors.sidebar_stats",
+                "core.context_processors.sso_context",
                 
             ],
         },

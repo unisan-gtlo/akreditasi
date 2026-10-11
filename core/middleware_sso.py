@@ -108,7 +108,7 @@ class SSOMiddleware:
             resp = self._cek_ulang(request)
             if resp is not None:
                 return resp
-        elif request.path.startswith(AWALAN_INTERNAL):
+        elif request.path.startswith(AWALAN_INTERNAL) or request.path == "/":
             keluar = request.COOKIES.get(COOKIE_KELUAR, "")
             token = request.COOKIES.get(settings.SSO_COOKIE_NAME, "")
             # 1) Cookie SSO sekeluarga domain: login senyap (kecuali token yang sama baru saja di-logout)
@@ -123,7 +123,7 @@ class SSOMiddleware:
             # 2) Pernah masuk lewat SSO di browser ini tapi cookie SSO ada di domain lain
             #    (mis. login di sso.unisan.ac.id, membuka siakred.unisan-g.id): minta token ke SSO.
             #    SSO langsung mengembalikan token bila sudah login (jembatan lintas domain SSO).
-            if (request.method == "GET" and request.COOKIES.get(COOKIE_PAKAI_SSO) and not keluar
+            if (request.method == "GET" and request.path != "/" and request.COOKIES.get(COOKIE_PAKAI_SSO) and not keluar
                     and not request.COOKIES.get(COOKIE_COBA) and request.GET.get("lokal") != "1"):
                 tujuan = (_next_aman(request.GET.get("next", "")) or "/app/") if request.path.startswith("/login") \
                     else request.get_full_path()

@@ -75,3 +75,9 @@ def vmts_stats(request):
         return {'stats_vmts_total': total}
     except Exception:
         return {}
+
+
+def sso_context(request):
+    """sso_aktif untuk tombol Login di halaman publik/landing."""
+    from . import sso
+    return {"sso_aktif": sso.aktif()}
