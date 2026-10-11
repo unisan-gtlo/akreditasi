@@ -1124,11 +1124,15 @@ def _build_bundle_tree(sesi, approved_only=False):
     # Dokumen bertipe tautan aplikasi: URL-nya ditempel ke objek (1 query) supaya
     # bundle bisa menampilkan tombol "Buka" langsung.
     from dokumen.models import DokumenRevisi
-    semua_dok = {d.pk: d for docs in dokumens_by_butir.values() for d in docs}
+    semua_dok = {}
+    for docs in dokumens_by_butir.values():
+        for d in docs:  # dokumen tautan Pustaka bisa muncul sebagai salinan di beberapa butir
+            semua_dok.setdefault(d.pk, []).append(d)
     for dok_id, url in DokumenRevisi.objects.filter(
         dokumen_id__in=list(semua_dok), aktif=True, storage_type=DokumenRevisi.StorageType.LINK,
     ).values_list('dokumen_id', 'gdrive_url'):
-        semua_dok[dok_id].tautan_url = url
+        for d in semua_dok[dok_id]:
+            d.tautan_url = url
 
     # Kelengkapan data dosen SIMDA untuk butir ber-mapping (DTPS sesi ini)
     from master_akreditasi.dosen_data import kelengkapan_sesi
