@@ -509,8 +509,11 @@ def login_view(request):
             form.fields["captcha_question"].initial = question
             form.fields["captcha_token"].initial = token
 
+    from . import sso
     context = {
         "page_title": "Login — SIAKRED UNISAN",
+        "sso_aktif": sso.aktif(),
+        "sso_next": request.GET.get("next", ""),
         "form": form,
         "require_captcha": require_captcha,
         "captcha": captcha_data,
@@ -525,11 +528,35 @@ def login_view(request):
 
 @require_POST
 def logout_view(request):
-    """Logout & redirect ke landing."""
+    """Logout & redirect ke landing. ?sso=1 sekaligus keluar dari SSO UNISAN."""
+    from . import sso
+    from .middleware_sso import COOKIE_KELUAR
+
+    lewat_sso = bool(request.session.get("sso_token"))
     if request.user.is_authenticated:
         logout(request)
         messages.info(request, "Anda telah berhasil logout.")
-    return redirect("core:landing")
+    if sso.aktif() and request.GET.get("sso") == "1":
+        resp = redirect(sso.url_logout(request))
+    else:
+        resp = redirect("core:landing")
+    if sso.aktif() and lewat_sso:
+        # Cegah login otomatis lagi dari cookie SSO sampai pengguna menekan "Masuk dengan SSO"
+        resp.set_cookie(COOKIE_KELUAR, "1", httponly=True, samesite="Lax", secure=request.is_secure())
+    return resp
+
+
+def sso_masuk_view(request):
+    """Arahkan ke login SSO UNISAN; SSO kembali ke SIAKRED membawa ?sso_token=."""
+    from . import sso
+    from .middleware_sso import COOKIE_KELUAR, _next_aman
+
+    if not sso.aktif():
+        messages.error(request, "Login SSO belum diaktifkan.")
+        return redirect("core:login")
+    resp = redirect(sso.url_login(request, _next_aman(request.GET.get("next", "")) or "/app/"))
+    resp.delete_cookie(COOKIE_KELUAR)
+    return resp
 
 
 # ============================================

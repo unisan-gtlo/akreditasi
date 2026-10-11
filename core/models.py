@@ -158,6 +158,16 @@ class ScopeUser(models.Model):
         _("Aktif"),
         default=True,
     )
+
+    # Asal scope: MANUAL (diatur admin) atau SSO (diturunkan otomatis dari jabatan SIMDA
+    # saat login SSO; disinkron ulang tiap login -- jangan diubah manual).
+    class Sumber(models.TextChoices):
+        MANUAL = "MANUAL", _("Manual (admin)")
+        SSO = "SSO", _("Otomatis dari jabatan (SSO/SIMDA)")
+
+    sumber = models.CharField(_("Sumber"), max_length=10, choices=Sumber.choices, default=Sumber.MANUAL)
+    kode_jabatan = models.CharField(_("Kode Jabatan SIMDA"), max_length=20, blank=True,
+                                    help_text=_("Diisi otomatis untuk scope bersumber SSO"))
     tanggal_mulai = models.DateField(
         _("Tanggal Mulai Berlaku"),
         auto_now_add=True,
@@ -887,3 +897,36 @@ class SurveiVMTS(models.Model):
 
     def __str__(self):
         return f"{self.status} - {self.prodi} ({self.created_at.strftime('%d/%m/%Y')})"
+
+# ============================================
+# PEMETAAN JABATAN SIMDA -> SCOPE SIAKRED (login SSO)
+# ============================================
+
+class PemetaanJabatanSSO(models.Model):
+    """Aturan scope untuk jabatan struktural SIMDA (master.jabatan_struktural.kode).
+
+    Tanpa baris pemetaan, berlaku aturan bawaan (core/sso_sinkron.py):
+    lingkup universitas -> Pimpinan Rektorat; fakultas -> Pimpinan Fakultas;
+    prodi -> Pimpinan Prodi. Jabatan lingkup 'unit' WAJIB dipetakan di sini
+    (mis. Kepala LPM -> LPM / Universitas; Kepala Biro X -> Pimpinan Biro + unit kerja).
+    """
+
+    kode_jabatan = models.CharField(_("Kode Jabatan SIMDA"), max_length=20, unique=True,
+                                    help_text=_("master.jabatan_struktural.kode, mis. KALPM"))
+    nama_jabatan = models.CharField(_("Nama Jabatan"), max_length=150, blank=True)
+    role = models.CharField(_("Role SIAKRED"), max_length=30, choices=ScopeUser.Role.choices)
+    level = models.CharField(_("Level"), max_length=20, choices=ScopeUser.Level.choices)
+    unit_kerja_id = models.BigIntegerField(_("ID Unit Kerja (Biro/Lembaga)"), null=True, blank=True,
+                                           help_text=_("master.unit_kerja.id, wajib untuk level Biro"))
+    abaikan = models.BooleanField(_("Abaikan jabatan ini"), default=False,
+                                  help_text=_("Centang bila jabatan ini tidak perlu akses SIAKRED"))
+    keterangan = models.CharField(_("Keterangan"), max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = _("Pemetaan Jabatan SSO")
+        verbose_name_plural = _("Pemetaan Jabatan SSO")
+        db_table = "pemetaan_jabatan_sso"
+        ordering = ["kode_jabatan"]
+
+    def __str__(self):
+        return f"{self.kode_jabatan} -> {'(abaikan)' if self.abaikan else self.get_role_display()}"

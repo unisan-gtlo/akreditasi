@@ -7,7 +7,20 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import SurveiVMTS, SiteProfile
 
-from .models import User, ScopeUser, LoginAttempt, DeviceSession
+from .models import User, ScopeUser, LoginAttempt, DeviceSession, PemetaanJabatanSSO
+
+
+@admin.register(PemetaanJabatanSSO)
+class PemetaanJabatanSSOAdmin(admin.ModelAdmin):
+    list_display = ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "abaikan")
+    list_filter = ("role", "level", "abaikan")
+    search_fields = ("kode_jabatan", "nama_jabatan")
+    fieldsets = ((None, {
+        "fields": ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "abaikan", "keterangan"),
+        "description": "Aturan scope SIAKRED untuk jabatan struktural SIMDA saat login SSO. Jabatan lingkup "
+                       "universitas/fakultas/prodi sudah punya aturan bawaan; jabatan lingkup unit (LPM, LPPM, "
+                       "Biro) wajib dipetakan di sini. Daftar kode: jalankan `manage.py cek_sso`.",
+    }),)
 
 
 @admin.register(User)
@@ -53,15 +66,15 @@ class ScopeUserAdmin(admin.ModelAdmin):
     list_display = (
         "user", "role", "level", "is_pimpinan",
         "unit_kerja_id", "fakultas_id", "prodi_id",
-        "aktif",
+        "aktif", "sumber", "kode_jabatan",
     )
-    list_filter = ("role", "level", "is_pimpinan", "aktif")
+    list_filter = ("role", "level", "is_pimpinan", "aktif", "sumber")
     search_fields = ("user__username", "user__first_name", "user__last_name")
     ordering = ("user__username", "role")
 
     fieldsets = (
         (_("Pengguna & Role"), {
-            "fields": ("user", "role", "level", "is_pimpinan", "aktif"),
+            "fields": ("user", "role", "level", "is_pimpinan", "aktif", "sumber", "kode_jabatan"),
         }),
         (_("Scope Organisasi"), {
             "fields": ("unit_kerja_id", "fakultas_id", "prodi_id"),

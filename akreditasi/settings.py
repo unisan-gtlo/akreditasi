@@ -61,6 +61,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
+    "core.middleware_sso.SSOMiddleware",
 ]
 
 ROOT_URLCONF = "akreditasi.urls"
@@ -179,12 +180,7 @@ MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "50"))
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-# ==========================================
-# SSO INTEGRATION
-# ==========================================
-SSO_BASE_URL = os.getenv("SSO_BASE_URL", "https://sso.unisan-g.id")
-SSO_SECRET_KEY = os.getenv("SSO_SECRET_KEY", "")
-SSO_COOKIE_DOMAIN = os.getenv("SSO_COOKIE_DOMAIN", ".unisan-g.id")
+# (Konfigurasi SSO ada di bagian "SSO UNISAN" di bawah LOGIN / LOGOUT)
 
 # ==========================================
 # SI-OBE (sumber RPS Disahkan, API baca-saja)
@@ -255,6 +251,21 @@ AUTH_USER_MODEL = "core.User"
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/app/"
 LOGOUT_REDIRECT_URL = "/"
+
+# ==========================================
+# SSO UNISAN (core/sso.py) -- nonaktif sampai SSO_ENABLED=True & SSO_SECRET_KEY diisi di .env
+# ==========================================
+SSO_ENABLED = os.getenv("SSO_ENABLED", "False").lower() == "true"
+SSO_SECRET_KEY = os.getenv("SSO_SECRET_KEY", "")
+# Alamat SSO per keluarga domain (cookie SSO tidak bisa lintas .unisan.ac.id <-> .unisan-g.id)
+SSO_BASE_URL_AC = os.getenv("SSO_BASE_URL_AC", "https://sso.unisan.ac.id").rstrip("/")
+SSO_BASE_URL_G = os.getenv("SSO_BASE_URL_G", "https://sso.unisan-g.id").rstrip("/")
+SSO_VERIFY_URL = os.getenv("SSO_VERIFY_URL", SSO_BASE_URL_AC + "/api/verify-token/")
+SSO_COOKIE_NAME = os.getenv("SSO_COOKIE_NAME", "sso_token")
+SSO_TIMEOUT = int(os.getenv("SSO_TIMEOUT", "5"))
+SSO_CEK_ULANG_DETIK = int(os.getenv("SSO_CEK_ULANG_DETIK", "300"))
+# Buat akun SIAKRED otomatis untuk pengguna SSO yang punya jabatan struktural (SIMDA)
+SSO_BUAT_AKUN_PEJABAT = os.getenv("SSO_BUAT_AKUN_PEJABAT", "True").lower() == "true"
 
 # ==========================================
 # EMAIL CONFIGURATION (Gmail SMTP)

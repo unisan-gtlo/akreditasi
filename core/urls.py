@@ -12,6 +12,7 @@ urlpatterns = [
     path("prodi/<str:kode>/", views.prodi_detail, name="prodi_detail"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
+    path("sso/masuk/", views.sso_masuk_view, name="sso_masuk"),
     path("app/", views.dashboard_view, name="dashboard"),
     # Notifikasi (Step 9H)
     path("notifikasi/", views.notifikasi_list, name="notifikasi_list"),

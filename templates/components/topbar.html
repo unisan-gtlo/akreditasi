@@ -199,6 +199,13 @@
                 </div>
             </button>
         </form>
+        {% if request.session.sso_token %}
+        <form method="post" action="{% url 'core:logout' %}?sso=1" style="margin:0 0 0 .35rem;">
+            {% csrf_token %}
+            <button type="submit" class="btn" title="Keluar dari SIAKRED sekaligus dari SSO UNISAN (semua aplikasi)"
+                    style="padding:.35rem .6rem; font-size:.75rem;">Keluar SSO</button>
+        </form>
+        {% endif %}
     </div>
 
 </header>
