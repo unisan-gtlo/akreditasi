@@ -4,17 +4,9 @@ from django.db import migrations, models
 
 
 def isi_jenis(apps, schema_editor):
-    """Tebak jenis dokumen untuk data lama (judul -> nama butir; revisi LINK -> APLIKASI)."""
-    from dokumen.pustaka import tebak_jenis
-
-    Dokumen = apps.get_model("dokumen", "Dokumen")
-    DokumenRevisi = apps.get_model("dokumen", "DokumenRevisi")
-    link_ids = set(
-        DokumenRevisi.objects.filter(aktif=True, storage_type="LINK").values_list("dokumen_id", flat=True)
-    )
-    for d in Dokumen.objects.filter(jenis_dokumen="").select_related("butir_dokumen").iterator():
-        jenis = tebak_jenis(d.judul, d.butir_dokumen.nama_dokumen, d.pk in link_ids)
-        Dokumen.objects.filter(pk=d.pk).update(jenis_dokumen=jenis)
+    """Dulu: tebak jenis untuk data lama. Field ini digantikan kategori (0007), yang
+    menebak ulang dari judul; jadi di sini cukup no-op agar migrasi tidak bergantung kode lama."""
+    return
 
 
 class Migration(migrations.Migration):

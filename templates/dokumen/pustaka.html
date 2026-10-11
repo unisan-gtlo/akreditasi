@@ -39,9 +39,7 @@
   .pk-judul:hover { text-decoration:underline; }
   .pk-meta { font-size:.76rem; color:var(--text-muted); margin-top:.25rem; display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:center; }
   .pk-jenis { padding:.08rem .45rem; border-radius:4px; font-size:.68rem; font-weight:700; background:#F3E8FF; color:#6B21A8; }
-  .pk-jenis.APLIKASI { background:#DBEAFE; color:#1E40AF; } .pk-jenis.SK { background:#FEF3C7; color:#92400E; }
-  .pk-jenis.LAPORAN { background:#DCFCE7; color:#166534; } .pk-jenis.RENCANA { background:#E0F2FE; color:#075985; }
-  .pk-jenis.SOP { background:#FCE7F3; color:#9D174D; } .pk-jenis.LAINNYA { background:#F1F5F9; color:#475569; }
+  .pk-arsip { padding:.08rem .45rem; border-radius:4px; font-size:.68rem; font-weight:700; background:#FEF3C7; color:#92400E; }
   .pk-aksi { display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
   .pk-aksi .btn { padding:.3rem .7rem; font-size:.78rem; }
   .pk-versi { margin-top:.35rem; font-size:.76rem; }
@@ -66,14 +64,18 @@
                 versi tahun terbaru ditampilkan lebih dulu.
             </p>
         </div>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+            {% if bisa_kelola %}<a href="{% url 'dokumen:kategori_kelola' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">🏷 Kelola Kategori</a>{% endif %}
+            {% if bisa_tambah %}<a href="{% url 'dokumen:pustaka_tambah' %}" class="btn btn-primary">+ Tambah Dokumen</a>{% endif %}
+        </div>
     </div>
 </div>
 
-{% if ringkasan_jenis %}
+{% if ringkasan_kategori %}
 <div class="pk-chips">
-    <a class="pk-chip {% if not f.jenis %}aktif{% endif %}" href="?{% if f.bagian %}bagian={{ f.bagian }}&{% endif %}{% if f.unit %}unit={{ f.unit }}&{% endif %}{% if f.q %}q={{ f.q|urlencode }}&{% endif %}{% if f.tahun %}tahun={{ f.tahun|urlencode }}&{% endif %}{% if f.instrumen %}instrumen={{ f.instrumen }}{% endif %}">Semua jenis</a>
-    {% for kode, label, n in ringkasan_jenis %}
-    <a class="pk-chip {% if f.jenis == kode %}aktif{% endif %}" href="?jenis={{ kode }}{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}">{{ label }} <strong>{{ n }}</strong></a>
+    <a class="pk-chip {% if not f.kategori %}aktif{% endif %}" href="?{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}">Semua kategori</a>
+    {% for pk, nama, n in ringkasan_kategori %}
+    <a class="pk-chip {% if f.kategori == pk|stringformat:"s" %}aktif{% endif %}" href="?kategori={{ pk }}{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}">{{ nama }} <strong>{{ n }}</strong></a>
     {% endfor %}
 </div>
 {% endif %}
@@ -81,8 +83,8 @@
 <div class="panel">
     <div class="panel-body" style="padding:1rem 1.25rem;">
         <form method="get" class="pk-filter">
-            {% if f.jenis %}<input type="hidden" name="jenis" value="{{ f.jenis }}">{% endif %}
-            <input type="text" name="q" value="{{ f.q }}" placeholder="🔍 Cari judul / butir…" class="form-input" style="max-width:260px;">
+            {% if f.kategori %}<input type="hidden" name="kategori" value="{{ f.kategori }}">{% endif %}
+            <input type="text" name="q" value="{{ f.q }}" placeholder="🔍 Cari judul / nomor / butir…" class="form-input" style="max-width:260px;">
             <select name="bagian" class="form-input" onchange="this.form.submit()">
                 <option value="">Semua bagian</option>
                 {% for kode, label in opsi_bagian %}<option value="{{ kode }}" {% if f.bagian == kode %}selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -94,6 +96,11 @@
             <select name="instrumen" class="form-input" onchange="this.form.submit()">
                 <option value="">Semua instrumen</option>
                 {% for ins in instrumen_all %}<option value="{{ ins.id }}" {% if f.instrumen == ins.id|stringformat:"s" %}selected{% endif %}>{{ ins.nama_singkat }}</option>{% endfor %}
+            </select>
+            <select name="sumber" class="form-input" onchange="this.form.submit()">
+                <option value="">Semua sumber</option>
+                <option value="pustaka" {% if f.sumber == "pustaka" %}selected{% endif %}>Arsip Pustaka (tanpa butir)</option>
+                <option value="butir" {% if f.sumber == "butir" %}selected{% endif %}>Dari butir instrumen</option>
             </select>
             <input type="text" name="tahun" value="{{ f.tahun }}" placeholder="Tahun, mis. 2024" class="form-input" style="max-width:150px;">
             <button type="submit" class="btn btn-primary">Terapkan</button>
@@ -120,7 +127,11 @@
             <div>
                 <a class="pk-judul" href="{% url 'dokumen:dokumen_detail' d.pk %}">{{ d.judul }}</a>
                 <div class="pk-meta">
-                    <span class="pk-jenis {{ e.jenis }}">{{ e.jenis_label }}</span>
+                    {% if e.kategori %}<span class="pk-jenis">{{ e.kategori.nama }}</span>{% endif %}
+                    {% if not d.butir_dokumen_id %}<span class="pk-arsip">📚 Arsip Pustaka</span>{% endif %}
+                    {% if d.nomor_dokumen %}<span>No. {{ d.nomor_dokumen }}</span>{% endif %}
+                    {% if d.tanggal_dokumen %}<span>🗓 {{ d.tanggal_dokumen|date:"d M Y" }}</span>{% endif %}
+                    {% if d.penerbit %}<span>{{ d.penerbit }}</span>{% endif %}
                     {% if d.tahun_akademik %}<span>📅 {{ d.tahun_akademik }}</span>{% endif %}
                     {% if d.status_akses == "TERBUKA" %}<span>🌐 Terbuka</span>{% endif %}
                     <span>diperbarui {{ d.tanggal_diubah|date:"d M Y" }}</span>
@@ -145,6 +156,10 @@
                 <a class="btn" href="{{ d.rev.gdrive_url }}" target="_blank" rel="noopener">Buka ↗</a>
                 {% elif d.rev %}
                 <a class="btn" href="{% url 'dokumen:dokumen_download' d.pk %}">Unduh</a>
+                {% endif %}
+                {% if e.bisa_edit %}
+                <a class="btn" href="{% url 'dokumen:dokumen_edit' d.pk %}" title="Ubah judul, kategori, nomor, tanggal">Edit</a>
+                {% if not d.rev.is_link %}<a class="btn" href="{% url 'dokumen:dokumen_upload_revisi' d.pk %}" title="Ganti file dengan versi baru">Versi Baru</a>{% endif %}
                 {% endif %}
             </div>
         </div>

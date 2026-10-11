@@ -7,7 +7,7 @@
 <div class="topbar-breadcrumb">
     <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
     <span>/</span>
-    <a href="{% url 'dokumen:butir_detail' butir.pk %}">{{ butir.kode }}</a>
+    {% if butir.pk %}<a href="{% url 'dokumen:butir_detail' butir.pk %}">{{ butir.kode }}</a>{% else %}<a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>{% endif %}
     <span>/</span>
     <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
     <span>/</span>

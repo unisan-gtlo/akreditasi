@@ -2,7 +2,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from .models import Dokumen, DokumenRevisi
+from django.db.models import Q as models_Q
+
+from .models import Dokumen, DokumenRevisi, KategoriDokumen
 from .gdrive_helper import validate_gdrive_url
 
 
@@ -23,6 +25,20 @@ def normalisasi_tahun_akademik(nilai):
     if m.group(3):
         return f"{m.group(1)}/{m.group(2)} {m.group(3).capitalize()}" if m.group(2) else nilai
     return f"{m.group(1)}/{m.group(2)}" if m.group(2) else m.group(1)
+
+
+def _cek_file_pustaka(f):
+    """Validasi file untuk dokumen Pustaka (tanpa butir): batas ukuran & ekstensi umum."""
+    from .pustaka import EKSTENSI_DITERIMA, UKURAN_MAKS_MB
+    size_mb = f.size / (1024 * 1024)
+    if size_mb > UKURAN_MAKS_MB:
+        raise forms.ValidationError(
+            _(f"Ukuran file melebihi batas ({UKURAN_MAKS_MB} MB). File Anda: {size_mb:.1f} MB. "
+              f"Pakai tautan Google Drive untuk file besar.")
+        )
+    if not f.name.lower().endswith(EKSTENSI_DITERIMA):
+        raise forms.ValidationError(_("Format file tidak didukung. Gunakan PDF, Word, Excel, PowerPoint, gambar, atau ZIP."))
+    return f
 
 
 class DokumenUploadForm(forms.Form):
@@ -143,7 +159,7 @@ class DokumenUploadForm(forms.Form):
             raise forms.ValidationError(_("File wajib dipilih untuk upload lokal."))
 
         if not self.butir:
-            return f
+            return _cek_file_pustaka(f)
 
         # Size check
         max_mb = self.butir.ukuran_max_mb
@@ -288,7 +304,7 @@ class RevisiUploadForm(forms.Form):
             raise forms.ValidationError(_("File wajib dipilih untuk upload lokal."))
 
         if not self.butir:
-            return f
+            return _cek_file_pustaka(f)
 
         # Size check
         max_mb = self.butir.ukuran_max_mb
@@ -356,7 +372,8 @@ class DokumenEditForm(forms.ModelForm):
 
     class Meta:
         model = Dokumen
-        fields = ["judul", "deskripsi", "jenis_dokumen", "tahun_akademik", "status_akses", "status"]
+        fields = ["judul", "kategori", "nomor_dokumen", "tanggal_dokumen", "penerbit",
+                  "deskripsi", "tahun_akademik", "status_akses", "status"]
         widgets = {
             "judul": forms.TextInput(attrs={"class": "form-input"}),
             "deskripsi": forms.Textarea(attrs={
@@ -368,7 +385,10 @@ class DokumenEditForm(forms.ModelForm):
                 "class": "form-input",
                 "placeholder": "Contoh: 2024/2025",
             }),
-            "jenis_dokumen": forms.Select(attrs={"class": "form-input"}),
+            "kategori": forms.Select(attrs={"class": "form-input"}),
+            "nomor_dokumen": forms.TextInput(attrs={"class": "form-input", "placeholder": "Contoh: 123/UNISAN/SK/IV/2024"}),
+            "tanggal_dokumen": forms.DateInput(attrs={"class": "form-input", "type": "date"}, format="%Y-%m-%d"),
+            "penerbit": forms.TextInput(attrs={"class": "form-input", "placeholder": "Contoh: Rektor UNISAN"}),
             "status_akses": forms.RadioSelect,
             "status": forms.RadioSelect,
         }
@@ -382,6 +402,65 @@ class DokumenEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["jenis_dokumen"].choices = [("", "(Tebak otomatis dari judul)")] + list(
-            Dokumen.JenisDokumen.choices
-        )
+        aktif = KategoriDokumen.objects.filter(aktif=True)
+        if self.instance and self.instance.kategori_id:
+            aktif = KategoriDokumen.objects.filter(models_Q(aktif=True) | models_Q(pk=self.instance.kategori_id))
+        self.fields["kategori"].queryset = aktif
+        self.fields["kategori"].empty_label = "(Tebak otomatis dari judul)"
+
+    def clean_tahun_akademik(self):
+        return normalisasi_tahun_akademik(self.cleaned_data.get("tahun_akademik"))
+
+
+class PustakaDokumenForm(DokumenUploadForm):
+    """Tambah dokumen langsung di Pustaka (tanpa butir instrumen)."""
+
+    pemilik = forms.ChoiceField(label=_("Pemilik Dokumen"), widget=forms.Select(attrs={"class": "form-input"}))
+    kategori = forms.ModelChoiceField(
+        label=_("Kategori Dokumen"), queryset=None, required=False,
+        empty_label="(Tebak otomatis dari judul)",
+        widget=forms.Select(attrs={"class": "form-input"}),
+    )
+    nomor_dokumen = forms.CharField(label=_("Nomor Dokumen"), max_length=150, required=False,
+                                    widget=forms.TextInput(attrs={"class": "form-input", "placeholder": "Contoh: 123/UNISAN/SK/IV/2024"}))
+    tanggal_dokumen = forms.DateField(label=_("Tanggal Penetapan"), required=False,
+                                      widget=forms.DateInput(attrs={"class": "form-input", "type": "date"}))
+    penerbit = forms.CharField(label=_("Penerbit / Penetap"), max_length=200, required=False,
+                               widget=forms.TextInput(attrs={"class": "form-input", "placeholder": "Contoh: Rektor UNISAN, Kemendikbudristek"}))
+
+    def __init__(self, *args, pilihan_pemilik=(), **kwargs):
+        super().__init__(*args, butir=None, **kwargs)
+        self.fields["pemilik"].choices = [("", "— pilih —")] + list(pilihan_pemilik)
+        self.fields["kategori"].queryset = KategoriDokumen.objects.filter(aktif=True)
+        if not self.is_bound:
+            self.fields["status_akses"].initial = "INTERNAL"
+            if len(pilihan_pemilik) == 1:
+                self.fields["pemilik"].initial = pilihan_pemilik[0][0]
+
+
+class KategoriDokumenForm(forms.ModelForm):
+    class Meta:
+        model = KategoriDokumen
+        fields = ["nama", "kode", "keterangan", "kata_kunci", "urutan", "aktif"]
+        widgets = {
+            "nama": forms.TextInput(attrs={"class": "form-input", "placeholder": "Contoh: SK Rektor"}),
+            "kode": forms.TextInput(attrs={"class": "form-input", "placeholder": "sk-rektor (kosongkan: otomatis)"}),
+            "keterangan": forms.Textarea(attrs={"class": "form-input", "rows": 2}),
+            "kata_kunci": forms.Textarea(attrs={"class": "form-input", "rows": 2,
+                                                "placeholder": "sk rektor, keputusan rektor"}),
+            "urutan": forms.NumberInput(attrs={"class": "form-input", "style": "max-width:120px"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["kode"].required = False
+        if self.instance.pk and self.instance.is_sistem:
+            self.fields["kode"].disabled = True
+            self.fields["aktif"].disabled = True
+
+    def clean_kode(self):
+        from django.utils.text import slugify
+        kode = self.cleaned_data.get("kode") or slugify(self.cleaned_data.get("nama") or "")
+        if not kode:
+            raise forms.ValidationError(_("Kode wajib diisi."))
+        return kode

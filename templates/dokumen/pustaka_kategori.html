@@ -1,0 +1,114 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Kategori Dokumen — SIAKRED{% endblock %}
+{% block page_heading %}Kategori Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Kelola Kategori</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<style>
+  .kt-wrap { display:grid; grid-template-columns: minmax(0, 1fr) 360px; gap:1.25rem; align-items:start; }
+  .kt-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .kt-table th, .kt-table td { padding:.6rem .75rem; border-bottom:1px solid var(--border-subtle); text-align:left; vertical-align:top; }
+  .kt-table th { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
+  .kt-kunci { font-size:.75rem; color:var(--text-muted); margin-top:.2rem; }
+  .kt-off { opacity:.55; }
+  .kt-aksi { display:flex; gap:.35rem; flex-wrap:wrap; }
+  .kt-aksi .btn { padding:.25rem .6rem; font-size:.76rem; }
+  .kt-hapus summary { cursor:pointer; color:#B91C1C; font-size:.76rem; list-style:none; padding:.25rem .4rem; }
+  .kt-hapus form { margin-top:.4rem; display:flex; flex-direction:column; gap:.4rem; }
+  @media (max-width:900px) { .kt-wrap { grid-template-columns:1fr; } }
+</style>
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Kategori Dokumen</h1>
+            <p class="page-subtitle">
+                Kategori dipakai untuk mengelompokkan Pustaka Dokumen. <strong>Kata kunci</strong> menentukan tebakan otomatis:
+                bila judul dokumen memuat kata kunci dan kategori dokumen dikosongkan, dokumen masuk ke kategori itu.
+            </p>
+        </div>
+        <a href="{% url 'dokumen:pustaka' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">Kembali ke Pustaka</a>
+    </div>
+</div>
+
+<div class="kt-wrap">
+    <div class="panel">
+        <div class="panel-body panel-body-flush" style="overflow-x:auto;">
+            <table class="kt-table">
+                <thead><tr><th>Urutan</th><th>Kategori</th><th>Dokumen</th><th>Aksi</th></tr></thead>
+                <tbody>
+                {% for k in daftar %}
+                    <tr class="{% if not k.aktif %}kt-off{% endif %}">
+                        <td>{{ k.urutan }}</td>
+                        <td>
+                            <strong>{{ k.nama }}</strong> <code style="font-size:.72rem;">{{ k.kode }}</code>
+                            {% if not k.aktif %}<span class="badge badge-gray">nonaktif</span>{% endif %}
+                            {% if k.is_sistem %}<span class="badge badge-blue" title="Tidak bisa dihapus">sistem</span>{% endif %}
+                            {% if k.keterangan %}<div class="kt-kunci">{{ k.keterangan }}</div>{% endif %}
+                            {% if k.kata_kunci %}<div class="kt-kunci">🔑 {{ k.kata_kunci|truncatechars:140 }}</div>{% endif %}
+                        </td>
+                        <td><a href="{% url 'dokumen:pustaka' %}?kategori={{ k.pk }}">{{ k.jumlah }}</a></td>
+                        <td>
+                            <div class="kt-aksi">
+                                <a class="btn" href="{% url 'dokumen:kategori_ubah' k.pk %}">Ubah</a>
+                                {% if not k.is_sistem %}
+                                <details class="kt-hapus">
+                                    <summary>Hapus…</summary>
+                                    <form method="post" action="{% url 'dokumen:kategori_hapus' k.pk %}">
+                                        {% csrf_token %}
+                                        {% if k.jumlah %}
+                                        <label style="font-size:.75rem;">Pindahkan {{ k.jumlah }} dokumen ke:</label>
+                                        <select name="pindah_ke" class="form-input" required style="padding:.3rem .5rem; font-size:.8rem;">
+                                            <option value="">— pilih —</option>
+                                            {% for t in daftar %}{% if t.pk != k.pk %}<option value="{{ t.pk }}">{{ t.nama }}</option>{% endif %}{% endfor %}
+                                        </select>
+                                        {% endif %}
+                                        <button type="submit" class="btn" style="background:#FEE2E2; color:#991B1B;"
+                                                onclick="return confirm('Hapus kategori {{ k.nama|escapejs }}?');">Hapus kategori</button>
+                                    </form>
+                                </details>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" style="color:var(--text-muted);">Belum ada kategori.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <form method="post" class="panel" action="{% if obj %}{% url 'dokumen:kategori_ubah' obj.pk %}{% else %}{% url 'dokumen:kategori_kelola' %}{% endif %}">
+        {% csrf_token %}
+        <div class="panel-header"><div class="panel-title">{% if obj %}Ubah: {{ obj.nama }}{% else %}Tambah Kategori{% endif %}</div></div>
+        <div class="panel-body">
+            {% for field in form %}
+            <div class="form-group">
+                {% if field.name == "aktif" %}
+                    <label style="display:flex; gap:.5rem; align-items:center;">{{ field }} {{ field.label }}</label>
+                {% else %}
+                    <label class="form-label {% if field.field.required %}form-label-required{% endif %}" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                {% endif %}
+                {% if field.help_text %}<div class="form-help">{{ field.help_text }}</div>{% endif %}
+                {% if field.errors %}<div class="form-errors">{{ field.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% if obj and obj.is_sistem %}<div class="form-help">Kategori sistem: kode &amp; status aktif tidak bisa diubah.</div>{% endif %}
+            <div style="display:flex; gap:.5rem; justify-content:flex-end;">
+                {% if obj %}<a href="{% url 'dokumen:kategori_kelola' %}" class="btn">Batal</a>{% endif %}
+                <button type="submit" class="btn btn-primary">{% if obj %}Simpan Perubahan{% else %}Tambah Kategori{% endif %}</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

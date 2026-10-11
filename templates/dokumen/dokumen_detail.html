@@ -8,7 +8,7 @@
 <div class="topbar-breadcrumb">
     <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
     <span>/</span>
-    <a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>
+    {% if dokumen.butir_dokumen_id %}<a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>{% else %}<a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>{% endif %}
     <span>/</span>
     <span style="color:var(--text-primary); font-weight:500;">{{ dokumen.judul|truncatechars:40 }}</span>
 </div>
@@ -22,9 +22,20 @@
         <div style="flex:1;">
             <h1 class="page-title">{{ dokumen.judul }}</h1>
             <p class="page-subtitle">
+                {% if dokumen.butir_dokumen_id %}
                 <span class="badge badge-blue">{{ dokumen.butir_dokumen.kode }}</span>
                 {{ dokumen.butir_dokumen.nama_dokumen }}
+                {% else %}
+                <span class="badge badge-blue">📚 Arsip Pustaka</span> tidak terkait butir instrumen
+                {% endif %}
             </p>
+            {% if dokumen.nomor_dokumen or dokumen.tanggal_dokumen or dokumen.penerbit %}
+            <p class="page-subtitle" style="margin-top:.25rem;">
+                {% if dokumen.nomor_dokumen %}No. <strong>{{ dokumen.nomor_dokumen }}</strong>{% endif %}
+                {% if dokumen.tanggal_dokumen %} · ditetapkan {{ dokumen.tanggal_dokumen|date:"d F Y" }}{% endif %}
+                {% if dokumen.penerbit %} · oleh {{ dokumen.penerbit }}{% endif %}
+            </p>
+            {% endif %}
             <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem;">
                 {% if dokumen.status_akses == 'TERBUKA' %}
                     <span class="badge badge-emerald">🌐 Terbuka</span>
@@ -32,6 +43,7 @@
                     <span class="badge badge-gray">🔒 Internal</span>
                 {% endif %}
                 <span class="badge badge-gray">{{ dokumen.scope_label }}</span>
+                {% if dokumen.kategori %}<span class="badge badge-purple" style="background:#F3E8FF; color:#6B21A8;">🏷 {{ dokumen.kategori.nama }}</span>{% endif %}
                 {% if dokumen.tahun_akademik %}
                     <span class="badge badge-blue">📅 {{ dokumen.tahun_akademik }}</span>
                 {% endif %}
@@ -75,7 +87,7 @@
                     Riwayat Akses
                 </a>
             {% endif %}
-            <a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+            <a href="{% if dokumen.butir_dokumen_id %}{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}{% else %}{% url 'dokumen:pustaka' %}{% endif %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Kembali
             </a>

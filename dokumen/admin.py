@@ -3,7 +3,19 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import Dokumen, DokumenRevisi, DokumenAccessLog
+from .models import Dokumen, DokumenRevisi, DokumenAccessLog, KategoriDokumen
+
+
+@admin.register(KategoriDokumen)
+class KategoriDokumenAdmin(admin.ModelAdmin):
+    list_display = ("nama", "kode", "urutan", "aktif", "jumlah_dokumen")
+    list_editable = ("urutan", "aktif")
+    search_fields = ("nama", "kode", "kata_kunci")
+    prepopulated_fields = {"kode": ("nama",)}
+
+    @admin.display(description="Dokumen")
+    def jumlah_dokumen(self, obj):
+        return obj.dokumen.count()
 
 
 class DokumenRevisiInline(admin.TabularInline):
@@ -23,16 +35,17 @@ class DokumenAdmin(admin.ModelAdmin):
         "tanggal_diubah",
     )
     list_filter = (
-        "status_akses", "status", "kategori_pemilik", "jenis_dokumen",
+        "status_akses", "status", "kategori_pemilik", "kategori",
         "butir_dokumen__sub_standar__standar__instrumen",
     )
-    search_fields = ("judul", "butir_dokumen__kode", "butir_dokumen__nama_dokumen")
+    search_fields = ("judul", "nomor_dokumen", "penerbit", "butir_dokumen__kode", "butir_dokumen__nama_dokumen")
     ordering = ("-tanggal_diubah",)
     date_hierarchy = "tanggal_diubah"
 
     fieldsets = (
         (_("Identitas"), {
-            "fields": ("butir_dokumen", "judul", "deskripsi", "jenis_dokumen", "tahun_akademik"),
+            "fields": ("butir_dokumen", "judul", "kategori", "nomor_dokumen", "tanggal_dokumen", "penerbit",
+                       "deskripsi", "tahun_akademik"),
         }),
         (_("Pemilik & Scope"), {
             "fields": (

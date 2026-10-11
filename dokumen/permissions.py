@@ -82,10 +82,11 @@ def can_upload_to_butir(user, butir):
 # EDIT/DELETE PERMISSION  (lateral lock)
 # =========================================================
 
-def can_edit_dokumen(user, dokumen):
+def can_edit_dokumen(user, dokumen, scopes=None):
     """
     Cek apakah user boleh edit/delete dokumen ini.
-    LATERAL LOCK: fakultas A tidak boleh edit dokumen fakultas B.
+    LATERAL LOCK: fakultas A tidak boleh edit dokumen fakultas B; biro A tidak boleh edit biro B.
+    `scopes` opsional (daftar scope aktif user) agar tidak query ulang di dalam loop.
     """
     if not user.is_authenticated:
         return False, "Anda harus login"
@@ -93,22 +94,24 @@ def can_edit_dokumen(user, dokumen):
     if is_superadmin(user):
         return True, "Super admin"
 
-    scopes = get_user_scopes(user)
+    if scopes is None:
+        scopes = get_user_scopes(user)
     if not scopes:
         return False, "Tidak punya scope"
 
     kat = dokumen.kategori_pemilik
 
     for scope in scopes:
+        if scope.role == "ASESOR":
+            continue  # asesor hanya membaca
         # UNIVERSITAS: siapa saja yang scope UNIVERSITAS bisa edit
         if kat == "UNIVERSITAS" and scope.level == "UNIVERSITAS":
             return True, "OK - Scope Universitas"
 
-        # BIRO: harus unit_kerja_id cocok
+        # BIRO: hanya unit yang sama (dokumen tanpa unit hanya bisa diedit superadmin)
         elif kat == "BIRO" and scope.level == "BIRO":
-            # Simple check: unit_kerja_id di scope vs scope_kode_unit_kerja di dokumen
-            # Di Phase 1 kita relax: semua scope BIRO bisa edit semua dokumen BIRO
-            return True, "OK - Scope Biro"
+            if scope.unit_kerja_id and str(scope.unit_kerja_id) == (dokumen.scope_kode_unit_kerja or ""):
+                return True, "OK - Scope Biro/Lembaga sama"
 
         # FAKULTAS: harus fakultas_id cocok
         elif kat == "FAKULTAS" and scope.level == "FAKULTAS":

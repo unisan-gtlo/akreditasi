@@ -207,7 +207,7 @@
             <tr data-v-id="{{ v.pk }}">
                 <td><input type="checkbox" class="row-check" value="{{ v.pk }}" aria-label="Pilih {{ dok.judul }}"></td>
                 <td>
-                    <span class="v-butir">{{ butir.kode }}</span>
+                    <span class="v-butir">{{ butir.kode|default:"Pustaka" }}</span>
                     <div style="margin-top:.25rem; font-weight:500; color:var(--text-primary);">
                         {{ dok.judul|truncatechars:70 }}
                     </div>

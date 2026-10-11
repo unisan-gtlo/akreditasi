@@ -130,7 +130,7 @@
             <h3>Informasi Dokumen</h3>
             
             <div class="rv-butir">
-                <span class="kode">{{ butir.kode }}</span>
+                <span class="kode">{{ butir.kode|default:"Pustaka" }}</span>
                 <div class="nama">{{ butir.nama_dokumen }}</div>
             </div>
             

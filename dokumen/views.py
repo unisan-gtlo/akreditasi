@@ -957,6 +957,13 @@ def dokumen_upload_revisi(request, pk):
         return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
 
     butir = dokumen.butir_dokumen
+    butir_tampil = butir
+    if butir is None:
+        # Dokumen Pustaka (tanpa butir): validasi file pakai aturan umum Pustaka
+        from types import SimpleNamespace
+        from .pustaka import UKURAN_MAKS_MB
+        butir_tampil = SimpleNamespace(pk=None, kode="Pustaka", ukuran_max_mb=UKURAN_MAKS_MB,
+                                       get_format_diterima_display="PDF/Office/Gambar/ZIP")
 
     if request.method == "POST":
         form = RevisiUploadForm(request.POST, request.FILES, butir=butir)
@@ -983,7 +990,7 @@ def dokumen_upload_revisi(request, pk):
         "page_title": f"Upload Revisi: {dokumen.judul}",
         "active_menu": "dokumen",
         "dokumen": dokumen,
-        "butir": butir,
+        "butir": butir_tampil,
         "form": form,
     }
     return render(request, "dokumen/dokumen_upload_revisi.html", context)
@@ -2002,22 +2009,3 @@ def public_download(request, token):
         as_attachment=True,
         filename=revisi.original_filename or revisi.file.name.split("/")[-1],
     )
-
-# =========================================================
-# PUSTAKA DOKUMEN INSTITUSI (lintas sesi)
-# =========================================================
-
-@login_required
-def pustaka_dokumen(request):
-    """Semua dokumen Universitas/Rektorat, Biro/Lembaga, Fakultas tanpa masuk sesi."""
-    from .pustaka import bangun_pustaka, can_access_pustaka
-
-    if not can_access_pustaka(request.user):
-        messages.error(request, "Pustaka Dokumen hanya untuk pengguna internal kampus.")
-        return redirect("core:dashboard")
-    context = bangun_pustaka(request.GET)
-    context.update({
-        "active_menu": "pustaka",
-        "instrumen_all": Instrumen.objects.order_by("nama_singkat"),
-    })
-    return render(request, "dokumen/pustaka.html", context)

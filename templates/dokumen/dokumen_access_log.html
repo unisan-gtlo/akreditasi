@@ -7,7 +7,7 @@
 <div class="topbar-breadcrumb">
     <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
     <span>/</span>
-    <a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>
+    {% if dokumen.butir_dokumen_id %}<a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>{% else %}<a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>{% endif %}
     <span>/</span>
     <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
     <span>/</span>
@@ -245,7 +245,7 @@
                 </div>
                 <div style="margin-bottom:.75rem;">
                     <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Butir</div>
-                    <div style="font-weight:600; font-family:'JetBrains Mono', monospace;">{{ dokumen.butir_dokumen.kode }}</div>
+                    <div style="font-weight:600; font-family:'JetBrains Mono', monospace;">{{ dokumen.butir_dokumen.kode|default:"Pustaka" }}</div>
                 </div>
                 <div style="margin-bottom:.75rem;">
                     <div style="font-size:.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Status Akses</div>

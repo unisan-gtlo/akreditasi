@@ -43,6 +43,57 @@ def dokumen_upload_path(instance, filename):
 # DOKUMEN (entitas utama)
 # =========================================================
 
+class KategoriDokumen(models.Model):
+    """Kategori Pustaka Dokumen (SK Rektor, Peraturan, Pedoman, ...). Dikelola superadmin/LPM."""
+
+    nama = models.CharField(_("Nama Kategori"), max_length=120, unique=True)
+    kode = models.SlugField(_("Kode"), max_length=60, unique=True,
+                            help_text=_("Huruf kecil & tanda hubung, mis. sk-rektor"))
+    keterangan = models.TextField(_("Keterangan"), blank=True)
+    kata_kunci = models.TextField(
+        _("Kata Kunci Tebakan"),
+        blank=True,
+        help_text=_("Pisahkan dengan koma. Judul dokumen yang memuat kata ini otomatis masuk kategori ini "
+                    "(kata yang muncul paling awal di judul menang, lalu yang terpanjang). "
+                    "Contoh: sk rektor, keputusan rektor"),
+    )
+    urutan = models.PositiveIntegerField(_("Urutan"), default=100)
+    aktif = models.BooleanField(_("Aktif"), default=True)
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+    tanggal_diubah = models.DateTimeField(auto_now=True)
+
+    # Kategori sistem: tidak bisa dihapus (dipakai tebakan otomatis)
+    KODE_SISTEM = ("lainnya", "aplikasi")
+
+    class Meta:
+        verbose_name = _("Kategori Dokumen")
+        verbose_name_plural = _("Kategori Dokumen")
+        db_table = "kategori_dokumen"
+        ordering = ["urutan", "nama"]
+
+    def __str__(self):
+        return self.nama
+
+    @property
+    def is_sistem(self):
+        return self.kode in self.KODE_SISTEM
+
+    def kata_kunci_list(self):
+        teks = (self.kata_kunci or "").replace(chr(10), ",")
+        return [k.strip().lower() for k in teks.split(",") if k.strip()]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("pustaka_kategori_aturan")
+
+    def delete(self, *args, **kwargs):
+        r = super().delete(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete("pustaka_kategori_aturan")
+        return r
+
+
 class Dokumen(models.Model):
     """
     Dokumen yang di-arsipkan untuk 1 butir_dokumen.
@@ -55,26 +106,18 @@ class Dokumen(models.Model):
         TERBUKA = "TERBUKA", _("Terbuka (Publik)")
         INTERNAL = "INTERNAL", _("Internal (Perlu Login)")
 
-    class JenisDokumen(models.TextChoices):
-        KEBIJAKAN = "KEBIJAKAN", _("Kebijakan / Peraturan")
-        PEDOMAN = "PEDOMAN", _("Pedoman / Manual / Standar")
-        SK = "SK", _("Surat Keputusan (SK)")
-        RENCANA = "RENCANA", _("Renstra / Renop / Rencana")
-        SOP = "SOP", _("SOP / Prosedur")
-        LAPORAN = "LAPORAN", _("Laporan / Evaluasi / Bukti")
-        FORMULIR = "FORMULIR", _("Formulir / Instrumen")
-        APLIKASI = "APLIKASI", _("Tautan Aplikasi / Website")
-        LAINNYA = "LAINNYA", _("Lainnya")
-
     class Status(models.TextChoices):
         DRAFT = "DRAFT", _("Draft")
         FINAL = "FINAL", _("Final / Dipublikasikan")
         ARSIP = "ARSIP", _("Diarsipkan")
 
-    # Referensi ke butir dokumen di master
+    # Referensi ke butir dokumen di master.
+    # Kosong = dokumen arsip yang diunggah langsung di Pustaka (tidak terkait butir instrumen).
     butir_dokumen = models.ForeignKey(
         "master_akreditasi.ButirDokumen",
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         related_name="dokumen_terunggah",
         verbose_name=_("Butir Dokumen"),
     )
@@ -127,14 +170,21 @@ class Dokumen(models.Model):
         default=Status.FINAL,
     )
 
-    jenis_dokumen = models.CharField(
-        _("Jenis Dokumen"),
-        max_length=12,
-        choices=JenisDokumen.choices,
+    # Pustaka Dokumen: kategori (master yang bisa dikelola) + identitas arsip
+    kategori = models.ForeignKey(
+        "dokumen.KategoriDokumen",
+        on_delete=models.PROTECT,
+        null=True,
         blank=True,
-        db_index=True,
-        help_text=_("Pengelompokan di Pustaka Dokumen. Kosongkan agar ditebak otomatis dari judul."),
+        related_name="dokumen",
+        verbose_name=_("Kategori Dokumen"),
+        help_text=_("Kosongkan agar ditebak otomatis dari judul (kata kunci kategori)."),
     )
+    nomor_dokumen = models.CharField(_("Nomor Dokumen"), max_length=150, blank=True,
+                                     help_text=_("Contoh: 123/UNISAN/SK/IV/2024"))
+    tanggal_dokumen = models.DateField(_("Tanggal Penetapan"), null=True, blank=True)
+    penerbit = models.CharField(_("Penerbit / Penetap"), max_length=200, blank=True,
+                                help_text=_("Contoh: Rektor UNISAN, Yayasan, Kemendikbudristek"))
 
     # Periode / Tahun
     tahun_akademik = models.CharField(
@@ -236,15 +286,15 @@ class Dokumen(models.Model):
         ordering = ["-tanggal_diubah"]
 
     def __str__(self):
-        return f"{self.judul} ({self.butir_dokumen.kode})"
+        return f"{self.judul} ({self.butir_dokumen.kode if self.butir_dokumen_id else 'Pustaka'})"
 
     def save(self, *args, **kwargs):
-        if not self.jenis_dokumen:
-            from .pustaka import tebak_jenis
+        if not self.kategori_id:
+            from .pustaka import tebak_kategori_id
             nama_butir = self.butir_dokumen.nama_dokumen if self.butir_dokumen_id else ""
-            self.jenis_dokumen = tebak_jenis(self.judul, nama_butir)
-            if kwargs.get("update_fields") is not None:
-                kwargs["update_fields"] = set(kwargs["update_fields"]) | {"jenis_dokumen"}
+            self.kategori_id = tebak_kategori_id(self.judul, nama_butir)
+            if self.kategori_id and kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = set(kwargs["update_fields"]) | {"kategori"}
         super().save(*args, **kwargs)
 
     @property

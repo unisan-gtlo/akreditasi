@@ -1,6 +1,6 @@
 """URL routing untuk app dokumen."""
 from django.urls import path
-from . import views
+from . import views, views_pustaka
 
 app_name = "dokumen"
 
@@ -15,7 +15,11 @@ urlpatterns = [
     # =========================================
     # Butir
     path("", views.butir_saya, name="butir_saya"),
-    path("pustaka/", views.pustaka_dokumen, name="pustaka"),
+    path("pustaka/", views_pustaka.pustaka_dokumen, name="pustaka"),
+    path("pustaka/tambah/", views_pustaka.pustaka_tambah, name="pustaka_tambah"),
+    path("pustaka/kategori/", views_pustaka.kategori_kelola, name="kategori_kelola"),
+    path("pustaka/kategori/<int:pk>/", views_pustaka.kategori_kelola, name="kategori_ubah"),
+    path("pustaka/kategori/<int:pk>/hapus/", views_pustaka.kategori_hapus, name="kategori_hapus"),
     path("butir/<int:butir_id>/", views.butir_detail, name="butir_detail"),
 
     # Upload baru (untuk butir)
