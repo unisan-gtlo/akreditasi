@@ -293,3 +293,33 @@ def dokumen_cari_butir(request, pk):
         return redirect(asal)
     url = reverse("dokumen:butir_ambil_pustaka", args=[butir.pk]) + f"?dokumen={dok.pk}"
     return redirect(dengan_next(url, asal))
+
+
+# =========================================================
+# HAPUS DOKUMEN (permanen, dengan pengaman)
+# =========================================================
+
+@login_required
+def dokumen_hapus(request, pk):
+    """GET: halaman konfirmasi. POST: hapus permanen bila lolos pengaman (dokumen/hapus.py)."""
+    from core.templatetags.navigasi import next_aman
+    from .hapus import cek_hapus, hapus_dokumen
+
+    dok = get_object_or_404(Dokumen.objects.select_related("butir_dokumen", "kategori"), pk=pk)
+    boleh, alasan, info = cek_hapus(request.user, dok)
+    asal = next_aman(request)
+    if request.method == "POST":
+        if not boleh:
+            messages.error(request, "Dokumen tidak bisa dihapus: " + " ".join(alasan))
+        elif request.POST.get("konfirmasi", "").strip() != "HAPUS":
+            messages.error(request, "Ketik HAPUS (huruf besar) untuk konfirmasi.")
+        else:
+            butir_id = dok.butir_dokumen_id
+            ringkas = hapus_dokumen(request.user, dok)
+            messages.success(request, f"Dokumen {ringkas} dihapus permanen.")
+            if asal and f"/dokumen/dokumen/{pk}/" not in asal:
+                return redirect(asal)
+            return redirect("dokumen:butir_detail", butir_id=butir_id) if butir_id else redirect("dokumen:pustaka")
+    return render(request, "dokumen/dokumen_hapus.html", {
+        "active_menu": "dokumen", "dokumen": dok, "boleh": boleh, "alasan": alasan, **info,
+    })

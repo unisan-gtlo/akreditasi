@@ -1,0 +1,18 @@
+{% if form.duplikat %}
+<div class="alert alert-warning" style="margin:1rem 1.25rem 0; display:block; background:#FFFBEB; border:1px solid #FCD34D; color:#78350F; border-radius:10px; padding:.85rem 1rem;">
+    <strong>⚠ File/tautan yang sama sudah tersimpan:</strong>
+    <ul style="margin:.4rem 0 .5rem 1.1rem; padding:0;">
+        {% for d in form.duplikat %}
+        <li><a href="{% url 'dokumen:dokumen_detail' d.pk %}" target="_blank" rel="noopener">{{ d.judul }}</a>
+            <span style="font-size:.8rem;">({% if d.butir_dokumen_id %}butir {{ d.butir_dokumen.kode }}{% else %}Arsip Pustaka{% endif %}{% if d.tahun_akademik %}, {{ d.tahun_akademik }}{% endif %}, {{ d.get_status_display }})</span></li>
+        {% endfor %}
+    </ul>
+    <div style="font-size:.85rem;">Untuk butir lain, sebaiknya pakai <strong>📚 Ambil dari Pustaka</strong> daripada mengunggah ulang.
+        Bila tetap perlu disimpan, pilih file kembali lalu centang:</div>
+    <label style="display:flex; gap:.4rem; align-items:center; margin-top:.4rem; font-weight:600;">
+        <input type="checkbox" name="abaikan_duplikat" value="1"> Tetap simpan walaupun sama
+    </label>
+</div>
+{% elif form.non_field_errors %}
+<div class="alert alert-danger" style="margin:1rem 1.25rem 0;">{{ form.non_field_errors|join:" " }}</div>
+{% endif %}

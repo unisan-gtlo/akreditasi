@@ -1,0 +1,59 @@
+{% extends "layouts/internal.html" %}
+{% load navigasi %}
+
+{% block title %}Hapus Dokumen — SIAKRED{% endblock %}
+{% block page_heading %}Hapus Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="js-kembali">← {{ dokumen.judul|truncatechars:40 }}</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Hapus</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<div class="panel" style="max-width:760px;">
+    <div class="panel-header"><div class="panel-title">🗑 Hapus dokumen permanen</div></div>
+    <div class="panel-body" style="font-size:.9rem; line-height:1.6;">
+        <div style="margin-bottom:1rem;">
+            <div style="font-weight:700; font-size:1rem;">{{ dokumen.judul }}</div>
+            <div style="color:var(--text-muted); font-size:.82rem;">
+                {% if dokumen.butir_dokumen_id %}Butir {{ dokumen.butir_dokumen.kode }}{% else %}Arsip Pustaka{% endif %}
+                · {{ dokumen.scope_label }}{% if dokumen.tahun_akademik %} · {{ dokumen.tahun_akademik }}{% endif %}
+                · {{ dokumen.get_status_display }} · {{ n_revisi }} revisi · diunggah {{ dokumen.tanggal_dibuat|date:"d M Y H:i" }} oleh {{ dokumen.uploaded_by.username }}
+            </div>
+        </div>
+
+        {% if duplikat %}
+        <div style="background:#ECFDF5; border:1px solid #6EE7B7; color:#065F46; border-radius:10px; padding:.75rem 1rem; margin-bottom:1rem;">
+            ✓ File yang sama juga tersimpan di:
+            <ul style="margin:.3rem 0 0 1.1rem; padding:0;">
+                {% for d in duplikat %}<li><a href="{% url 'dokumen:dokumen_detail' d.pk %}" target="_blank" rel="noopener">{{ d.judul }}</a>{% if d.tahun_akademik %} ({{ d.tahun_akademik }}){% endif %}</li>{% endfor %}
+            </ul>
+            Dokumen ini duplikat, jadi aman dihapus.
+        </div>
+        {% endif %}
+
+        {% if not boleh %}
+        <div style="background:#FEF2F2; border:1px solid #FCA5A5; color:#991B1B; border-radius:10px; padding:.75rem 1rem; margin-bottom:1rem;">
+            <strong>Dokumen ini belum bisa dihapus:</strong>
+            <ul style="margin:.3rem 0 0 1.1rem; padding:0;">{% for a in alasan %}<li>{{ a }}</li>{% endfor %}</ul>
+        </div>
+        <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="btn js-kembali">Kembali</a>
+        {% else %}
+        <div style="background:#FFFBEB; border:1px solid #FCD34D; color:#78350F; border-radius:10px; padding:.75rem 1rem; margin-bottom:1rem;">
+            Dokumen, seluruh revisi, file tersimpan, riwayat akses, dan data verifikasinya akan <strong>dihapus permanen</strong>
+            dan tidak bisa dikembalikan. Bila ragu, gunakan <em>Edit Metadata → Status: Diarsipkan</em> (bisa dikembalikan).
+        </div>
+        <form method="post" style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center;">
+            {% csrf_token %}
+            <label for="konfirmasi">Ketik <strong>HAPUS</strong> untuk konfirmasi:</label>
+            <input type="text" id="konfirmasi" name="konfirmasi" class="form-input" required autocomplete="off" style="max-width:160px;">
+            <button type="submit" class="btn" style="background:#DC2626; color:#fff;">Hapus Permanen</button>
+            <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="btn js-kembali">Batal</a>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

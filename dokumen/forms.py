@@ -41,6 +41,39 @@ def _cek_file_pustaka(f):
     return f
 
 
+def cek_duplikat(form, cleaned):
+    """Peringatkan bila file/tautan yang sama sudah ada di dokumen lain (cegah unggah ganda).
+
+    Mengisi form.duplikat = [Dokumen, ...] dan menambah error non-field, kecuali pengguna
+    mencentang 'abaikan_duplikat' (tetap simpan).
+    """
+    import hashlib
+    form.duplikat = []
+    if form.errors or form.data.get("abaikan_duplikat"):
+        return
+    storage = cleaned.get("storage_type", "LOCAL")
+    q = None
+    if storage == "LOCAL" and cleaned.get("file"):
+        f = cleaned["file"]
+        h = hashlib.sha256()
+        for chunk in f.chunks():
+            h.update(chunk)
+        f.seek(0)
+        q = {"file_hash": h.hexdigest()}
+    elif storage == "GDRIVE" and cleaned.get("gdrive_url"):
+        q = {"gdrive_url": cleaned["gdrive_url"]}
+    elif storage == "LINK" and cleaned.get("link_url"):
+        q = {"gdrive_url": cleaned["link_url"], "storage_type": "LINK"}
+    if not q:
+        return
+    ids = (DokumenRevisi.objects.filter(aktif=True, **q).exclude(dokumen__status="ARSIP")
+           .values_list("dokumen_id", flat=True).distinct()[:5])
+    form.duplikat = list(Dokumen.objects.filter(pk__in=list(ids)).select_related("butir_dokumen"))
+    if form.duplikat:
+        form.add_error(None, _("File/tautan yang sama sudah tersimpan di dokumen lain (lihat daftar di bawah). "
+                               "Bila memang perlu disimpan lagi, pilih file kembali dan centang 'Tetap simpan'."))
+
+
 class DokumenUploadForm(forms.Form):
     """Form upload dokumen baru atau revisi — hybrid (local upload OR gdrive link)."""
 
@@ -230,6 +263,7 @@ class DokumenUploadForm(forms.Form):
             if "link_url" not in self._errors:
                 self.add_error("link_url", _("URL aplikasi/website wajib diisi."))
 
+        cek_duplikat(self, cleaned)
         return cleaned
 
     def clean_link_url(self):
@@ -364,6 +398,7 @@ class RevisiUploadForm(forms.Form):
             if "gdrive_url" not in self._errors:
                 self.add_error("gdrive_url", _("URL Google Drive wajib diisi."))
 
+        cek_duplikat(self, cleaned)
         return cleaned
 
 
