@@ -1974,3 +1974,22 @@ def public_download(request, token):
         as_attachment=True,
         filename=revisi.original_filename or revisi.file.name.split("/")[-1],
     )
+
+# =========================================================
+# PUSTAKA DOKUMEN INSTITUSI (lintas sesi)
+# =========================================================
+
+@login_required
+def pustaka_dokumen(request):
+    """Semua dokumen Universitas/Rektorat, Biro/Lembaga, Fakultas tanpa masuk sesi."""
+    from .pustaka import bangun_pustaka, can_access_pustaka
+
+    if not can_access_pustaka(request.user):
+        messages.error(request, "Pustaka Dokumen hanya untuk pengguna internal kampus.")
+        return redirect("core:dashboard")
+    context = bangun_pustaka(request.GET)
+    context.update({
+        "active_menu": "pustaka",
+        "instrumen_all": Instrumen.objects.order_by("nama_singkat"),
+    })
+    return render(request, "dokumen/pustaka.html", context)

@@ -23,7 +23,7 @@ class DokumenAdmin(admin.ModelAdmin):
         "tanggal_diubah",
     )
     list_filter = (
-        "status_akses", "status", "kategori_pemilik",
+        "status_akses", "status", "kategori_pemilik", "jenis_dokumen",
         "butir_dokumen__sub_standar__standar__instrumen",
     )
     search_fields = ("judul", "butir_dokumen__kode", "butir_dokumen__nama_dokumen")
@@ -32,7 +32,7 @@ class DokumenAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (_("Identitas"), {
-            "fields": ("butir_dokumen", "judul", "deskripsi", "tahun_akademik"),
+            "fields": ("butir_dokumen", "judul", "deskripsi", "jenis_dokumen", "tahun_akademik"),
         }),
         (_("Pemilik & Scope"), {
             "fields": (

@@ -356,7 +356,7 @@ class DokumenEditForm(forms.ModelForm):
 
     class Meta:
         model = Dokumen
-        fields = ["judul", "deskripsi", "tahun_akademik", "status_akses", "status"]
+        fields = ["judul", "deskripsi", "jenis_dokumen", "tahun_akademik", "status_akses", "status"]
         widgets = {
             "judul": forms.TextInput(attrs={"class": "form-input"}),
             "deskripsi": forms.Textarea(attrs={
@@ -368,6 +368,7 @@ class DokumenEditForm(forms.ModelForm):
                 "class": "form-input",
                 "placeholder": "Contoh: 2024/2025",
             }),
+            "jenis_dokumen": forms.Select(attrs={"class": "form-input"}),
             "status_akses": forms.RadioSelect,
             "status": forms.RadioSelect,
         }
@@ -378,3 +379,9 @@ class DokumenEditForm(forms.ModelForm):
             "status_akses": _("Status Akses"),
             "status": _("Status Dokumen"),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["jenis_dokumen"].choices = [("", "(Tebak otomatis dari judul)")] + list(
+            Dokumen.JenisDokumen.choices
+        )

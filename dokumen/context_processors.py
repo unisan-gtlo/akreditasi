@@ -49,9 +49,12 @@ def _compute_verifikasi(user):
         except Exception:
             pending_count = 0
 
+    from dokumen.pustaka import can_access_pustaka
+
     return {
         'can_verify': can_verify,
         'verifikasi_pending_count': pending_count,
+        'can_pustaka': can_access_pustaka(user),
     }
 
 
@@ -63,6 +66,6 @@ def verifikasi_context(request):
     """
     user = getattr(request, 'user', None)
     if not user or not user.is_authenticated:
-        return {'can_verify': False, 'verifikasi_pending_count': 0}
+        return {'can_verify': False, 'verifikasi_pending_count': 0, 'can_pustaka': False}
 
     return cache.get_or_set(verif_key(user.pk), lambda: _compute_verifikasi(user), VERIF_TTL)

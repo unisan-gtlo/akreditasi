@@ -15,6 +15,7 @@ urlpatterns = [
     # =========================================
     # Butir
     path("", views.butir_saya, name="butir_saya"),
+    path("pustaka/", views.pustaka_dokumen, name="pustaka"),
     path("butir/<int:butir_id>/", views.butir_detail, name="butir_detail"),
 
     # Upload baru (untuk butir)

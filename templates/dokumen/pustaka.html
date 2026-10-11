@@ -1,0 +1,161 @@
+{% extends "layouts/internal.html" %}
+
+{% block title %}Pustaka Dokumen — SIAKRED{% endblock %}
+{% block page_heading %}Pustaka Dokumen{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <span>Dokumen</span>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Pustaka Dokumen Institusi</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<style>
+  .pk-chips { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem; }
+  .pk-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .75rem; border-radius:999px;
+             border:1px solid var(--border); background:var(--surface); font-size:.8rem; color:var(--text-secondary); text-decoration:none; }
+  .pk-chip strong { color:var(--text-primary); }
+  .pk-chip.aktif { background:#EEF2FF; border-color:#6366F1; color:#3730A3; }
+  .pk-filter { display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; }
+  .pk-filter .form-input { padding:.5rem .75rem; max-width:220px; }
+  .pk-bagian { margin-top:1.5rem; }
+  .pk-bagian-judul { font-size:1.05rem; font-weight:700; margin:0 0 .75rem; display:flex; align-items:center; gap:.5rem; }
+  .pk-bagian-judul span { font-size:.75rem; font-weight:600; color:var(--text-muted); }
+  .pk-unit { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; overflow:hidden; }
+  .pk-unit > summary { cursor:pointer; padding:.8rem 1.1rem; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:1rem; }
+  .pk-unit > summary::-webkit-details-marker { display:none; }
+  .pk-unit > summary::before { content:"▸"; margin-right:.5rem; color:var(--text-muted); }
+  .pk-unit[open] > summary::before { content:"▾"; }
+  .pk-unit > summary .pk-n { font-size:.78rem; color:var(--text-muted); font-weight:500; white-space:nowrap; }
+  .pk-row { display:grid; grid-template-columns: 2.2rem 1fr auto; gap:.75rem; align-items:start;
+            padding:.75rem 1.1rem; border-top:1px solid var(--border-subtle); }
+  .pk-ico { width:2.2rem; height:2.2rem; border-radius:8px; display:flex; align-items:center; justify-content:center;
+            font-size:.62rem; font-weight:800; background:#F1F5F9; color:#475569; }
+  .pk-ico.pdf { background:#FEE2E2; color:#B91C1C; } .pk-ico.link { background:#DBEAFE; color:#1D4ED8; }
+  .pk-ico.gdrive { background:#DCFCE7; color:#15803D; }
+  .pk-judul { font-weight:600; color:var(--text-primary); text-decoration:none; line-height:1.35; }
+  .pk-judul:hover { text-decoration:underline; }
+  .pk-meta { font-size:.76rem; color:var(--text-muted); margin-top:.25rem; display:flex; flex-wrap:wrap; gap:.35rem .6rem; align-items:center; }
+  .pk-jenis { padding:.08rem .45rem; border-radius:4px; font-size:.68rem; font-weight:700; background:#F3E8FF; color:#6B21A8; }
+  .pk-jenis.APLIKASI { background:#DBEAFE; color:#1E40AF; } .pk-jenis.SK { background:#FEF3C7; color:#92400E; }
+  .pk-jenis.LAPORAN { background:#DCFCE7; color:#166534; } .pk-jenis.RENCANA { background:#E0F2FE; color:#075985; }
+  .pk-jenis.SOP { background:#FCE7F3; color:#9D174D; } .pk-jenis.LAINNYA { background:#F1F5F9; color:#475569; }
+  .pk-aksi { display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
+  .pk-aksi .btn { padding:.3rem .7rem; font-size:.78rem; }
+  .pk-versi { margin-top:.35rem; font-size:.76rem; }
+  .pk-versi summary { cursor:pointer; color:#4F46E5; }
+  .pk-versi ul { margin:.35rem 0 0 1rem; padding:0; }
+  .pk-butir { font-size:.72rem; color:var(--text-muted); margin-top:.25rem; }
+  .pk-kosong { padding:2.5rem 1rem; text-align:center; color:var(--text-muted); }
+  @media (max-width:700px) {
+    .pk-row { grid-template-columns: 2.2rem 1fr; }
+    .pk-aksi { grid-column: 2; justify-content:flex-start; }
+    .pk-filter .form-input { max-width:100%; flex:1 1 140px; }
+  }
+</style>
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Pustaka Dokumen Institusi</h1>
+            <p class="page-subtitle">
+                Semua dokumen final level Universitas/Rektorat, Biro/Lembaga, dan Fakultas dalam satu tempat,
+                tanpa harus masuk ke sesi akreditasi. Dokumen yang dipakai di beberapa butir tampil sekali;
+                versi tahun terbaru ditampilkan lebih dulu.
+            </p>
+        </div>
+    </div>
+</div>
+
+{% if ringkasan_jenis %}
+<div class="pk-chips">
+    <a class="pk-chip {% if not f.jenis %}aktif{% endif %}" href="?{% if f.bagian %}bagian={{ f.bagian }}&{% endif %}{% if f.unit %}unit={{ f.unit }}&{% endif %}{% if f.q %}q={{ f.q|urlencode }}&{% endif %}{% if f.tahun %}tahun={{ f.tahun|urlencode }}&{% endif %}{% if f.instrumen %}instrumen={{ f.instrumen }}{% endif %}">Semua jenis</a>
+    {% for kode, label, n in ringkasan_jenis %}
+    <a class="pk-chip {% if f.jenis == kode %}aktif{% endif %}" href="?jenis={{ kode }}{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}">{{ label }} <strong>{{ n }}</strong></a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="panel">
+    <div class="panel-body" style="padding:1rem 1.25rem;">
+        <form method="get" class="pk-filter">
+            {% if f.jenis %}<input type="hidden" name="jenis" value="{{ f.jenis }}">{% endif %}
+            <input type="text" name="q" value="{{ f.q }}" placeholder="🔍 Cari judul / butir…" class="form-input" style="max-width:260px;">
+            <select name="bagian" class="form-input" onchange="this.form.submit()">
+                <option value="">Semua bagian</option>
+                {% for kode, label in opsi_bagian %}<option value="{{ kode }}" {% if f.bagian == kode %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <select name="unit" class="form-input" onchange="this.form.submit()">
+                <option value="">Semua unit / fakultas</option>
+                {% for kode, label in opsi_unit %}<option value="{{ kode }}" {% if f.unit == kode %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <select name="instrumen" class="form-input" onchange="this.form.submit()">
+                <option value="">Semua instrumen</option>
+                {% for ins in instrumen_all %}<option value="{{ ins.id }}" {% if f.instrumen == ins.id|stringformat:"s" %}selected{% endif %}>{{ ins.nama_singkat }}</option>{% endfor %}
+            </select>
+            <input type="text" name="tahun" value="{{ f.tahun }}" placeholder="Tahun, mis. 2024" class="form-input" style="max-width:150px;">
+            <button type="submit" class="btn btn-primary">Terapkan</button>
+            {% if ada_filter %}<a href="{% url 'dokumen:pustaka' %}" class="btn">Reset</a>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div style="font-size:.82rem; color:var(--text-muted); margin-top:.75rem;">{{ total_entri }} dokumen ditemukan.</div>
+
+{% for bagian in bagian_list %}
+<div class="pk-bagian">
+    <h2 class="pk-bagian-judul">{{ bagian.label }} <span>{{ bagian.jumlah }} dokumen</span></h2>
+    {% for unit in bagian.units %}
+    <details class="pk-unit" {% if ada_filter or bagian.units|length <= 3 %}open{% endif %}>
+        <summary><span>{{ unit.label }}</span><span class="pk-n">{{ unit.entri|length }} dokumen</span></summary>
+        {% for e in unit.entri %}
+        {% with d=e.dok %}
+        <div class="pk-row">
+            {% if d.rev.is_link %}<div class="pk-ico link">URL</div>
+            {% elif d.rev.is_gdrive %}<div class="pk-ico gdrive">GD</div>
+            {% elif d.rev.extension %}<div class="pk-ico {% if d.rev.extension|lower == 'pdf' %}pdf{% endif %}">{{ d.rev.extension|upper|truncatechars:5 }}</div>
+            {% else %}<div class="pk-ico">DOC</div>{% endif %}
+            <div>
+                <a class="pk-judul" href="{% url 'dokumen:dokumen_detail' d.pk %}">{{ d.judul }}</a>
+                <div class="pk-meta">
+                    <span class="pk-jenis {{ e.jenis }}">{{ e.jenis_label }}</span>
+                    {% if d.tahun_akademik %}<span>📅 {{ d.tahun_akademik }}</span>{% endif %}
+                    {% if d.status_akses == "TERBUKA" %}<span>🌐 Terbuka</span>{% endif %}
+                    <span>diperbarui {{ d.tanggal_diubah|date:"d M Y" }}</span>
+                </div>
+                {% if e.butir %}
+                <div class="pk-butir">Dipakai di butir: {{ e.butir|slice:":6"|join:", " }}{% if e.butir|length > 6 %} +{{ e.butir|length|add:"-6" }} lainnya{% endif %}</div>
+                {% endif %}
+                {% if e.versi_lain %}
+                <details class="pk-versi">
+                    <summary>Tahun/versi lain ({{ e.versi_lain|length }})</summary>
+                    <ul>
+                        {% for v in e.versi_lain %}
+                        <li><a href="{% url 'dokumen:dokumen_detail' v.pk %}">{{ v.tahun_akademik|default:"tanpa tahun" }}</a> — {{ v.judul }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+                {% endif %}
+            </div>
+            <div class="pk-aksi">
+                <a class="btn" href="{% url 'dokumen:dokumen_detail' d.pk %}">Lihat</a>
+                {% if d.rev.is_link %}
+                <a class="btn" href="{{ d.rev.gdrive_url }}" target="_blank" rel="noopener">Buka ↗</a>
+                {% elif d.rev %}
+                <a class="btn" href="{% url 'dokumen:dokumen_download' d.pk %}">Unduh</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </details>
+    {% endfor %}
+</div>
+{% empty %}
+<div class="panel" style="margin-top:1rem;"><div class="pk-kosong">
+    {% if ada_filter %}Tidak ada dokumen yang cocok dengan filter. <a href="{% url 'dokumen:pustaka' %}">Reset filter</a>{% else %}Belum ada dokumen final level universitas, lembaga, atau fakultas.{% endif %}
+</div></div>
+{% endfor %}
+{% endblock %}

@@ -54,6 +54,13 @@
                 {% endif %}
             </div>
 
+            {# Jenis Dokumen (Pustaka Dokumen) #}
+            <div class="form-group">
+                <label class="form-label" for="id_jenis_dokumen">{{ form.jenis_dokumen.label }}</label>
+                {{ form.jenis_dokumen }}
+                <div style="font-size:.78rem; color:var(--text-muted); margin-top:.25rem;">Dipakai untuk pengelompokan di Pustaka Dokumen.</div>
+            </div>
+
             {# Tahun Akademik #}
             <div class="form-group">
                 <label class="form-label" for="id_tahun_akademik">{{ form.tahun_akademik.label }}</label>

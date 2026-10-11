@@ -55,6 +55,17 @@ class Dokumen(models.Model):
         TERBUKA = "TERBUKA", _("Terbuka (Publik)")
         INTERNAL = "INTERNAL", _("Internal (Perlu Login)")
 
+    class JenisDokumen(models.TextChoices):
+        KEBIJAKAN = "KEBIJAKAN", _("Kebijakan / Peraturan")
+        PEDOMAN = "PEDOMAN", _("Pedoman / Manual / Standar")
+        SK = "SK", _("Surat Keputusan (SK)")
+        RENCANA = "RENCANA", _("Renstra / Renop / Rencana")
+        SOP = "SOP", _("SOP / Prosedur")
+        LAPORAN = "LAPORAN", _("Laporan / Evaluasi / Bukti")
+        FORMULIR = "FORMULIR", _("Formulir / Instrumen")
+        APLIKASI = "APLIKASI", _("Tautan Aplikasi / Website")
+        LAINNYA = "LAINNYA", _("Lainnya")
+
     class Status(models.TextChoices):
         DRAFT = "DRAFT", _("Draft")
         FINAL = "FINAL", _("Final / Dipublikasikan")
@@ -114,6 +125,15 @@ class Dokumen(models.Model):
         max_length=10,
         choices=Status.choices,
         default=Status.FINAL,
+    )
+
+    jenis_dokumen = models.CharField(
+        _("Jenis Dokumen"),
+        max_length=12,
+        choices=JenisDokumen.choices,
+        blank=True,
+        db_index=True,
+        help_text=_("Pengelompokan di Pustaka Dokumen. Kosongkan agar ditebak otomatis dari judul."),
     )
 
     # Periode / Tahun
@@ -217,6 +237,15 @@ class Dokumen(models.Model):
 
     def __str__(self):
         return f"{self.judul} ({self.butir_dokumen.kode})"
+
+    def save(self, *args, **kwargs):
+        if not self.jenis_dokumen:
+            from .pustaka import tebak_jenis
+            nama_butir = self.butir_dokumen.nama_dokumen if self.butir_dokumen_id else ""
+            self.jenis_dokumen = tebak_jenis(self.judul, nama_butir)
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = set(kwargs["update_fields"]) | {"jenis_dokumen"}
+        super().save(*args, **kwargs)
 
     @property
     def revisi_aktif(self):
