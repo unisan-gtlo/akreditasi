@@ -18,7 +18,8 @@ from master_akreditasi.models import (
     MappingProdiInstrumen,
 )
 from core.templatetags.navigasi import dengan_next, next_aman
-from .models import Dokumen, DokumenRevisi, DokumenAccessLog
+from .models import Dokumen, DokumenRevisi, DokumenAccessLog, DokumenTautanButir
+from .pustaka import can_access_pustaka
 from .permissions import (
     get_user_scopes,
     is_superadmin,
@@ -464,8 +465,19 @@ def butir_detail(request, butir_id):
         "data_dosen": _data_dosen_context(request.user, butir),
         "can_upload": can_upload,
         "upload_reason": upload_reason,
+        "can_ambil_pustaka": can_upload and can_access_pustaka(request.user),
+        "tautan_list": _tautan_list(request.user, DokumenTautanButir.objects.filter(butir_id__in=butir_ids)),
     }
     return render(request, "dokumen/butir_detail.html", context)
+
+
+def _tautan_list(user, qs):
+    """Daftar tautan Pustaka -> butir + flag bisa_lepas untuk user."""
+    from .tautan_pustaka import bisa_lepas
+    daftar = list(qs.select_related("dokumen__kategori", "butir__sub_standar__standar__instrumen", "dibuat_oleh"))
+    for t in daftar:
+        t.bisa_lepas = bisa_lepas(user, t)
+    return daftar
 
 
 # =========================================================
@@ -522,6 +534,9 @@ def dokumen_detail(request, pk):
     context = {
         "page_title": dokumen.judul,
         "active_menu": "dokumen",
+        "tautan_list": _tautan_list(request.user, dokumen.tautan_butir.all()),
+        "can_tautkan": can_access_pustaka(request.user) and dokumen.kategori_pemilik in ("UNIVERSITAS", "BIRO", "FAKULTAS"),
+        "instrumen_all": Instrumen.objects.order_by("nama_singkat"),
         "dokumen": dokumen,
         "revisi_aktif": revisi_aktif,
         "revisi_list": revisi_list,

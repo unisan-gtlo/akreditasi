@@ -21,6 +21,9 @@ urlpatterns = [
     path("pustaka/kategori/<int:pk>/", views_pustaka.kategori_kelola, name="kategori_ubah"),
     path("pustaka/kategori/<int:pk>/hapus/", views_pustaka.kategori_hapus, name="kategori_hapus"),
     path("pustaka/kategori/tebak-ulang/", views_pustaka.kategori_tebak_ulang, name="kategori_tebak_ulang"),
+    path("butir/<int:butir_id>/ambil-pustaka/", views_pustaka.butir_ambil_pustaka, name="butir_ambil_pustaka"),
+    path("tautan/<int:pk>/lepas/", views_pustaka.tautan_lepas, name="tautan_lepas"),
+    path("dokumen/<int:pk>/tautkan/", views_pustaka.dokumen_cari_butir, name="dokumen_cari_butir"),
     path("butir/<int:butir_id>/", views.butir_detail, name="butir_detail"),
 
     # Upload baru (untuk butir)

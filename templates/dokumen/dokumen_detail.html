@@ -95,6 +95,51 @@
     </div>
 </div>
 
+{# Tautan Pustaka -> butir #}
+{% if tautan_list or can_tautkan %}
+<div class="panel" style="margin-bottom:1.25rem;">
+    <div class="panel-header"><div>
+        <div class="panel-title">🔗 Dipakai untuk butir lain</div>
+        <div class="panel-subtitle">Butir yang memakai dokumen ini tanpa unggah ulang. Revisi dokumen otomatis ikut terpakai.</div>
+    </div></div>
+    <div class="panel-body" style="font-size:.85rem;">
+        {% if tautan_list %}
+        <table class="data-table" style="margin-bottom:.75rem;">
+            <thead><tr><th>Butir</th><th>Instrumen</th><th>Cakupan</th><th>Ditautkan</th><th></th></tr></thead>
+            <tbody>
+            {% for t in tautan_list %}
+            <tr>
+                <td><a href="{% url_next 'dokumen:butir_detail' t.butir.pk %}"><strong>{{ t.butir.kode }}</strong></a> — {{ t.butir.nama_dokumen|truncatechars:60 }}</td>
+                <td>{{ t.butir.sub_standar.standar.instrumen.nama_singkat }}</td>
+                <td><span class="badge badge-gray">{{ t.cakupan_label }}</span></td>
+                <td style="font-size:.75rem; color:var(--text-muted);">{{ t.dibuat_oleh.username|default:"-" }}<br>{{ t.tanggal_dibuat|date:"d/m/Y" }}</td>
+                <td>{% if t.bisa_lepas %}
+                <form method="post" action="{% url 'dokumen:tautan_lepas' t.pk %}?next={{ request.get_full_path|urlencode }}" style="display:inline;"
+                      onsubmit="return confirm('Lepas tautan dari butir {{ t.butir.kode|escapejs }}?');">
+                    {% csrf_token %}<button type="submit" class="btn" style="padding:.2rem .55rem; font-size:.74rem; background:#FEF2F2; color:#991B1B;">Lepas</button>
+                </form>
+                {% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% elif not can_tautkan %}<div style="color:var(--text-muted);">Belum ditautkan ke butir lain.</div>{% endif %}
+        {% if can_tautkan %}
+        <form method="get" action="{% url 'dokumen:dokumen_cari_butir' dokumen.pk %}" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+            {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
+            <span style="font-weight:600;">Tautkan ke butir:</span>
+            <select name="instrumen" class="form-input" required style="max-width:220px; padding:.4rem .6rem;">
+                <option value="">— instrumen —</option>
+                {% for ins in instrumen_all %}<option value="{{ ins.id }}">{{ ins.nama_singkat }}</option>{% endfor %}
+            </select>
+            <input type="text" name="kode" required placeholder="Kode butir, mis. U3.01" class="form-input" style="max-width:180px; padding:.4rem .6rem;">
+            <button type="submit" class="btn">Lanjut →</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 {# Layout 2 kolom #}
 <div style="display:grid; grid-template-columns: 1fr 320px; gap:1.5rem;">
 

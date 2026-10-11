@@ -18,12 +18,19 @@ Dokumen bersama + aturan scope dokumen untuk sesi/laporan (satu sumber kebenaran
 
 4. Data dosen SIMDA: butir ber-ButirDataDosenMapping juga terhitung terisi kalau
    bukti semua DTPS lengkap (master_akreditasi/dosen_data.py).
+
+5. Tautan Pustaka (DokumenTautanButir): dokumen yang ditautkan ke butir dihitung seperti
+   dokumen yang diunggah ke butir itu, bila (a) dokumennya lolos aturan scope & tahun
+   sesi, dan (b) cakupan tautan cocok dengan prodi/fakultas sesi (kosong = semua prodi).
+   Dokumen tautan ditandai `dok.dari_pustaka = True`.
 """
+import copy
+
 from django.db.models import Q
 
 from master_akreditasi.models import ButirDokumen
 
-from .models import Dokumen
+from .models import Dokumen, DokumenTautanButir
 
 
 # =========================================================
@@ -109,6 +116,22 @@ def sesi_dokumen_qs(sesi, butir_ids):
     )
 
 
+def tautan_sesi(sesi, butir_ids):
+    """[(butir_id, dokumen_id)] tautan Pustaka yang berlaku untuk sesi pada butir_ids."""
+    dok_berlaku = (
+        Dokumen.objects.filter(status="FINAL")
+        .filter(sesi_tahun_q(sesi))
+        .filter(scope_q(sesi.kode_prodi, sesi.kode_fakultas))
+    )
+    return list(
+        DokumenTautanButir.objects.filter(butir_id__in=butir_ids, dokumen__in=dok_berlaku)
+        .filter(scope_q(sesi.kode_prodi, sesi.kode_fakultas))
+        .order_by()
+        .values_list("butir_id", "dokumen_id")
+        .distinct()
+    )
+
+
 # =========================================================
 # API UNTUK VIEW
 # =========================================================
@@ -130,6 +153,17 @@ def dokumen_per_butir_for_sesi(sesi, butirs, order_by=("tahun_akademik", "-tangg
     for d in docs:
         by_butir.setdefault(d.butir_dokumen_id, []).append(d)
 
+    # Tautan Pustaka -> butir
+    tautan = tautan_sesi(sesi, all_ids(groups))
+    tautan_by_butir = {}
+    dok_tautan = {}
+    if tautan:
+        for bid, dok_id in tautan:
+            tautan_by_butir.setdefault(bid, []).append(dok_id)
+        dok_tautan = {
+            d.pk: d for d in Dokumen.objects.filter(pk__in={dk for _, dk in tautan}).select_related("butir_dokumen")
+        }
+
     result = {}
     for bid, ids in groups.items():
         if len(ids) == 1:
@@ -138,6 +172,20 @@ def dokumen_per_butir_for_sesi(sesi, butirs, order_by=("tahun_akademik", "-tangg
             result[bid] = [d for d in docs if d.butir_dokumen_id in ids]
         for d in result[bid]:
             d.dari_butir_lain = d.butir_dokumen_id != bid
+        if tautan_by_butir:
+            sudah = {d.pk for d in result[bid]}
+            tambahan = []
+            for gid in ids:
+                for dok_id in tautan_by_butir.get(gid, []):
+                    if dok_id in sudah or dok_id not in dok_tautan:
+                        continue
+                    salinan = copy.copy(dok_tautan[dok_id])  # objek terpisah per butir
+                    salinan.dari_butir_lain = True
+                    salinan.dari_pustaka = True
+                    tambahan.append(salinan)
+                    sudah.add(dok_id)
+            if tambahan:
+                result[bid] = list(result[bid]) + tambahan
     return result
 
 
@@ -147,6 +195,7 @@ def butir_terisi_for_sesi(sesi, butirs):
     punya_dokumen = set(
         sesi_dokumen_qs(sesi, all_ids(groups)).values_list("butir_dokumen_id", flat=True).distinct()
     )
+    punya_dokumen |= {bid for bid, _ in tautan_sesi(sesi, all_ids(groups))}
     terisi = {bid for bid, ids in groups.items() if ids & punya_dokumen}
     # Butir ber-mapping data dosen SIMDA yang buktinya lengkap untuk semua DTPS
     from master_akreditasi.dosen_data import butir_terisi_simda
@@ -154,10 +203,17 @@ def butir_terisi_for_sesi(sesi, butirs):
 
 
 def dokumen_rows(butir_ids):
-    """{butir_id: [(dokumen_id, scope_prodi, scope_fakultas), ...]} untuk dokumen FINAL."""
+    """{butir_id: [(dokumen_id, scope_prodi, scope_fakultas), ...]} untuk dokumen FINAL,
+    termasuk tautan Pustaka (scope efektif = cakupan tautan bila diisi, selain itu scope dokumen)."""
     rows = {}
     for pk, bid, sp, sf in Dokumen.objects.filter(
         butir_dokumen_id__in=butir_ids, status="FINAL"
     ).values_list("pk", "butir_dokumen_id", "scope_kode_prodi", "scope_kode_fakultas"):
+        rows.setdefault(bid, []).append((pk, sp or "", sf or ""))
+    for bid, pk, lp, lf, dp, df in DokumenTautanButir.objects.filter(
+        butir_id__in=butir_ids, dokumen__status="FINAL"
+    ).values_list("butir_id", "dokumen_id", "scope_kode_prodi", "scope_kode_fakultas",
+                  "dokumen__scope_kode_prodi", "dokumen__scope_kode_fakultas"):
+        sp, sf = (lp, lf) if (lp or lf) else (dp, df)
         rows.setdefault(bid, []).append((pk, sp or "", sf or ""))
     return rows

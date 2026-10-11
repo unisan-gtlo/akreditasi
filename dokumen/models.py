@@ -703,3 +703,48 @@ def auto_create_verifikasi(sender, instance, created, **kwargs):
             defaults={'status': VerifikasiDokumen.Status.PENDING},
         )
 
+
+
+# =========================================================
+# TAUTAN DOKUMEN (Pustaka) -> BUTIR
+# =========================================================
+
+class DokumenTautanButir(models.Model):
+    """Dokumen (mis. arsip Pustaka) dipakai sebagai bukti butir lain TANPA diunggah ulang.
+
+    Cakupan (scope_kode_prodi / scope_kode_fakultas) membatasi untuk prodi/fakultas mana
+    tautan berlaku; keduanya kosong = semua prodi. Aturan sesi: dokumen/sharing.py.
+    """
+
+    dokumen = models.ForeignKey(Dokumen, on_delete=models.CASCADE, related_name="tautan_butir",
+                                verbose_name=_("Dokumen"))
+    butir = models.ForeignKey("master_akreditasi.ButirDokumen", on_delete=models.CASCADE,
+                              related_name="tautan_dokumen", verbose_name=_("Butir"))
+    scope_kode_prodi = models.CharField(_("Berlaku untuk Prodi"), max_length=10, blank=True)
+    scope_kode_fakultas = models.CharField(_("Berlaku untuk Fakultas"), max_length=10, blank=True)
+    dibuat_oleh = models.ForeignKey("core.User", on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name="+", verbose_name=_("Ditautkan oleh"))
+    tanggal_dibuat = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Tautan Dokumen ke Butir")
+        verbose_name_plural = _("Tautan Dokumen ke Butir")
+        db_table = "dokumen_tautan_butir"
+        ordering = ["-tanggal_dibuat"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["dokumen", "butir", "scope_kode_prodi", "scope_kode_fakultas"],
+                name="uniq_tautan_dokumen_butir_cakupan",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.dokumen.judul} -> {self.butir.kode} ({self.cakupan_label})"
+
+    @property
+    def cakupan_label(self):
+        if self.scope_kode_prodi:
+            return f"Prodi {self.scope_kode_prodi}"
+        if self.scope_kode_fakultas:
+            return f"Fakultas {self.scope_kode_fakultas}"
+        return "Semua prodi"

@@ -179,3 +179,117 @@ def kategori_hapus(request, pk):
         k.delete()
         messages.success(request, f"Kategori '{k.nama}' dihapus.")
     return redirect("dokumen:kategori_kelola")
+
+
+# =========================================================
+# TAUTAN PUSTAKA -> BUTIR
+# =========================================================
+
+def _catat(request, dokumen, catatan):
+    from .views import _get_client_ip
+    DokumenAccessLog.objects.create(
+        dokumen=dokumen, aksi=DokumenAccessLog.AksiType.EDIT_META, user=request.user,
+        ip_address=_get_client_ip(request), user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        catatan=catatan[:200],
+    )
+
+
+@login_required
+def butir_ambil_pustaka(request, butir_id):
+    """Pilih dokumen Pustaka untuk dipakai di butir ini (tautan, tanpa unggah ulang)."""
+    from core.templatetags.navigasi import dengan_next, next_aman
+    from django.urls import reverse
+    from master_akreditasi.models import ButirDokumen
+    from .models import DokumenTautanButir
+    from .permissions import can_upload_to_butir
+    from .tautan_pustaka import kandidat_dokumen, opsi_cakupan, urai_cakupan
+
+    butir = get_object_or_404(ButirDokumen.objects.select_related("sub_standar__standar__instrumen"),
+                              pk=butir_id, aktif=True)
+    boleh, alasan = can_upload_to_butir(request.user, butir)
+    if not boleh or not can_access_pustaka(request.user):
+        messages.error(request, f"Tidak bisa menautkan dokumen: {alasan}")
+        return redirect("dokumen:butir_detail", butir_id=butir.pk)
+    opsi = opsi_cakupan(request.user, butir)
+    kembali = dengan_next(reverse("dokumen:butir_detail", args=[butir.pk]), next_aman(request))
+
+    if request.method == "POST":
+        nilai = request.POST.get("cakupan", "")
+        dok = Dokumen.objects.filter(pk=request.POST.get("dokumen") or 0, status="FINAL").first()
+        if not opsi or nilai not in dict(opsi):
+            messages.error(request, "Pilih cakupan tautan yang sesuai peran Anda.")
+        elif not dok or not kandidat_dokumen(request.user, butir).filter(pk=dok.pk).exists():
+            messages.error(request, "Dokumen tidak ditemukan atau tidak bisa ditautkan ke butir ini.")
+        else:
+            tautan, baru = DokumenTautanButir.objects.get_or_create(
+                dokumen=dok, butir=butir, **urai_cakupan(nilai), defaults={"dibuat_oleh": request.user})
+            if baru:
+                _catat(request, dok, f"Ditautkan ke butir {butir.kode} ({tautan.cakupan_label})")
+                messages.success(request, f"'{dok.judul}' kini dipakai untuk butir {butir.kode} ({tautan.cakupan_label}).")
+            else:
+                messages.info(request, f"'{dok.judul}' sudah tertaut ke butir {butir.kode} ({tautan.cakupan_label}).")
+            return redirect(kembali)
+
+    q = request.GET.get("q", "").strip()
+    kategori = request.GET.get("kategori", "")
+    pilihan = request.GET.get("dokumen", "")
+    kandidat = kandidat_dokumen(request.user, butir, q, kategori)
+    dipilih = kandidat.filter(pk=pilihan).first() if pilihan.isdigit() else None
+    sudah = {}
+    for dok_id, sp, sf in DokumenTautanButir.objects.filter(butir=butir).values_list(
+            "dokumen_id", "scope_kode_prodi", "scope_kode_fakultas"):
+        sudah.setdefault(dok_id, []).append(sp or sf or "semua")
+    daftar = list(kandidat[:60])
+    for d in daftar:
+        d.sudah_tertaut = sudah.get(d.pk)
+    return render(request, "dokumen/butir_ambil_pustaka.html", {
+        "active_menu": "dokumen",
+        "butir": butir,
+        "opsi_cakupan": opsi,
+        "daftar": daftar,
+        "lebih": kandidat.count() > len(daftar),
+        "dipilih": dipilih,
+        "q": q,
+        "kategori": kategori,
+        "kategori_all": KategoriDokumen.objects.filter(aktif=True),
+        "kembali": kembali,
+    })
+
+
+@login_required
+@require_POST
+def tautan_lepas(request, pk):
+    """Lepas tautan dokumen Pustaka dari butir."""
+    from core.templatetags.navigasi import next_aman
+    from .models import DokumenTautanButir
+    from .tautan_pustaka import bisa_lepas
+
+    tautan = get_object_or_404(DokumenTautanButir.objects.select_related("dokumen", "butir"), pk=pk)
+    if not bisa_lepas(request.user, tautan):
+        messages.error(request, "Hanya yang menautkan, pemilik dokumen, atau Super Admin yang bisa melepas tautan.")
+    else:
+        _catat(request, tautan.dokumen, f"Tautan ke butir {tautan.butir.kode} ({tautan.cakupan_label}) dilepas")
+        messages.success(request, f"Tautan '{tautan.dokumen.judul}' dari butir {tautan.butir.kode} dilepas.")
+        tautan.delete()
+    n = next_aman(request)
+    return redirect(n) if n else redirect("dokumen:butir_detail", butir_id=tautan.butir_id)
+
+
+@login_required
+def dokumen_cari_butir(request, pk):
+    """Dari detail dokumen: cari butir (instrumen + kode) lalu buka halaman tautkan."""
+    from core.templatetags.navigasi import dengan_next, next_aman
+    from django.urls import reverse
+    from master_akreditasi.models import ButirDokumen
+
+    dok = get_object_or_404(Dokumen, pk=pk)
+    asal = dengan_next(reverse("dokumen:dokumen_detail", args=[dok.pk]), next_aman(request))
+    kode = request.GET.get("kode", "").strip()
+    butir = ButirDokumen.objects.filter(
+        aktif=True, kode__iexact=kode, sub_standar__standar__instrumen_id=request.GET.get("instrumen") or 0
+    ).first()
+    if not butir:
+        messages.error(request, f"Butir '{kode}' tidak ditemukan di instrumen yang dipilih.")
+        return redirect(asal)
+    url = reverse("dokumen:butir_ambil_pustaka", args=[butir.pk]) + f"?dokumen={dok.pk}"
+    return redirect(dengan_next(url, asal))

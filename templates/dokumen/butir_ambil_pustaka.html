@@ -1,0 +1,114 @@
+{% extends "layouts/internal.html" %}
+{% load navigasi %}
+
+{% block title %}Ambil dari Pustaka — {{ butir.kode }}{% endblock %}
+{% block page_heading %}Ambil dari Pustaka{% endblock %}
+
+{% block breadcrumb %}
+<div class="topbar-breadcrumb">
+    <a href="{{ kembali }}" class="js-kembali">← Butir {{ butir.kode }}</a>
+    <span>/</span>
+    <span style="color:var(--text-primary); font-weight:500;">Ambil dari Pustaka</span>
+</div>
+{% endblock %}
+
+{% block page %}
+<style>
+  .ap-row { display:grid; grid-template-columns: 1fr minmax(220px, 300px); gap:1rem; padding:.85rem 1.1rem;
+            border-top:1px solid var(--border-subtle); align-items:center; }
+  .ap-row:first-child { border-top:none; }
+  .ap-row.dipilih { background:#EEF2FF; }
+  .ap-judul { font-weight:600; color:var(--text-primary); }
+  .ap-meta { font-size:.76rem; color:var(--text-muted); margin-top:.2rem; display:flex; flex-wrap:wrap; gap:.3rem .6rem; }
+  .ap-kat { padding:.05rem .4rem; border-radius:4px; font-size:.68rem; font-weight:700; background:#F3E8FF; color:#6B21A8; }
+  .ap-form { display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
+  .ap-form select { padding:.35rem .5rem; font-size:.8rem; max-width:100%; }
+  .ap-form .btn { padding:.35rem .75rem; font-size:.8rem; }
+  .ap-sudah { font-size:.74rem; color:#047857; font-weight:600; }
+  @media (max-width:700px) { .ap-row { grid-template-columns:1fr; } .ap-form { justify-content:flex-start; } }
+</style>
+
+<div class="page-header">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Ambil dari Pustaka</h1>
+            <p class="page-subtitle">
+                Untuk butir <strong>{{ butir.kode }}</strong> — {{ butir.nama_dokumen }}
+                ({{ butir.sub_standar.standar.instrumen.nama_singkat }}).
+                Dokumen tidak diunggah ulang: butir memakai dokumen Pustaka yang sama, dan revisi dokumen
+                otomatis ikut terpakai.
+            </p>
+        </div>
+        <a href="{{ kembali }}" class="btn js-kembali" style="background:var(--surface-muted); color:var(--text-primary);">Kembali</a>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-body" style="padding:1rem 1.25rem;">
+        <form method="get" style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center;">
+            {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
+            <input type="text" name="q" value="{{ q }}" placeholder="🔍 Cari judul / nomor / penerbit…" class="form-input" style="max-width:300px; padding:.5rem .75rem;">
+            <select name="kategori" class="form-input" style="max-width:240px; padding:.5rem .75rem;" onchange="this.form.submit()">
+                <option value="">Semua kategori</option>
+                {% for k in kategori_all %}<option value="{{ k.pk }}" {% if kategori == k.pk|stringformat:"s" %}selected{% endif %}>{{ k.nama }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Cari</button>
+        </form>
+        {% if butir.kategori_kepemilikan == "PRODI" or butir.kategori_kepemilikan == "FAKULTAS" %}
+        <div class="form-help" style="margin-top:.6rem;">
+            Butir ini level {{ butir.get_kategori_kepemilikan_display }}: tautan hanya berlaku untuk
+            {% if butir.kategori_kepemilikan == "PRODI" %}prodi{% else %}fakultas{% endif %} yang dipilih pada kolom cakupan.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="panel" style="margin-top:1rem;">
+    <div class="panel-body panel-body-flush">
+        {% if dipilih %}
+        {% with d=dipilih %}
+        <div class="ap-row dipilih">
+            <div>
+                <div class="ap-judul">📌 {{ d.judul }}</div>
+                <div class="ap-meta">{% if d.kategori %}<span class="ap-kat">{{ d.kategori.nama }}</span>{% endif %}<span>{{ d.scope_label }}</span>{% if d.tahun_akademik %}<span>📅 {{ d.tahun_akademik }}</span>{% endif %}</div>
+            </div>
+            <form method="post" class="ap-form">
+                {% csrf_token %}
+                <input type="hidden" name="dokumen" value="{{ d.pk }}">
+                <select name="cakupan" class="form-input" required>{% for v, l in opsi_cakupan %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+                <button type="submit" class="btn btn-primary">Tautkan</button>
+            </form>
+        </div>
+        {% endwith %}
+        {% endif %}
+        {% for d in daftar %}
+        {% if not dipilih or d.pk != dipilih.pk %}
+        <div class="ap-row">
+            <div>
+                <a class="ap-judul" href="{% url_next 'dokumen:dokumen_detail' d.pk %}" style="text-decoration:none;">{{ d.judul }}</a>
+                <div class="ap-meta">
+                    {% if d.kategori %}<span class="ap-kat">{{ d.kategori.nama }}</span>{% endif %}
+                    <span>{{ d.scope_label }}</span>
+                    {% if d.nomor_dokumen %}<span>No. {{ d.nomor_dokumen }}</span>{% endif %}
+                    {% if d.tahun_akademik %}<span>📅 {{ d.tahun_akademik }}</span>{% endif %}
+                    {% if d.butir_dokumen_id %}<span>dari butir {{ d.butir_dokumen.kode }}</span>{% else %}<span>📚 Arsip Pustaka</span>{% endif %}
+                </div>
+                {% if d.sudah_tertaut %}<div class="ap-sudah">✓ Sudah tertaut ({{ d.sudah_tertaut|join:", " }})</div>{% endif %}
+            </div>
+            <form method="post" class="ap-form">
+                {% csrf_token %}
+                <input type="hidden" name="dokumen" value="{{ d.pk }}">
+                <select name="cakupan" class="form-input" required>{% for v, l in opsi_cakupan %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+                <button type="submit" class="btn">Tautkan</button>
+            </form>
+        </div>
+        {% endif %}
+        {% empty %}
+        <div style="padding:2.5rem 1rem; text-align:center; color:var(--text-muted);">
+            Tidak ada dokumen Pustaka yang cocok. {% if q or kategori %}Ubah kata kunci pencarian.{% endif %}
+        </div>
+        {% endfor %}
+        {% if lebih %}<div style="padding:.75rem 1.1rem; font-size:.8rem; color:var(--text-muted);">Menampilkan 60 dokumen pertama — persempit dengan pencarian.</div>{% endif %}
+    </div>
+</div>
+{% endblock %}

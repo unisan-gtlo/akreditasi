@@ -232,6 +232,13 @@ def bangun_pustaka(params, user):
               .select_related("sub_standar__standar__instrumen")):
         kb_butir.setdefault(b.kode_bersama, []).append(b)
 
+    # Butir yang memakai dokumen lewat tautan Pustaka
+    from .models import DokumenTautanButir
+    tautan_dok = {}
+    for t in (DokumenTautanButir.objects.filter(dokumen_id__in=[d.pk for d in docs])
+              .select_related("butir__sub_standar__standar__instrumen")):
+        tautan_dok.setdefault(t.dokumen_id, []).append(t)
+
     unit_nama = nama_unit_map()
     fak_nama = nama_fakultas_map()
     scopes = get_user_scopes(user)
@@ -262,6 +269,9 @@ def bangun_pustaka(params, user):
             anggota = kb_butir.get(b.kode_bersama, [b]) if b.kode_bersama else [b]
             for x in anggota:
                 g["butir"][x.pk] = f"{x.kode} · {x.sub_standar.standar.instrumen.nama_singkat}"
+        for t in tautan_dok.get(d.pk, []):
+            x = t.butir
+            g["butir"].setdefault(x.pk, f"{x.kode} · {x.sub_standar.standar.instrumen.nama_singkat} (tautan)")
 
     ringkasan = {}
     per_bagian = {k: {} for k, _ in BAGIAN}

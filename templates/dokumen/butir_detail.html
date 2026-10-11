@@ -40,6 +40,11 @@
             </p>
         </div>
         <div style="display:flex; gap:.5rem;">
+            {% if can_ambil_pustaka %}
+                <a href="{% url_teruskan 'dokumen:butir_ambil_pustaka' butir.pk %}" class="btn" title="Pakai dokumen yang sudah ada di Pustaka tanpa unggah ulang" style="background:#EEF2FF; color:#3730A3;">
+                    📚 Ambil dari Pustaka
+                </a>
+            {% endif %}
             {% if can_upload %}
                 <a href="{% url_teruskan 'dokumen:dokumen_upload' butir.pk %}" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -233,6 +238,43 @@
             Jalankan sinkron RPS terlebih dahulu.
         </p>
         {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Dokumen Pustaka yang ditautkan ke butir ini #}
+{% if tautan_list %}
+<div class="panel" style="margin-bottom:1.25rem;">
+    <div class="panel-header"><div>
+        <div class="panel-title">📚 Dokumen dari Pustaka ({{ tautan_list|length }})</div>
+        <div class="panel-subtitle">Ditautkan tanpa unggah ulang; dihitung di Bundle/ZIP sesuai cakupan dan tahun sesi.</div>
+    </div></div>
+    <div class="panel-body panel-body-flush">
+        <table class="data-table">
+            <thead><tr><th>Judul</th><th style="width:150px;">Kategori</th><th style="width:110px;">Tahun</th><th style="width:140px;">Cakupan</th><th style="width:130px;">Ditautkan</th><th style="width:150px;"></th></tr></thead>
+            <tbody>
+            {% for t in tautan_list %}
+            <tr>
+                <td><div style="font-weight:600;">{{ t.dokumen.judul }}</div>
+                    {% if t.butir_id != butir.pk %}<div style="font-size:.75rem; color:#047857;">via butir bersama {{ t.butir.kode }} ({{ t.butir.sub_standar.standar.instrumen.nama_singkat }})</div>{% endif %}
+                    {% if t.dokumen.status != "FINAL" %}<div style="font-size:.75rem; color:#B91C1C;">Dokumen tidak berstatus Final — tidak dihitung</div>{% endif %}</td>
+                <td style="font-size:.8rem;">{{ t.dokumen.kategori.nama|default:"-" }}</td>
+                <td style="font-size:.85rem;">{{ t.dokumen.tahun_akademik|default:"—" }}</td>
+                <td><span class="badge badge-gray">{{ t.cakupan_label }}</span></td>
+                <td style="font-size:.75rem; color:var(--text-muted);">{{ t.dibuat_oleh.username|default:"-" }}<br>{{ t.tanggal_dibuat|date:"d/m/Y" }}</td>
+                <td><div style="display:flex; gap:.4rem; align-items:center; flex-wrap:wrap;">
+                    <a href="{% url_next 'dokumen:dokumen_detail' t.dokumen.pk %}" style="font-size:.85rem; font-weight:600;">Detail →</a>
+                    {% if t.bisa_lepas %}
+                <form method="post" action="{% url 'dokumen:tautan_lepas' t.pk %}?next={{ request.get_full_path|urlencode }}" style="display:inline;"
+                      onsubmit="return confirm('Lepas tautan dari butir {{ t.butir.kode|escapejs }}?');">
+                    {% csrf_token %}<button type="submit" class="btn" style="padding:.2rem .55rem; font-size:.74rem; background:#FEF2F2; color:#991B1B;">Lepas</button>
+                </form>
+                {% endif %}
+                </div></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endif %}

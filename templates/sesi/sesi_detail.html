@@ -199,7 +199,7 @@
                                 {% if item.dokumen_list %}
                                     <div style="margin-top:.35rem; font-size:.75rem; color:var(--text-muted);">
                                         {% for d in item.dokumen_list %}
-                                            <a href="/dokumen/dokumen/{{ d.pk }}/{% next_ini %}" style="color:var(--primary-600); text-decoration:none; font-weight:600;">📄 {{ d.judul|truncatechars:40 }}</a>{% if not forloop.last %} • {% endif %}
+                                            <a href="/dokumen/dokumen/{{ d.pk }}/{% next_ini %}" style="color:var(--primary-600); text-decoration:none; font-weight:600;">{% if d.dari_pustaka %}📚{% else %}📄{% endif %} {{ d.judul|truncatechars:40 }}</a>{% if not forloop.last %} • {% endif %}
                                         {% endfor %}
                                     </div>
                                 {% endif %}
