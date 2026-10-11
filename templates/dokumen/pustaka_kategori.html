@@ -35,7 +35,13 @@
                 bila judul dokumen memuat kata kunci dan kategori dokumen dikosongkan, dokumen masuk ke kategori itu.
             </p>
         </div>
-        <a href="{% url 'dokumen:pustaka' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">Kembali ke Pustaka</a>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+            <form method="post" action="{% url 'dokumen:kategori_tebak_ulang' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn" title="Setelah menambah kategori/kata kunci, pindahkan dokumen 'Lainnya' yang kini cocok">⟳ Tebak Ulang Dokumen "Lainnya"</button>
+            </form>
+            <a href="{% url 'dokumen:pustaka' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">Kembali ke Pustaka</a>
+        </div>
     </div>
 </div>
 

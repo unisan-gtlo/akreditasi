@@ -78,7 +78,8 @@ def pustaka_tambah(request):
                     storage = cd.get("storage_type", "LOCAL")
                     buat = {"LOCAL": _create_local_revisi, "LINK": _create_link_revisi}.get(storage, _create_gdrive_revisi)
                     revisi = buat(dok, 1, form, request.user)
-                    if storage == "LINK" and (not cd.get("kategori")):
+                    # Tautan tanpa kategori yang cocok (mis. bukan "Permendikbudristek ...") → Tautan Aplikasi
+                    if storage == "LINK" and not cd.get("kategori") and (dok.kategori is None or dok.kategori.kode == "lainnya"):
                         aplikasi = KategoriDokumen.objects.filter(kode="aplikasi", aktif=True).first()
                         if aplikasi:
                             Dokumen.objects.filter(pk=dok.pk).update(kategori=aplikasi)
@@ -128,6 +129,27 @@ def kategori_kelola(request, pk=None):
         "obj": obj,
         "daftar": daftar,
     })
+
+
+@login_required
+@require_POST
+def kategori_tebak_ulang(request):
+    """Tebak ulang kategori dokumen yang masih 'Lainnya' (setelah kata kunci/kategori baru ditambah)."""
+    if not can_kelola_kategori(request.user):
+        messages.error(request, "Kelola kategori hanya untuk Super Admin dan LPM.")
+        return redirect("dokumen:pustaka")
+    from .pustaka import tebak_kategori_id
+
+    pindah = 0
+    for d in (Dokumen.objects.filter(kategori__kode="lainnya")
+              .select_related("butir_dokumen").prefetch_related("revisi")):
+        is_link = any(r.aktif and r.is_link for r in d.revisi.all())
+        baru = tebak_kategori_id(d.judul, d.butir_dokumen.nama_dokumen if d.butir_dokumen_id else "", is_link)
+        if baru and baru != d.kategori_id:
+            Dokumen.objects.filter(pk=d.pk).update(kategori_id=baru)
+            pindah += 1
+    messages.success(request, f"Tebak ulang selesai: {pindah} dokumen 'Lainnya' dipindah ke kategori yang cocok.")
+    return redirect("dokumen:kategori_kelola")
 
 
 @login_required
