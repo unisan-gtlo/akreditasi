@@ -530,9 +530,10 @@ def login_view(request):
 def logout_view(request):
     """Logout & redirect ke landing. ?sso=1 sekaligus keluar dari SSO UNISAN."""
     from . import sso
-    from .middleware_sso import COOKIE_KELUAR
+    from .middleware_sso import COOKIE_KELUAR, _sidik
 
-    lewat_sso = bool(request.session.get("sso_token"))
+    token_sso = request.session.get("sso_token", "")
+    lewat_sso = bool(token_sso)
     if request.user.is_authenticated:
         logout(request)
         messages.info(request, "Anda telah berhasil logout.")
@@ -542,7 +543,7 @@ def logout_view(request):
         resp = redirect("core:landing")
     if sso.aktif() and lewat_sso:
         # Cegah login otomatis lagi dari cookie SSO sampai pengguna menekan "Masuk dengan SSO"
-        resp.set_cookie(COOKIE_KELUAR, "1", httponly=True, samesite="Lax", secure=request.is_secure())
+        resp.set_cookie(COOKIE_KELUAR, _sidik(token_sso), httponly=True, samesite="Lax", secure=request.is_secure())
     return resp
 
 

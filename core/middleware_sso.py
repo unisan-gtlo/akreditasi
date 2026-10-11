@@ -22,8 +22,20 @@ from django.shortcuts import redirect
 
 from . import sso
 
-COOKIE_KELUAR = "siakred_sso_keluar"
+COOKIE_KELUAR = "siakred_sso_keluar"      # berisi sidik token yang di-logout (bukan tokennya)
+COOKIE_PAKAI_SSO = "siakred_pakai_sso"     # browser ini biasa masuk lewat SSO (1 tahun)
+COOKIE_COBA = "siakred_sso_coba"           # penahan putaran redirect ke SSO (60 detik)
 AWALAN_INTERNAL = ("/app", "/dokumen", "/sesi", "/master", "/laporan", "/login")
+
+
+def _sidik(token):
+    return hashlib.sha256((token or "").encode()).hexdigest()[:24] if token else "x"
+
+
+def _tandai_pakai_sso(resp, request):
+    resp.set_cookie(COOKIE_PAKAI_SSO, "1", max_age=365 * 24 * 3600, httponly=True, samesite="Lax",
+                    secure=request.is_secure())
+    resp.delete_cookie(COOKIE_COBA)
 
 
 def _tanpa_token(request):
@@ -83,19 +95,41 @@ class SSOMiddleware:
 
         token_url = request.GET.get("sso_token", "").strip()
         if token_url and request.method == "GET":
-            masuk_dengan_token(request, token_url)
+            berhasil = masuk_dengan_token(request, token_url)
             resp = redirect(_tanpa_token(request) if request.user.is_authenticated else "core:login")
             resp.delete_cookie(COOKIE_KELUAR)
+            if berhasil:
+                _tandai_pakai_sso(resp, request)
+            else:
+                resp.delete_cookie(COOKIE_PAKAI_SSO)  # cegah putaran redirect ke SSO
             return resp
 
         if request.user.is_authenticated:
             resp = self._cek_ulang(request)
             if resp is not None:
                 return resp
-        elif request.path.startswith(AWALAN_INTERNAL) and not request.COOKIES.get(COOKIE_KELUAR):
+        elif request.path.startswith(AWALAN_INTERNAL):
+            keluar = request.COOKIES.get(COOKIE_KELUAR, "")
             token = request.COOKIES.get(settings.SSO_COOKIE_NAME, "")
-            if token and masuk_dengan_token(request, token, diam=True) and request.path.startswith("/login"):
-                return redirect(_next_aman(request.GET.get("next", "")) or "core:dashboard")
+            # 1) Cookie SSO sekeluarga domain: login senyap (kecuali token yang sama baru saja di-logout)
+            if token and keluar != _sidik(token) and masuk_dengan_token(request, token, diam=True):
+                if request.path.startswith("/login"):
+                    resp = redirect(_next_aman(request.GET.get("next", "")) or "core:dashboard")
+                else:
+                    resp = self.get_response(request)
+                _tandai_pakai_sso(resp, request)
+                resp.delete_cookie(COOKIE_KELUAR)
+                return resp
+            # 2) Pernah masuk lewat SSO di browser ini tapi cookie SSO ada di domain lain
+            #    (mis. login di sso.unisan.ac.id, membuka siakred.unisan-g.id): minta token ke SSO.
+            #    SSO langsung mengembalikan token bila sudah login (jembatan lintas domain SSO).
+            if (request.method == "GET" and request.COOKIES.get(COOKIE_PAKAI_SSO) and not keluar
+                    and not request.COOKIES.get(COOKIE_COBA) and request.GET.get("lokal") != "1"):
+                tujuan = (_next_aman(request.GET.get("next", "")) or "/app/") if request.path.startswith("/login") \
+                    else request.get_full_path()
+                resp = redirect(sso.url_login(request, tujuan))
+                resp.set_cookie(COOKIE_COBA, "1", max_age=60, httponly=True, samesite="Lax", secure=request.is_secure())
+                return resp
         return self.get_response(request)
 
     def _cek_ulang(self, request):
