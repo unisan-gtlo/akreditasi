@@ -70,7 +70,7 @@ def nama_unit_map():
             nama_col = next((k for k in ("nama_unit_kerja", "nama_unit", "nama", "nama_lengkap") if k in kolom), None)
             for row in c.fetchall():
                 r = dict(zip(kolom, row))
-                nama = (r.get(nama_col) if nama_col else "") or r.get("kode") or r.get("id")
+                nama = " ".join(str((r.get(nama_col) if nama_col else "") or r.get("kode") or r.get("id")).split())
                 kode = r.get("kode")
                 data[str(r.get("id"))] = f"{nama} ({kode})" if kode and nama_col and kode != nama else str(nama)
     except Exception:

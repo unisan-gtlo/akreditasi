@@ -558,9 +558,24 @@ def dokumen_upload(request, butir_id):
     # Determine user scope info — untuk populate Dokumen.scope_xxx fields
     user_scope = _resolve_user_scope(request.user, butir.kategori_kepemilikan)
 
+    # Superadmin mengunggah ke butir Fakultas/Biro: wajib pilih fakultas/unit pemilik
+    pilihan_scope = _pilihan_scope_superadmin(request.user, butir)
+    scope_dipilih = request.POST.get("scope_pilihan", "") if request.method == "POST" else ""
+    scope_error = ""
+    if pilihan_scope is not None and request.method == "POST":
+        label = dict(pilihan_scope).get(scope_dipilih)
+        if not label:
+            scope_error = "Pilih fakultas/unit pemilik dokumen ini."
+        elif butir.kategori_kepemilikan == "FAKULTAS":
+            user_scope = dict(user_scope, scope_kode_fakultas=scope_dipilih, label=f"Super Admin → {label}")
+        else:
+            user_scope = dict(user_scope, scope_kode_unit_kerja=scope_dipilih, label=f"Super Admin → {label}")
+
     if request.method == "POST":
         form = DokumenUploadForm(request.POST, request.FILES, butir=butir)
-        if form.is_valid():
+        if scope_error:
+            messages.error(request, scope_error)
+        elif form.is_valid():
             try:
                 with transaction.atomic():
                     dokumen = _create_dokumen(
@@ -586,8 +601,21 @@ def dokumen_upload(request, butir_id):
         "butir": butir,
         "form": form,
         "user_scope": user_scope,
+        "pilihan_scope": pilihan_scope,
+        "scope_dipilih": scope_dipilih,
+        "scope_error": scope_error,
     }
     return render(request, "dokumen/dokumen_upload.html", context)
+
+
+def _pilihan_scope_superadmin(user, butir):
+    """[(kode, label)] fakultas/unit untuk superadmin pada butir FAKULTAS/BIRO; None jika tidak perlu."""
+    if not is_superadmin(user) or butir.kategori_kepemilikan not in ("FAKULTAS", "BIRO"):
+        return None
+    from .pustaka import nama_fakultas_map, nama_unit_map
+
+    data = nama_fakultas_map() if butir.kategori_kepemilikan == "FAKULTAS" else nama_unit_map()
+    return sorted(data.items(), key=lambda x: x[1].lower())
 
 
 # =========================================================

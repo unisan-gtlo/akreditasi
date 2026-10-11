@@ -140,6 +140,23 @@
 
             <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-subtle);">
 
+            {% if pilihan_scope is not None %}
+            {# Superadmin: pilih fakultas/unit pemilik dokumen #}
+            <div class="form-group">
+                <label class="form-label form-label-required" for="id_scope_pilihan">
+                    {% if butir.kategori_kepemilikan == "FAKULTAS" %}Fakultas Pemilik Dokumen{% else %}Biro/Lembaga Pemilik Dokumen{% endif %}
+                </label>
+                <select name="scope_pilihan" id="id_scope_pilihan" class="form-input" required>
+                    <option value="">— pilih —</option>
+                    {% for kode, label in pilihan_scope %}
+                    <option value="{{ kode }}" {% if scope_dipilih == kode %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if scope_error %}<div class="form-errors">{{ scope_error }}</div>{% endif %}
+                <div class="form-help">Anda mengunggah sebagai Super Admin; dokumen akan tercatat milik unit yang dipilih.</div>
+            </div>
+            {% endif %}
+
             {# Judul #}
             <div class="form-group">
                 <label class="form-label form-label-required" for="id_judul">Judul Dokumen</label>
