@@ -17,6 +17,7 @@ from master_akreditasi.models import (
     ButirDokumen,
     MappingProdiInstrumen,
 )
+from core.templatetags.navigasi import dengan_next, next_aman
 from .models import Dokumen, DokumenRevisi, DokumenAccessLog
 from .permissions import (
     get_user_scopes,
@@ -589,7 +590,8 @@ def dokumen_upload(request, butir_id):
                     request,
                     f"Dokumen '{dokumen.judul}' berhasil di-upload!"
                 )
-                return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+                asal = dengan_next(reverse("dokumen:butir_detail", args=[butir.pk]), next_aman(request))
+                return _ke_detail(request, dokumen.pk, asal)
             except Exception as e:
                 messages.error(request, f"Gagal upload: {str(e)}")
     else:
@@ -621,6 +623,12 @@ def _pilihan_scope_superadmin(user, butir):
 # =========================================================
 # HELPERS
 # =========================================================
+
+def _ke_detail(request, pk, asal=None):
+    """Redirect ke detail dokumen sambil membawa ?next= (tujuan tombol Kembali)."""
+    url = reverse("dokumen:dokumen_detail", args=[pk])
+    return redirect(dengan_next(url, next_aman(request) if asal is None else asal))
+
 
 def _resolve_user_scope(user, kategori):
     """
@@ -899,7 +907,7 @@ def dokumen_download(request, pk):
     revisi = dokumen.revisi_aktif
     if not revisi:
         messages.error(request, "Dokumen tidak memiliki revisi aktif.")
-        return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+        return _ke_detail(request, dokumen.pk)
 
     # Increment counter
     Dokumen.objects.filter(pk=dokumen.pk).update(
@@ -936,7 +944,7 @@ def dokumen_download(request, pk):
             return response
         except FileNotFoundError:
             messages.error(request, "File fisik tidak ditemukan di server. Hubungi admin.")
-            return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+            return _ke_detail(request, dokumen.pk)
 
 
 # =========================================================
@@ -954,7 +962,7 @@ def dokumen_upload_revisi(request, pk):
     can_edit, reason = can_edit_dokumen(request.user, dokumen)
     if not can_edit:
         messages.error(request, f"Tidak bisa upload revisi: {reason}")
-        return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+        return _ke_detail(request, dokumen.pk)
 
     butir = dokumen.butir_dokumen
     butir_tampil = butir
@@ -980,7 +988,7 @@ def dokumen_upload_revisi(request, pk):
                     request,
                     f"Revisi #{revisi.nomor_revisi} berhasil diupload!"
                 )
-                return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+                return _ke_detail(request, dokumen.pk)
             except Exception as e:
                 messages.error(request, f"Gagal upload revisi: {str(e)}")
     else:
@@ -1103,7 +1111,7 @@ def dokumen_edit(request, pk):
     can_edit, reason = can_edit_dokumen(request.user, dokumen)
     if not can_edit:
         messages.error(request, f"Tidak bisa edit: {reason}")
-        return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+        return _ke_detail(request, dokumen.pk)
 
     if request.method == "POST":
         form = DokumenEditForm(request.POST, instance=dokumen)
@@ -1122,7 +1130,7 @@ def dokumen_edit(request, pk):
             )
 
             messages.success(request, f"Metadata dokumen '{dokumen.judul}' berhasil diupdate!")
-            return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+            return _ke_detail(request, dokumen.pk)
     else:
         form = DokumenEditForm(instance=dokumen)
 
@@ -1154,7 +1162,7 @@ def dokumen_access_log(request, pk):
             request,
             "Anda tidak memiliki akses untuk melihat riwayat akses dokumen ini."
         )
-        return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+        return _ke_detail(request, dokumen.pk)
 
     # Query logs
     logs_qs = dokumen.access_logs.select_related("user", "revisi").order_by("-waktu")
@@ -1234,7 +1242,7 @@ def dokumen_access_log(request, pk):
             request,
             "Anda tidak memiliki akses untuk melihat riwayat akses dokumen ini."
         )
-        return redirect("dokumen:dokumen_detail", pk=dokumen.pk)
+        return _ke_detail(request, dokumen.pk)
 
     # Query logs
     logs_qs = dokumen.access_logs.select_related("user", "revisi").order_by("-waktu")

@@ -1,4 +1,5 @@
 {% extends "layouts/internal.html" %}
+{% load navigasi %}
 
 {% block title %}Pusat Sinkronisasi - SIAKRED{% endblock %}
 {% block page_heading %}Pusat Sinkronisasi{% endblock %}
@@ -125,7 +126,7 @@
             <tbody>
             {% for r in stat.tautan_rusak %}
                 <tr><td>{{ r.dokumen.butir_dokumen.kode }}</td>
-                    <td><a href="{% url 'dokumen:dokumen_detail' r.dokumen.pk %}">{{ r.dokumen.judul }}</a></td>
+                    <td><a href="{% url_next 'dokumen:dokumen_detail' r.dokumen.pk %}">{{ r.dokumen.judul }}</a></td>
                     <td><a href="{{ r.gdrive_url }}" target="_blank" rel="noopener">{{ r.gdrive_url }}</a></td></tr>
             {% endfor %}
             </tbody>

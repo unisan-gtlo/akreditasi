@@ -1,15 +1,15 @@
 ﻿{% extends "layouts/internal.html" %}
+{% load navigasi %}
 
 {% block title %}Riwayat Akses — SIAKRED{% endblock %}
 {% block page_heading %}Riwayat Akses Dokumen{% endblock %}
 
 {% block breadcrumb %}
 <div class="topbar-breadcrumb">
-    <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
+    {% if dokumen.butir_dokumen_id %}{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk as def_url %}{% asal_navigasi def_url dokumen.butir_dokumen.kode as asal %}{% else %}{% url 'dokumen:pustaka' as def_url %}{% asal_navigasi def_url "Pustaka Dokumen" as asal %}{% endif %}
+    <a href="{{ asal.url }}" class="js-kembali">← {{ asal.label }}</a>
     <span>/</span>
-    {% if dokumen.butir_dokumen_id %}<a href="{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk %}">{{ dokumen.butir_dokumen.kode }}</a>{% else %}<a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>{% endif %}
-    <span>/</span>
-    <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
+    <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
     <span>/</span>
     <span style="color:var(--text-primary); font-weight:500;">Riwayat Akses</span>
 </div>
@@ -25,7 +25,7 @@
                 Audit trail untuk: <strong>{{ dokumen.judul }}</strong>
             </p>
         </div>
-        <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+        <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Kembali ke Detail
         </a>
@@ -87,6 +87,7 @@
             {# Filter bar #}
             <div class="panel-body" style="padding:.75rem 1.25rem; border-bottom: 1px solid var(--border-subtle);">
                 <form method="get" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+                    {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
                     <select name="aksi" class="form-input" style="max-width:180px; padding:.45rem .75rem; font-size:.85rem;" onchange="this.form.submit()">
                         <option value="">Semua Aksi</option>
                         {% for value, label in aksi_choices %}
@@ -97,7 +98,7 @@
                            class="form-input" style="max-width:220px; padding:.45rem .75rem; font-size:.85rem;">
                     <button type="submit" class="btn btn-primary" style="padding:.45rem .85rem; font-size:.85rem;">Filter</button>
                     {% if filter_aksi or filter_user %}
-                        <a href="{% url 'dokumen:dokumen_access_log' dokumen.pk %}" style="font-size:.8rem; color:var(--primary-600); font-weight:600;">Reset</a>
+                        <a href="{% url_teruskan 'dokumen:dokumen_access_log' dokumen.pk %}" style="font-size:.8rem; color:var(--primary-600); font-weight:600;">Reset</a>
                     {% endif %}
                 </form>
             </div>
@@ -171,10 +172,10 @@
                     </div>
                     <div style="display:flex; gap:.25rem;">
                         {% if page_obj.has_previous %}
-                            <a href="?page={{ page_obj.previous_page_number }}{% if filter_aksi %}&aksi={{ filter_aksi }}{% endif %}{% if filter_user %}&user={{ filter_user }}{% endif %}" class="btn" style="padding:.4rem .75rem; font-size:.8rem; background:var(--surface-muted); color:var(--text-primary);">← Sebelumnya</a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if filter_aksi %}&aksi={{ filter_aksi }}{% endif %}{% if filter_user %}&user={{ filter_user }}{% endif %}{% if request.GET.next %}&next={{ request.GET.next|urlencode }}{% endif %}" class="btn" style="padding:.4rem .75rem; font-size:.8rem; background:var(--surface-muted); color:var(--text-primary);">← Sebelumnya</a>
                         {% endif %}
                         {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}{% if filter_aksi %}&aksi={{ filter_aksi }}{% endif %}{% if filter_user %}&user={{ filter_user }}{% endif %}" class="btn" style="padding:.4rem .75rem; font-size:.8rem; background:var(--surface-muted); color:var(--text-primary);">Berikutnya →</a>
+                            <a href="?page={{ page_obj.next_page_number }}{% if filter_aksi %}&aksi={{ filter_aksi }}{% endif %}{% if filter_user %}&user={{ filter_user }}{% endif %}{% if request.GET.next %}&next={{ request.GET.next|urlencode }}{% endif %}" class="btn" style="padding:.4rem .75rem; font-size:.8rem; background:var(--surface-muted); color:var(--text-primary);">Berikutnya →</a>
                         {% endif %}
                     </div>
                 </div>

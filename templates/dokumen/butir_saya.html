@@ -1,4 +1,5 @@
 {% extends "layouts/internal.html" %}
+{% load navigasi %}
 
 {% block title %}Dokumen Saya — SIAKRED{% endblock %}
 {% block page_heading %}Dokumen Saya{% endblock %}
@@ -138,7 +139,7 @@
 
             {# Butir rows #}
             {% for item in snode.items %}
-            <a href="{% url 'dokumen:butir_detail' item.butir.pk %}"
+            <a href="{% url_next 'dokumen:butir_detail' item.butir.pk %}"
                style="display:flex; align-items:center; gap:.75rem; padding:.65rem 1.25rem .65rem 2.5rem; border-top:1px solid var(--border-light); text-decoration:none; color:inherit;"
                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'">
                 <span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:var(--primary-700); background:var(--primary-50); padding:.22rem .5rem; border-radius:6px; font-size:.75rem; white-space:nowrap;">

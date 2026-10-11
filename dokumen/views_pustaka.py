@@ -90,7 +90,9 @@ def pustaka_tambah(request):
                         catatan="Ditambahkan lewat Pustaka Dokumen",
                     )
                 messages.success(request, f"Dokumen '{dok.judul}' ditambahkan ke Pustaka.")
-                return redirect("dokumen:dokumen_detail", pk=dok.pk)
+                from core.templatetags.navigasi import dengan_next
+                from django.urls import reverse
+                return redirect(dengan_next(reverse("dokumen:dokumen_detail", args=[dok.pk]), reverse("dokumen:pustaka")))
             except Exception as e:
                 messages.error(request, f"Gagal menyimpan: {e}")
     else:

@@ -1,12 +1,13 @@
 {% extends "layouts/internal.html" %}
-{% load static %}
+{% load static navigasi %}
 
 {% block title %}{{ butir.kode }} — SIAKRED{% endblock %}
 {% block page_heading %}Butir: {{ butir.kode }}{% endblock %}
 
 {% block breadcrumb %}
 <div class="topbar-breadcrumb">
-    <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
+    {% url 'dokumen:butir_saya' as def_url %}{% asal_navigasi def_url "Dokumen Saya" as asal %}
+    <a href="{{ asal.url }}" class="js-kembali">← {{ asal.label }}</a>
     <span>/</span>
     <span style="color:var(--text-primary); font-weight:500;">{{ butir.kode }}</span>
 </div>
@@ -40,12 +41,13 @@
         </div>
         <div style="display:flex; gap:.5rem;">
             {% if can_upload %}
-                <a href="{% url 'dokumen:dokumen_upload' butir.pk %}" class="btn btn-primary">
+                <a href="{% url_teruskan 'dokumen:dokumen_upload' butir.pk %}" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Upload Dokumen
                 </a>
             {% endif %}
-            <a href="{% url 'dokumen:butir_saya' %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+{% url 'dokumen:butir_saya' as def_url %}{% asal_navigasi def_url "Dokumen Saya" as asal %}
+            <a href="{{ asal.url }}" class="btn js-kembali" title="Kembali ke {{ asal.label }}" style="background:var(--surface-muted); color:var(--text-primary);">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 Kembali
             </a>
@@ -302,7 +304,7 @@
                     </td>
                     <td>
                         <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
-                            <a href="{% url 'dokumen:dokumen_detail' dok.pk %}" style="font-size:.85rem; font-weight:600; white-space:nowrap;">
+                            <a href="{% url_next 'dokumen:dokumen_detail' dok.pk %}" style="font-size:.85rem; font-weight:600; white-space:nowrap;">
                                 Detail →
                             </a>
                             {% include "dokumen/_copy_link_button.html" with dokumen=dok %}
@@ -326,7 +328,7 @@
                 {% endif %}
             </div>
             {% if can_upload %}
-                <a href="{% url 'dokumen:dokumen_upload' butir.pk %}" class="btn btn-primary" style="margin-top:1rem;">
+                <a href="{% url_teruskan 'dokumen:dokumen_upload' butir.pk %}" class="btn btn-primary" style="margin-top:1rem;">
                     Upload Dokumen Sekarang
                 </a>
             {% endif %}

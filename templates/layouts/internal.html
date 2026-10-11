@@ -43,5 +43,48 @@
     });
 </script>
 
+<script>
+    // "Kembali ke posisi sebelumnya": saat meninggalkan halaman lewat tautan, simpan posisi gulir
+    // & bagian yang terbuka; tombol berkelas js-kembali (atau tombol Back browser) memulihkannya.
+    (function () {
+        var PREFIX = 'siakred_posisi:';
+        function kunci(href) {
+            try { var u = new URL(href, location.origin); return PREFIX + u.pathname + u.search; } catch (e) { return null; }
+        }
+        function simpan() {
+            try {
+                var det = Array.prototype.map.call(document.querySelectorAll('.page-content details'), function (d) { return d.open ? 1 : 0; });
+                var std = Array.prototype.map.call(document.querySelectorAll('.std-card'), function (c) { return c.classList.contains('collapsed') ? 1 : 0; });
+                sessionStorage.setItem(kunci(location.href), JSON.stringify({ y: window.scrollY, det: det, std: std }));
+            } catch (e) {}
+        }
+        document.addEventListener('click', function (e) {
+            var a = e.target.closest ? e.target.closest('a[href]') : null;
+            if (!a || a.target === '_blank' || a.getAttribute('href').charAt(0) === '#') return;
+            simpan();
+            if (a.classList.contains('js-kembali')) {
+                try { sessionStorage.setItem('siakred_kembali', kunci(a.href)); } catch (e) {}
+            }
+        }, true);
+        function pulihkan() {
+            try {
+                var k = kunci(location.href);
+                var nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+                var dariKembali = sessionStorage.getItem('siakred_kembali') === k;
+                if (!dariKembali && nav.type !== 'back_forward') return;
+                sessionStorage.removeItem('siakred_kembali');
+                var data = JSON.parse(sessionStorage.getItem(k) || 'null');
+                if (!data) return;
+                var det = document.querySelectorAll('.page-content details');
+                (data.det || []).forEach(function (o, i) { if (det[i]) det[i].open = !!o; });
+                var std = document.querySelectorAll('.std-card');
+                (data.std || []).forEach(function (c, i) { if (std[i]) std[i].classList.toggle('collapsed', !!c); });
+                window.scrollTo(0, data.y || 0);
+            } catch (e) {}
+        }
+        if (document.readyState === 'complete') { pulihkan(); } else { window.addEventListener('load', function () { setTimeout(pulihkan, 30); }); }
+    })();
+</script>
+
 {% block extra_page_js %}{% endblock %}
 {% endblock %}

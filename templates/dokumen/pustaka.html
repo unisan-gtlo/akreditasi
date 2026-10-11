@@ -1,4 +1,5 @@
 {% extends "layouts/internal.html" %}
+{% load navigasi %}
 
 {% block title %}Pustaka Dokumen — SIAKRED{% endblock %}
 {% block page_heading %}Pustaka Dokumen{% endblock %}
@@ -26,8 +27,10 @@
   .pk-unit { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.75rem; overflow:hidden; }
   .pk-unit > summary { cursor:pointer; padding:.8rem 1.1rem; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:1rem; }
   .pk-unit > summary::-webkit-details-marker { display:none; }
-  .pk-unit > summary::before { content:"▸"; margin-right:.5rem; color:var(--text-muted); }
-  .pk-unit[open] > summary::before { content:"▾"; }
+  .pk-unit > summary > span:first-child::before { content:"▸"; margin-right:.5rem; color:var(--text-muted); }
+  .pk-unit[open] > summary > span:first-child::before { content:"▾"; }
+  .pk-unit.tunggal > summary { display:none; }
+  .pk-unit.tunggal > .pk-row:first-of-type { border-top:none; }
   .pk-unit > summary .pk-n { font-size:.78rem; color:var(--text-muted); font-weight:500; white-space:nowrap; }
   .pk-row { display:grid; grid-template-columns: 2.2rem 1fr auto; gap:.75rem; align-items:start;
             padding:.75rem 1.1rem; border-top:1px solid var(--border-subtle); }
@@ -115,7 +118,7 @@
 <div class="pk-bagian">
     <h2 class="pk-bagian-judul">{{ bagian.label }} <span>{{ bagian.jumlah }} dokumen</span></h2>
     {% for unit in bagian.units %}
-    <details class="pk-unit" {% if ada_filter or bagian.units|length <= 3 %}open{% endif %}>
+    <details class="pk-unit {% if bagian.units|length == 1 and unit.label == bagian.label %}tunggal{% endif %}" {% if ada_filter or bagian.units|length <= 3 %}open{% endif %}>
         <summary><span>{{ unit.label }}</span><span class="pk-n">{{ unit.entri|length }} dokumen</span></summary>
         {% for e in unit.entri %}
         {% with d=e.dok %}
@@ -125,7 +128,7 @@
             {% elif d.rev.extension %}<div class="pk-ico {% if d.rev.extension|lower == 'pdf' %}pdf{% endif %}">{{ d.rev.extension|upper|truncatechars:5 }}</div>
             {% else %}<div class="pk-ico">DOC</div>{% endif %}
             <div>
-                <a class="pk-judul" href="{% url 'dokumen:dokumen_detail' d.pk %}">{{ d.judul }}</a>
+                <a class="pk-judul" href="{% url_next 'dokumen:dokumen_detail' d.pk %}">{{ d.judul }}</a>
                 <div class="pk-meta">
                     {% if e.kategori %}<span class="pk-jenis">{{ e.kategori.nama }}</span>{% endif %}
                     {% if not d.butir_dokumen_id %}<span class="pk-arsip">📚 Arsip Pustaka</span>{% endif %}
@@ -144,22 +147,22 @@
                     <summary>Tahun/versi lain ({{ e.versi_lain|length }})</summary>
                     <ul>
                         {% for v in e.versi_lain %}
-                        <li><a href="{% url 'dokumen:dokumen_detail' v.pk %}">{{ v.tahun_akademik|default:"tanpa tahun" }}</a> — {{ v.judul }}</li>
+                        <li><a href="{% url_next 'dokumen:dokumen_detail' v.pk %}">{{ v.tahun_akademik|default:"tanpa tahun" }}</a> — {{ v.judul }}</li>
                         {% endfor %}
                     </ul>
                 </details>
                 {% endif %}
             </div>
             <div class="pk-aksi">
-                <a class="btn" href="{% url 'dokumen:dokumen_detail' d.pk %}">Lihat</a>
+                <a class="btn" href="{% url_next 'dokumen:dokumen_detail' d.pk %}">Lihat</a>
                 {% if d.rev.is_link %}
                 <a class="btn" href="{{ d.rev.gdrive_url }}" target="_blank" rel="noopener">Buka ↗</a>
                 {% elif d.rev %}
                 <a class="btn" href="{% url 'dokumen:dokumen_download' d.pk %}">Unduh</a>
                 {% endif %}
                 {% if e.bisa_edit %}
-                <a class="btn" href="{% url 'dokumen:dokumen_edit' d.pk %}" title="Ubah judul, kategori, nomor, tanggal">Edit</a>
-                {% if not d.rev.is_link %}<a class="btn" href="{% url 'dokumen:dokumen_upload_revisi' d.pk %}" title="Ganti file dengan versi baru">Versi Baru</a>{% endif %}
+                <a class="btn" href="{% url_next 'dokumen:dokumen_edit' d.pk %}" title="Ubah judul, kategori, nomor, tanggal">Edit</a>
+                {% if not d.rev.is_link %}<a class="btn" href="{% url_next 'dokumen:dokumen_upload_revisi' d.pk %}" title="Ganti file dengan versi baru">Versi Baru</a>{% endif %}
                 {% endif %}
             </div>
         </div>

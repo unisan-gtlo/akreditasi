@@ -1,15 +1,15 @@
 ﻿{% extends "layouts/internal.html" %}
+{% load navigasi %}
 
 {% block title %}Upload Revisi — SIAKRED{% endblock %}
 {% block page_heading %}Upload Revisi{% endblock %}
 
 {% block breadcrumb %}
 <div class="topbar-breadcrumb">
-    <a href="{% url 'dokumen:butir_saya' %}">Dokumen Saya</a>
+    {% if dokumen.butir_dokumen_id %}{% url 'dokumen:butir_detail' dokumen.butir_dokumen.pk as def_url %}{% asal_navigasi def_url dokumen.butir_dokumen.kode as asal %}{% else %}{% url 'dokumen:pustaka' as def_url %}{% asal_navigasi def_url "Pustaka Dokumen" as asal %}{% endif %}
+    <a href="{{ asal.url }}" class="js-kembali">← {{ asal.label }}</a>
     <span>/</span>
-    {% if butir.pk %}<a href="{% url 'dokumen:butir_detail' butir.pk %}">{{ butir.kode }}</a>{% else %}<a href="{% url 'dokumen:pustaka' %}">Pustaka Dokumen</a>{% endif %}
-    <span>/</span>
-    <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
+    <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}">{{ dokumen.judul|truncatechars:30 }}</a>
     <span>/</span>
     <span style="color:var(--text-primary); font-weight:500;">Upload Revisi</span>
 </div>
@@ -25,7 +25,7 @@
                 Untuk dokumen: <strong>{{ dokumen.judul }}</strong>
             </p>
         </div>
-        <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
+        <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="btn" style="background:var(--surface-muted); color:var(--text-primary);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Kembali
         </a>
@@ -118,7 +118,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:.5rem; padding-top:1rem; border-top:1px solid var(--border-subtle); margin-top:1rem;">
-                <a href="{% url 'dokumen:dokumen_detail' dokumen.pk %}" class="btn">Batal</a>
+                <a href="{% url_teruskan 'dokumen:dokumen_detail' dokumen.pk %}" class="btn">Batal</a>
                 <button type="submit" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 12 12 5 19 12"/><line x1="12" y1="19" x2="12" y2="5"/></svg>
                     Upload Revisi
