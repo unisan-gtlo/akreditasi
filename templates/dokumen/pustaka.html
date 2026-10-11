@@ -76,9 +76,9 @@
 
 {% if ringkasan_kategori %}
 <div class="pk-chips">
-    <a class="pk-chip {% if not f.kategori %}aktif{% endif %}" href="?{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}">Semua kategori</a>
+    <a class="pk-chip {% if not f.kategori %}aktif{% endif %}" href="?{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}{% if f.versi %}&versi={{ f.versi }}{% endif %}">Semua kategori</a>
     {% for pk, nama, n in ringkasan_kategori %}
-    <a class="pk-chip {% if f.kategori == pk|stringformat:"s" %}aktif{% endif %}" href="?kategori={{ pk }}{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}">{{ nama }} <strong>{{ n }}</strong></a>
+    <a class="pk-chip {% if f.kategori == pk|stringformat:"s" %}aktif{% endif %}" href="?kategori={{ pk }}{% if f.bagian %}&bagian={{ f.bagian }}{% endif %}{% if f.unit %}&unit={{ f.unit }}{% endif %}{% if f.q %}&q={{ f.q|urlencode }}{% endif %}{% if f.tahun %}&tahun={{ f.tahun|urlencode }}{% endif %}{% if f.instrumen %}&instrumen={{ f.instrumen }}{% endif %}{% if f.sumber %}&sumber={{ f.sumber }}{% endif %}{% if f.versi %}&versi={{ f.versi }}{% endif %}">{{ nama }} <strong>{{ n }}</strong></a>
     {% endfor %}
 </div>
 {% endif %}
@@ -105,6 +105,10 @@
                 <option value="pustaka" {% if f.sumber == "pustaka" %}selected{% endif %}>Arsip Pustaka (tanpa butir)</option>
                 <option value="butir" {% if f.sumber == "butir" %}selected{% endif %}>Dari butir instrumen</option>
             </select>
+            <select name="versi" class="form-input" onchange="this.form.submit()" title="Dokumen berjudul sama beda tahun">
+                <option value="">Versi terbaru (gabung tahun)</option>
+                <option value="semua" {% if f.versi == "semua" %}selected{% endif %}>Semua versi terpisah</option>
+            </select>
             <input type="text" name="tahun" value="{{ f.tahun }}" placeholder="Tahun, mis. 2024" class="form-input" style="max-width:150px;">
             <button type="submit" class="btn btn-primary">Terapkan</button>
             {% if ada_filter %}<a href="{% url 'dokumen:pustaka' %}" class="btn">Reset</a>{% endif %}
@@ -112,7 +116,10 @@
     </div>
 </div>
 
-<div style="font-size:.82rem; color:var(--text-muted); margin-top:.75rem;">{{ total_entri }} dokumen ditemukan.</div>
+<div style="font-size:.82rem; color:var(--text-muted); margin-top:.75rem;">
+    {{ total_entri }} dokumen ditemukan{% if total_versi_lain %} — <strong>{{ total_versi_lain }}</strong> dokumen tahun lama
+    digabung di bawah versi terbarunya (lihat "📅 versi tahun lain", atau pilih <em>Semua versi terpisah</em>){% endif %}.
+</div>
 
 {% for bagian in bagian_list %}
 <div class="pk-bagian">
@@ -143,8 +150,8 @@
                 <div class="pk-butir">Dipakai di butir: {{ e.butir|slice:":6"|join:", " }}{% if e.butir|length > 6 %} +{{ e.butir|length|add:"-6" }} lainnya{% endif %}</div>
                 {% endif %}
                 {% if e.versi_lain %}
-                <details class="pk-versi">
-                    <summary>Tahun/versi lain ({{ e.versi_lain|length }})</summary>
+                <details class="pk-versi" {% if ada_filter %}open{% endif %}>
+                    <summary>📅 {{ e.versi_lain|length }} versi tahun lain: {% for v in e.versi_lain %}{{ v.tahun_akademik|default:v.judul|truncatechars:40 }}{% if not forloop.last %}, {% endif %}{% endfor %}</summary>
                     <ul>
                         {% for v in e.versi_lain %}
                         <li><a href="{% url_next 'dokumen:dokumen_detail' v.pk %}">{{ v.tahun_akademik|default:"tanpa tahun" }}</a> — {{ v.judul }}</li>

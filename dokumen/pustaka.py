@@ -191,6 +191,7 @@ def bangun_pustaka(params, user):
     f_tahun = params.get("tahun", "").strip()
     f_instrumen = params.get("instrumen", "")
     f_sumber = params.get("sumber", "")
+    f_versi = params.get("versi", "")  # "semua" = tiap tahun/versi tampil terpisah
     q = params.get("q", "").strip()
 
     qs = (
@@ -261,7 +262,8 @@ def bangun_pustaka(params, user):
         d.kat_tampil = kat
         d.rev = rev
         unit_kode, unit_label = unit_dari(d)
-        key = (d.kategori_pemilik, unit_kode, kunci_judul(d.judul) or f"#{d.pk}")
+        key = (d.kategori_pemilik, unit_kode,
+               f"#{d.pk}" if f_versi == "semua" else (kunci_judul(d.judul) or f"#{d.pk}"))
         g = grup.setdefault(key, {"unit_kode": unit_kode, "unit_label": unit_label, "versi": [], "butir": {}})
         g["versi"].append(d)
         b = d.butir_dokumen
@@ -276,7 +278,10 @@ def bangun_pustaka(params, user):
     ringkasan = {}
     per_bagian = {k: {} for k, _ in BAGIAN}
     for (kat_pemilik, _u, _j), g in grup.items():
-        g["versi"].sort(key=lambda d: (tahun_urut(d.tahun_akademik) or (d.tanggal_dokumen.year if d.tanggal_dokumen else 0),
+        # Terbaru = tahun akademik, lalu tahun penetapan, lalu tahun di judul, lalu tanggal unggah
+        g["versi"].sort(key=lambda d: (tahun_urut(d.tahun_akademik)
+                                       or (d.tanggal_dokumen.year if d.tanggal_dokumen else 0)
+                                       or tahun_urut(d.judul),
                                        d.tanggal_dibuat), reverse=True)
         utama = g["versi"][0]
         kat = utama.kat_tampil
@@ -296,12 +301,14 @@ def bangun_pustaka(params, user):
 
     hasil = []
     total = 0
+    total_versi_lain = 0
     for kat_pemilik, label in BAGIAN:
         units = sorted(per_bagian[kat_pemilik].values(), key=lambda u: u["label"].lower())
         for u in units:
             u["entri"].sort(key=lambda e: ((e["kategori"].urutan, e["kategori"].nama) if e["kategori"] else (9999, ""),
                                            e["dok"].judul.lower()))
         n = sum(len(u["entri"]) for u in units)
+        total_versi_lain += sum(len(e["versi_lain"]) for u in units for e in u["entri"])
         total += n
         if units:
             hasil.append({"kode": kat_pemilik, "label": label, "units": units, "jumlah": n})
@@ -322,10 +329,11 @@ def bangun_pustaka(params, user):
     return {
         "bagian_list": hasil,
         "total_entri": total,
+        "total_versi_lain": total_versi_lain,
         "ringkasan_kategori": ringkasan_kat,
         "opsi_bagian": BAGIAN,
         "opsi_unit": sorted(opsi_unit, key=lambda x: x[1].lower()),
         "f": {"bagian": f_bagian, "kategori": f_kategori, "unit": f_unit, "tahun": f_tahun,
-              "instrumen": f_instrumen, "sumber": f_sumber, "q": q},
+              "instrumen": f_instrumen, "sumber": f_sumber, "versi": f_versi, "q": q},
         "ada_filter": any([f_bagian, f_kategori, f_unit, f_tahun, f_instrumen, f_sumber, q]),
     }
