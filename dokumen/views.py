@@ -1987,6 +1987,27 @@ def public_dokumen(request, token):
 
 
 @require_GET
+def public_lihat(request, token):
+    """Isi file (inline) untuk pratinjau halaman tautan publik /d/<token>/.
+    Dipakai karena /media/ dokumen INTERNAL kini hanya untuk pengguna login."""
+    import mimetypes
+    from django.http import FileResponse
+
+    dokumen = get_object_or_404(Dokumen, public_token=token, public_enabled=True, status=Dokumen.Status.FINAL)
+    revisi = dokumen.revisi_aktif
+    if not revisi or not revisi.is_local or not revisi.file:
+        raise Http404("File tidak tersedia")
+    nama = revisi.original_filename or revisi.file.name
+    content_type = mimetypes.guess_type(nama)[0] or "application/octet-stream"
+    try:
+        resp = FileResponse(revisi.file.open("rb"), content_type=content_type, as_attachment=False)
+    except FileNotFoundError:
+        raise Http404("File fisik tidak ditemukan")
+    resp["Content-Disposition"] = f'inline; filename="{nama}"'
+    return resp
+
+
+@require_GET
 def public_download(request, token):
     """
     Force-download untuk dokumen via public token.

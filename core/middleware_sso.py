@@ -90,7 +90,8 @@ class SSOMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if not sso.aktif():
+        # Subrequest nginx auth_request per berkas: jangan sentuh sesi/redirect di sini
+        if not sso.aktif() or request.path == "/media-akses/":
             return self.get_response(request)
 
         token_url = request.GET.get("sso_token", "").strip()

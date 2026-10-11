@@ -19,6 +19,7 @@ urlpatterns = [
     # PUBLIC DOC LINK (untuk hyperlink di LED — UUID token, no login)
     path("d/<uuid:token>/", dokumen_views.public_dokumen, name="public_dokumen"),
     path("d/<uuid:token>/download/", dokumen_views.public_download, name="public_download"),
+    path("d/<uuid:token>/lihat/", dokumen_views.public_lihat, name="public_lihat"),
 
     # Internal apps
     path("master/", include("master_akreditasi.urls")),

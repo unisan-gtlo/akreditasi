@@ -231,9 +231,9 @@
     {# === Viewer === #}
     <main class="pubdoc-viewer">
         {% if is_pdf %}
-            <iframe src="{{ revisi.file.url }}" title="Preview PDF"></iframe>
+            <iframe src="/d/{{ dokumen.public_token }}/lihat/" title="Preview PDF"></iframe>
         {% elif is_image %}
-            <img src="{{ revisi.file.url }}" alt="{{ dokumen.judul }}">
+            <img src="/d/{{ dokumen.public_token }}/lihat/" alt="{{ dokumen.judul }}">
         {% else %}
             <div class="pubdoc-fallback">
                 <div class="pubdoc-fallback-icon">📄</div>
