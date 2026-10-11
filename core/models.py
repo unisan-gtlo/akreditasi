@@ -918,6 +918,9 @@ class PemetaanJabatanSSO(models.Model):
     level = models.CharField(_("Level"), max_length=20, choices=ScopeUser.Level.choices)
     unit_kerja_id = models.BigIntegerField(_("ID Unit Kerja (Biro/Lembaga)"), null=True, blank=True,
                                            help_text=_("master.unit_kerja.id, wajib untuk level Biro"))
+    fakultas_tetap = models.CharField(_("Kode Fakultas tetap"), max_length=10, blank=True,
+                                      help_text=_("Untuk level Fakultas bila data pejabat tidak memuat fakultas, "
+                                                  "mis. Direktur Pascasarjana -> S2"))
     abaikan = models.BooleanField(_("Abaikan jabatan ini"), default=False,
                                   help_text=_("Centang bila jabatan ini tidak perlu akses SIAKRED"))
     keterangan = models.CharField(_("Keterangan"), max_length=200, blank=True)

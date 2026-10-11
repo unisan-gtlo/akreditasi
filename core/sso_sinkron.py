@@ -81,6 +81,7 @@ def target_scope(username, data_sso=None):
             continue
         if p:
             role, level, unit = p.role, p.level, p.unit_kerja_id
+            fak = (p.fakultas_tetap or "").strip() or fak
         elif j["lingkup"] in ("universitas", "fakultas", "prodi"):
             level = {"universitas": "UNIVERSITAS", "fakultas": "FAKULTAS", "prodi": "PRODI"}[j["lingkup"]]
             role, unit = ROLE_LEVEL[level], None

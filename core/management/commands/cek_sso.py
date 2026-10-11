@@ -41,7 +41,7 @@ class Command(BaseCommand):
         for r in rows:
             p = peta.get((r["kode"] or "").upper())
             if p:
-                aturan = "DIABAIKAN" if p.abaikan else f"pemetaan -> {p.role}/{p.level}" + (f" unit {p.unit_kerja_id}" if p.unit_kerja_id else "")
+                aturan = "DIABAIKAN" if p.abaikan else f"pemetaan -> {p.role}/{p.level}" + (f" unit {p.unit_kerja_id}" if p.unit_kerja_id else "") + (f" fakultas {p.fakultas_tetap}" if p.fakultas_tetap else "")
             elif r["lingkup"] in ("universitas", "fakultas", "prodi"):
                 aturan = f"bawaan -> {r['lingkup']}"
             else:

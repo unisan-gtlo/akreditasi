@@ -12,11 +12,12 @@ from .models import User, ScopeUser, LoginAttempt, DeviceSession, PemetaanJabata
 
 @admin.register(PemetaanJabatanSSO)
 class PemetaanJabatanSSOAdmin(admin.ModelAdmin):
-    list_display = ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "abaikan")
+    list_display = ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "fakultas_tetap", "abaikan")
     list_filter = ("role", "level", "abaikan")
     search_fields = ("kode_jabatan", "nama_jabatan")
     fieldsets = ((None, {
-        "fields": ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "abaikan", "keterangan"),
+        "fields": ("kode_jabatan", "nama_jabatan", "role", "level", "unit_kerja_id", "fakultas_tetap", "abaikan",
+                   "keterangan"),
         "description": "Aturan scope SIAKRED untuk jabatan struktural SIMDA saat login SSO. Jabatan lingkup "
                        "universitas/fakultas/prodi sudah punya aturan bawaan; jabatan lingkup unit (LPM, LPPM, "
                        "Biro) wajib dipetakan di sini. Daftar kode: jalankan `manage.py cek_sso`.",
