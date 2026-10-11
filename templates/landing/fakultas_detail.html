@@ -199,7 +199,7 @@
         <!-- VISI MISI -->
         <h2 class="fd-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-            Visi & Misi
+            Visi, Misi, Tujuan &amp; Sasaran
         </h2>
         <div class="fd-vm-grid">
             <div class="fd-vm-card">
@@ -232,7 +232,32 @@
                     {% endif %}
                 </div>
             </div>
+            {% if fakultas_profile.get_tujuan_list %}
+            <div class="fd-vm-card">
+                <div class="fd-vm-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                    Tujuan
+                </div>
+                <div class="fd-vm-content">
+                    <ol>{% for poin in fakultas_profile.get_tujuan_list %}<li>{{ poin }}</li>{% endfor %}</ol>
+                </div>
+            </div>
+            {% endif %}
+            {% if fakultas_profile.get_sasaran_list %}
+            <div class="fd-vm-card">
+                <div class="fd-vm-label">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+                    Sasaran
+                </div>
+                <div class="fd-vm-content">
+                    <ol>{% for poin in fakultas_profile.get_sasaran_list %}<li>{{ poin }}</li>{% endfor %}</ol>
+                </div>
+            </div>
+            {% endif %}
         </div>
+        {% if fakultas_profile.vmts_simda_at %}
+        <p style="font-size:.78rem; color:var(--text-muted); margin-top:.5rem;">Sumber: SIMDA · diperbarui {{ fakultas_profile.vmts_simda_at|date:"d M Y H:i" }}</p>
+        {% endif %}
         
         <!-- PRODI GRID -->
         <h2 class="fd-section-title">

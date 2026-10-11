@@ -66,6 +66,9 @@
             {% elif k.jenis == "DTPS" %}
                 <strong>{{ stat.sesi_aktif|length }}</strong> sesi aktif ·
                 <strong style="{% if stat.dtps_ditinjau %}color:#B45309;{% endif %}">{{ stat.dtps_ditinjau|length }}</strong> dosen perlu ditinjau
+            {% elif k.jenis == "VMTS" %}
+                Visi terisi: <strong>{{ stat.vmts_terisi.fakultas }}</strong> fakultas ·
+                <strong>{{ stat.vmts_terisi.prodi }}</strong> prodi
             {% elif k.jenis == "TAUTAN" %}
                 <strong>{{ stat.tautan_total }}</strong> tautan ·
                 <strong style="{% if stat.tautan_rusak %}color:#B91C1C;{% endif %}">{{ stat.tautan_rusak|length }}</strong> tidak bisa diakses

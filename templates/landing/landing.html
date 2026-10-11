@@ -1110,6 +1110,23 @@
                         {% endif %}
                     </div>
                 </div>
+
+                {% if profile.sasaran %}
+                <!-- SASARAN (dari SIMDA) -->
+                <div class="lb-vmt-card">
+                    <div class="lb-vmt-icon vm-t">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    </div>
+                    <div class="lb-vmt-label vm-t">Sasaran</div>
+                    <div class="lb-vmt-content">
+                        <ol>
+                            {% for poin in profile.sasaran.splitlines %}
+                                {% if poin.strip %}<li>{{ poin }}</li>{% endif %}
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}

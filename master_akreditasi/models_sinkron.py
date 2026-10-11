@@ -11,6 +11,7 @@ class SinkronLog(models.Model):
         RPS = "RPS", "RPS SI-OBE"
         DTPS = "DTPS", "DTPS & Data Dosen SIMDA"
         TAUTAN = "TAUTAN", "Tautan Aplikasi & Portal"
+        VMTS = "VMTS", "VMTS SIMDA"
         CACHE = "CACHE", "Bersihkan Cache"
         SEMUA = "SEMUA", "Sinkron Semua"
 

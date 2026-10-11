@@ -104,7 +104,7 @@
       </div>
     </div>
     
-    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Visi &amp; Misi</h2>
+    <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Visi, Misi, Tujuan &amp; Sasaran</h2>
     <div class="pd-vm-grid">
       <div class="pd-vm-card">
         <div class="pd-vm-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>Visi</div>
@@ -121,7 +121,22 @@
           {% else %}<p class="pd-vm-empty">Misi belum diinput.</p>{% endif %}
         </div>
       </div>
+      {% if prodi_profile.get_tujuan_list %}
+      <div class="pd-vm-card">
+        <div class="pd-vm-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>Tujuan</div>
+        <div class="pd-vm-content"><ol>{% for poin in prodi_profile.get_tujuan_list %}<li>{{ poin }}</li>{% endfor %}</ol></div>
+      </div>
+      {% endif %}
+      {% if prodi_profile.get_sasaran_list %}
+      <div class="pd-vm-card">
+        <div class="pd-vm-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>Sasaran</div>
+        <div class="pd-vm-content"><ol>{% for poin in prodi_profile.get_sasaran_list %}<li>{{ poin }}</li>{% endfor %}</ol></div>
+      </div>
+      {% endif %}
     </div>
+    {% if prodi_profile.vmts_simda_at %}
+    <p style="font-size:.78rem; color:var(--text-muted); margin-top:.5rem;">Sumber: SIMDA · diperbarui {{ prodi_profile.vmts_simda_at|date:"d M Y H:i" }}</p>
+    {% endif %}
     
     {% if prodi_profile.profil_lulusan %}
     <h2 class="pd-section-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/></svg>Profil Lulusan</h2>

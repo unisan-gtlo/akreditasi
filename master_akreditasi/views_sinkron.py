@@ -61,6 +61,7 @@ def _statistik():
     maps = MappingProdiInstrumen.objects.filter(aktif=True).order_by("kode_prodi")
     return {
         "rps_dokumen": rev_aktif.filter(catatan_revisi__startswith=MARKER).count(),
+        "vmts_terisi": _vmts_terisi(),
         "rps_prodi": prodi_dengan_butir_rps(),
         "sesi_aktif": [
             {"sesi": s, "dtps": DTPSDosenSesi.objects.filter(sesi=s, aktif=True).count()} for s in sesi_aktif
@@ -70,6 +71,14 @@ def _statistik():
         "tautan_rusak": list(tautan.filter(is_link_broken=True).select_related("dokumen__butir_dokumen")),
         "portal_ada": [m for m in maps if m.portal_slug],
         "portal_kosong": [m for m in maps if not m.portal_slug],
+    }
+
+
+def _vmts_terisi():
+    from core.models import FakultasProfile, ProdiProfile
+    return {
+        "fakultas": FakultasProfile.objects.exclude(visi="").count(),
+        "prodi": ProdiProfile.objects.exclude(visi="").count(),
     }
 
 
@@ -86,6 +95,8 @@ def pusat_sinkron(request):
          "ket": "Tambah dosen homebase baru ke sesi aktif, perbarui snapshot, tandai dosen yang perlu ditinjau."},
         {"jenis": "TAUTAN", "judul": "🌐 Tautan Aplikasi & Portal",
          "ket": "Tautan LMS, SIAKAD, SIAMI, Digital Library, Portal UNISAN & Alumni; cek ulang tautan mati."},
+        {"jenis": "VMTS", "judul": "🎯 VMTS SIMDA",
+         "ket": "Visi, misi, tujuan, sasaran universitas/fakultas/prodi + profil lulusan dari SIMDA (sama dengan portal)."},
         {"jenis": "CACHE", "judul": "🧹 Cache",
          "ket": "Bersihkan cache beranda publik, sidebar, kelengkapan SIMDA, badge notifikasi."},
     ]

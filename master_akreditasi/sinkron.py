@@ -5,6 +5,7 @@ Jenis:
     RPS    -> RPS Disahkan SI-OBE (dokumen per MK + MK penciri)
     DTPS   -> DTPS sesi aktif dari SIMDA (dosen homebase baru, snapshot, penanda)
     TAUTAN -> tautan aplikasi kampus + Portal UNISAN/Alumni per prodi + cek ulang tautan
+    VMTS   -> VMTS universitas/fakultas/prodi dari view SIMDA (sama dengan Portal UNISAN)
     CACHE  -> bersihkan cache (beranda publik, sidebar, kelengkapan, badge)
     SEMUA  -> keempatnya berurutan
 
@@ -18,7 +19,7 @@ from django.utils import timezone
 
 from .models_sinkron import SinkronLog
 
-URUTAN_SEMUA = ["RPS", "DTPS", "TAUTAN", "CACHE"]
+URUTAN_SEMUA = ["RPS", "DTPS", "TAUTAN", "VMTS", "CACHE"]
 BATAS_BERJALAN = timedelta(minutes=30)  # proses lebih lama dari ini dianggap macet
 
 
@@ -178,6 +179,86 @@ def sinkron_tautan(user, kode_prodi="", log=print):
     return f"Tautan: {baru} baru | {dicek} dicek | {rusak} tidak bisa diakses"
 
 
+GRANT_VMTS = (
+    "GRANT SELECT ON master.v_profil_institusi_publik, master.v_profil_fakultas_publik, "
+    "master.v_profil_prodi_publik TO {user};"
+)
+
+
+def _baca_view(sql, params=None):
+    """Baca view SIMDA -> list dict. Error izin dijelaskan dengan perintah GRANT yang dibutuhkan."""
+    from django.conf import settings
+    from django.db import connection
+
+    try:
+        with connection.cursor() as cur:
+            cur.execute(sql, params or [])
+            kolom = [c[0] for c in cur.description]
+            return [dict(zip(kolom, baris)) for baris in cur.fetchall()]
+    except Exception as exc:
+        if "permission denied" in str(exc).lower():
+            user = settings.DATABASES["default"].get("USER", "akreditasi_user")
+            raise RuntimeError(
+                "User database SIAKRED belum diizinkan membaca view VMTS SIMDA. Jalankan sekali sebagai "
+                "postgres: " + GRANT_VMTS.format(user=user)
+            ) from exc
+        raise
+
+
+def _terapkan(obj, nilai, log, label):
+    """Tulis nilai SIMDA yang TIDAK kosong ke obj (SIMDA sumber utama; kosong tidak menghapus isian lokal)."""
+    berubah = [f for f, v in nilai.items() if (v or "").strip() and (getattr(obj, f) or "") != v.strip()]
+    for f in berubah:
+        setattr(obj, f, nilai[f].strip())
+    obj.vmts_simda_at = timezone.now()
+    obj.save()
+    kosong = [f for f, v in nilai.items() if not (v or "").strip()]
+    log(f"    {label}: {'diperbarui ' + ', '.join(berubah) if berubah else 'tidak berubah'}"
+        + (f" | kosong di SIMDA: {', '.join(kosong)}" if kosong else ""))
+    return bool(berubah)
+
+
+def sinkron_vmts(user, kode_prodi="", log=print):
+    """VMTS dari view SIMDA (v_profil_*_publik) ke SiteProfile / FakultasProfile / ProdiProfile."""
+    from core.models import FakultasProfile, ProdiProfile, SiteProfile
+    from .models import MappingProdiInstrumen
+
+    berubah = 0
+    if not kode_prodi:
+        inst = _baca_view("SELECT visi, misi, tujuan, sasaran FROM master.v_profil_institusi_publik LIMIT 1")
+        if inst:
+            berubah += _terapkan(SiteProfile.get_instance(), inst[0], log, "Universitas")
+
+    prodi_qs = MappingProdiInstrumen.objects.filter(aktif=True)
+    if kode_prodi:
+        prodi_qs = prodi_qs.filter(kode_prodi=kode_prodi)
+    kode_prodi_list = list(prodi_qs.values_list("kode_prodi", flat=True))
+    if not kode_prodi_list:
+        return "VMTS: tidak ada prodi"
+
+    prodi_rows = _baca_view(
+        "SELECT p.kode_prodi, ps.kode_fakultas, p.visi_keilmuan, p.misi, p.tujuan, p.profil_lulusan, p.sasaran "
+        "FROM master.v_profil_prodi_publik p JOIN master.program_studi ps ON ps.kode_prodi = p.kode_prodi "
+        "WHERE p.kode_prodi = ANY(%s)", [kode_prodi_list])
+    fak_kode = sorted({r["kode_fakultas"] for r in prodi_rows if r["kode_fakultas"]})
+    if fak_kode:
+        for r in _baca_view("SELECT kode_fakultas, visi, misi, tujuan, sasaran "
+                            "FROM master.v_profil_fakultas_publik WHERE kode_fakultas = ANY(%s)", [fak_kode]):
+            fp, _ = FakultasProfile.objects.get_or_create(kode_fakultas=r["kode_fakultas"])
+            berubah += _terapkan(fp, {k: r[k] for k in ("visi", "misi", "tujuan", "sasaran")},
+                                 log, f"Fakultas {r['kode_fakultas']}")
+    for r in prodi_rows:
+        pp, _ = ProdiProfile.objects.get_or_create(kode_prodi=r["kode_prodi"])
+        berubah += _terapkan(pp, {
+            "visi": r["visi_keilmuan"], "misi": r["misi"], "tujuan": r["tujuan"],
+            "profil_lulusan": r["profil_lulusan"], "sasaran": r["sasaran"],
+        }, log, f"Prodi {r['kode_prodi']}")
+    from core.cache_utils import invalidate_publik
+    invalidate_publik()
+    cakupan = "" if kode_prodi else " + universitas"
+    return f"VMTS: {len(fak_kode)} fakultas, {len(prodi_rows)} prodi{cakupan} | {berubah} profil berubah"
+
+
 def sinkron_cache(user, kode_prodi="", log=print):
     cache.clear()
     log("Cache dibersihkan (beranda publik, sidebar, kelengkapan, badge notifikasi/verifikasi).")
@@ -188,6 +269,7 @@ FUNGSI = {
     "RPS": sinkron_rps,
     "DTPS": sinkron_dtps,
     "TAUTAN": sinkron_tautan,
+    "VMTS": sinkron_vmts,
     "CACHE": sinkron_cache,
 }
 

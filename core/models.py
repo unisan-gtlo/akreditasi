@@ -535,6 +535,12 @@ class SiteProfile(models.Model):
     
     # Tujuan (extension visi/misi)
     tujuan = models.TextField(blank=True, help_text="Tujuan universitas (1 poin per baris)")
+    sasaran = models.TextField(blank=True, help_text="Sasaran (1 poin per baris). Diambil dari SIMDA.")
+    vmts_simda_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="VMTS dari SIMDA terakhir",
+        help_text="Waktu VMTS terakhir disinkron dari SIMDA (Pusat Sinkronisasi). "
+                  "Isian VMTS akan ditimpa sinkron bila SIMDA punya isinya.",
+    )
     
     # Akreditasi Institusi (extend dari SIMDA)
     akreditasi_peringkat = models.CharField(max_length=30, blank=True, help_text="e.g. 'Unggul', 'Baik Sekali', 'B'")
@@ -708,6 +714,12 @@ class FakultasProfile(models.Model):
         blank=True,
         help_text="Tujuan fakultas (opsional).",
     )
+    sasaran = models.TextField(blank=True, help_text="Sasaran (1 poin per baris). Diambil dari SIMDA.")
+    vmts_simda_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="VMTS dari SIMDA terakhir",
+        help_text="Waktu VMTS terakhir disinkron dari SIMDA (Pusat Sinkronisasi). "
+                  "Isian VMTS akan ditimpa sinkron bila SIMDA punya isinya.",
+    )
     
     # Meta
     aktif = models.BooleanField(default=True)
@@ -727,6 +739,12 @@ class FakultasProfile(models.Model):
         if not self.misi:
             return []
         return [line.strip() for line in self.misi.splitlines() if line.strip()]
+
+    def get_tujuan_list(self):
+        return [line.strip() for line in (self.tujuan or "").splitlines() if line.strip()]
+
+    def get_sasaran_list(self):
+        return [line.strip() for line in (self.sasaran or "").splitlines() if line.strip()]
     
     def get_foto_dekan_url(self):
         """Return URL foto dekan atau None."""
@@ -763,6 +781,12 @@ class ProdiProfile(models.Model):
     visi = models.TextField(blank=True, help_text="Visi prodi")
     misi = models.TextField(blank=True, help_text="Misi prodi (1 baris per poin)")
     tujuan = models.TextField(blank=True, help_text="Tujuan prodi (opsional)")
+    sasaran = models.TextField(blank=True, help_text="Sasaran (1 poin per baris). Diambil dari SIMDA.")
+    vmts_simda_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="VMTS dari SIMDA terakhir",
+        help_text="Waktu VMTS terakhir disinkron dari SIMDA (Pusat Sinkronisasi). "
+                  "Isian VMTS akan ditimpa sinkron bila SIMDA punya isinya.",
+    )
     profil_lulusan = models.TextField(
         blank=True,
         help_text="Profil lulusan / kompetensi utama (opsional)",
@@ -807,6 +831,12 @@ class ProdiProfile(models.Model):
         if not self.misi:
             return []
         return [line.strip() for line in self.misi.splitlines() if line.strip()]
+
+    def get_tujuan_list(self):
+        return [line.strip() for line in (self.tujuan or "").splitlines() if line.strip()]
+
+    def get_sasaran_list(self):
+        return [line.strip() for line in (self.sasaran or "").splitlines() if line.strip()]
     
     def get_foto_kaprodi_url(self):
         if self.foto_kaprodi and hasattr(self.foto_kaprodi, "url"):

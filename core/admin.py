@@ -142,15 +142,15 @@ from .models import SiteProfile
 @admin.register(SiteProfile)
 class SiteProfileAdmin(admin.ModelAdmin):
     list_display = ("nama_institusi", "tagline", "nama_rektor", "foto_rektor_preview", "aktif")
-    readonly_fields = ("foto_rektor_preview_large", "tanggal_dibuat", "tanggal_diubah")
+    readonly_fields = ("foto_rektor_preview_large", "tanggal_dibuat", "tanggal_diubah", "vmts_simda_at")
     
     fieldsets = (
         ("Identitas Institusi", {
             "fields": ("nama_institusi", "nama_singkat", "tagline", "deskripsi_singkat", "tahun_berdiri"),
         }),
-        ("Visi Misi & Tujuan", {
-            "fields": ("visi", "misi", "tujuan"),
-            "description": "Visi, misi, dan tujuan universitas. Untuk misi & tujuan, 1 poin per baris.",
+        ("Visi Misi Tujuan & Sasaran", {
+            "fields": ("visi", "misi", "tujuan", "sasaran", "vmts_simda_at"),
+            "description": "<b>Diambil dari SIMDA</b> lewat Pusat Sinkronisasi (SIMDA sumber utama): isian di sini akan ditimpa saat sinkron bila SIMDA punya isinya. Ubah VMTS di SIMDA. 1 poin per baris.",
         }),
         ("Akreditasi Institusi", {
             "fields": ("akreditasi_peringkat", "akreditasi_no_sk", "akreditasi_tanggal_sk", "akreditasi_berlaku_sampai", "akreditasi_lembaga"),
@@ -290,7 +290,7 @@ class FakultasProfileAdmin(admin.ModelAdmin):
     list_display = ("kode_fakultas", "nama_fakultas_display", "nama_dekan", "foto_preview_small", "has_visi_misi", "aktif")
     list_filter = ("aktif",)
     search_fields = ("kode_fakultas", "nama_dekan")
-    readonly_fields = ("foto_preview_large", "tanggal_dibuat", "tanggal_diubah")
+    readonly_fields = ("foto_preview_large", "tanggal_dibuat", "tanggal_diubah", "vmts_simda_at")
     
     fieldsets = (
         ("Identitas Fakultas", {
@@ -301,9 +301,9 @@ class FakultasProfileAdmin(admin.ModelAdmin):
             "fields": ("nama_dekan", "periode_dekan", "foto_dekan", "foto_preview_large"),
             "description": "Upload foto close-up dekan (ratio 1:1 atau 3:4, min 400x400px)",
         }),
-        ("Visi Misi", {
-            "fields": ("visi", "misi", "tujuan"),
-            "description": "Visi/Misi fakultas. Untuk misi, tulis satu poin per baris.",
+        ("Visi Misi Tujuan & Sasaran", {
+            "fields": ("visi", "misi", "tujuan", "sasaran", "vmts_simda_at"),
+            "description": "<b>Diambil dari SIMDA</b> lewat Pusat Sinkronisasi (SIMDA sumber utama): isian di sini akan ditimpa saat sinkron bila SIMDA punya isinya. Ubah VMTS di SIMDA. 1 poin per baris.",
         }),
         ("Meta", {
             "fields": ("aktif", "tanggal_dibuat", "tanggal_diubah"),
@@ -351,7 +351,7 @@ class ProdiProfileAdmin(admin.ModelAdmin):
     list_display = ("kode_prodi", "nama_prodi_display", "kode_fakultas_display", "nama_kaprodi", "foto_preview_small", "has_visi_misi", "aktif")
     list_filter = ("aktif",)
     search_fields = ("kode_prodi", "nama_kaprodi")
-    readonly_fields = ("foto_preview_large", "tanggal_dibuat", "tanggal_diubah")
+    readonly_fields = ("foto_preview_large", "tanggal_dibuat", "tanggal_diubah", "vmts_simda_at")
     
     fieldsets = (
         ("Identitas Prodi", {
@@ -362,9 +362,9 @@ class ProdiProfileAdmin(admin.ModelAdmin):
             "fields": ("nama_kaprodi", "periode_kaprodi", "foto_kaprodi", "foto_preview_large"),
             "description": "Upload foto close-up ketua program studi",
         }),
-        ("Visi Misi", {
-            "fields": ("visi", "misi", "tujuan", "profil_lulusan"),
-            "description": "Untuk misi, tulis satu poin per baris.",
+        ("Visi Misi Tujuan & Sasaran", {
+            "fields": ("visi", "misi", "tujuan", "sasaran", "profil_lulusan", "vmts_simda_at"),
+            "description": "<b>Diambil dari SIMDA</b> lewat Pusat Sinkronisasi (SIMDA sumber utama): isian di sini akan ditimpa saat sinkron bila SIMDA punya isinya. Ubah VMTS di SIMDA. Visi = visi keilmuan prodi. 1 poin per baris.",
         }),
 
         ("Target Survei VMTS", {
